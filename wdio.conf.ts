@@ -2,38 +2,38 @@ import { ObsidianWorkerService, ObsidianLauncherService } from "obsidian-plugin-
 import * as path from "path"
 
 export const config: WebdriverIO.Config = {
-	runner: 'local',
-	tsConfigPath: './test/tsconfig.json',
-	
-	specs: [
-		'./test/specs/**/*.ts'
-	],
+    runner: 'local',
+    tsConfigPath: './test/tsconfig.json',
+    
+    specs: [
+        './test/specs/**/*.ts'
+    ],
 
-	// How many instances of Obsidian should be launched in parallel during testing.
-	maxInstances: 4,
+    // How many instances of Obsidian should be launched in parallel during testing.
+    maxInstances: 4,
 
-	capabilities: [{
-		browserName: 'obsidian',
-		browserVersion: "latest",
-		'wdio:obsidianOptions': {
-			installerVersion: "earliest",
-			plugins: ["."],
-		},
-	}],
+    capabilities: [{
+        browserName: 'obsidian',
+        browserVersion: "latest",
+        'wdio:obsidianOptions': {
+            installerVersion: "earliest",
+            plugins: ["."],
+        },
+    }],
 
-	services: [[ObsidianWorkerService, {}], [ObsidianLauncherService, {}]],
+    services: [[ObsidianWorkerService, {}], [ObsidianLauncherService, {}]],
 
-	framework: 'mocha',
+    framework: 'mocha',
 
-	reporters: ['spec'],
+    reporters: ['spec'],
 
-	mochaOpts: {
-		ui: 'bdd',
-		timeout: 60000
-	},
+    mochaOpts: {
+        ui: 'bdd',
+        timeout: 60000
+    },
 
-	cacheDir: path.resolve(".optl-cache"),
+    cacheDir: path.resolve(".optl-cache"),
 
- 	logLevel: "warn",
+     logLevel: "warn",
 }
 

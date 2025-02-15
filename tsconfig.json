@@ -16,9 +16,14 @@
       "DOM",
       "ES5",
       "ES6",
-      "ES7"
+      "ES7",
+      "dom.iterable"
     ],
-    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework"],
+    "types": [
+      "node",
+      "@wdio/globals/types",
+      "@wdio/mocha-framework",
+    ],
     "skipLibCheck": true
   },
   "include": [

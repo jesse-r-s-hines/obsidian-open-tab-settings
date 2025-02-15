@@ -16,8 +16,9 @@ export const config: WebdriverIO.Config = {
         browserName: 'obsidian',
         browserVersion: "latest",
         'wdio:obsidianOptions': {
-            installerVersion: "earliest",
+            installerVersion: "latest",
             plugins: ["."],
+            vault: "./test/vault",
         },
     }],
 
@@ -31,6 +32,8 @@ export const config: WebdriverIO.Config = {
         ui: 'bdd',
         timeout: 60000
     },
+
+    waitforInterval: 100,
 
     cacheDir: path.resolve(".optl-cache"),
 

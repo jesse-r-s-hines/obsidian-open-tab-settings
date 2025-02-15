@@ -3,7 +3,7 @@ import * as monkeyAround from 'monkey-around';
 
 // Remember to rename these classes and interfaces!
 
-interface MyPluginSettings {
+export interface MyPluginSettings {
     openInNewTab: boolean;
 }
 

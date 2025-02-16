@@ -5,12 +5,9 @@ import workspacePage from 'test/pageobjects/workspace.page';
 import { setSettings } from './helpers';
 
 // Test that normal behaviors aren't broken by the plugin
-describe('Test normal behavior', () => {
-    beforeEach(async () => {
-        await setSettings({ openInNewTab: true });
-        await workspacePage.loadWorkspaceLayout("empty");
-    })
+// We'll run these tests 3 times: with the plugin disabled, with the settings disabled, and with the settings enabled
 
+const tests = () => {
     it('Open first file via open modal works', async () => {
         await workspacePage.openFileViaModal("A.md");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
@@ -39,4 +36,45 @@ describe('Test normal behavior', () => {
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
     })
+}
+
+
+describe('Test normal behavior without the plugin', () => {
+    before(async () => {
+        await browser.disablePlugin("sample-plugin");
+    });
+
+    beforeEach(async () => {
+        await workspacePage.loadWorkspaceLayout("empty");
+    });
+
+    after(async () => {
+        await browser.enablePlugin("sample-plugin");
+    });
+
+    tests();
+})
+
+describe('Test normal behavior with the plugin settings turned off', () => {
+    before(async () => {
+        await setSettings({ openInNewTab: false });;
+    })
+
+    beforeEach(async () => {
+        await workspacePage.loadWorkspaceLayout("empty");
+    })
+
+    tests();
+})
+
+describe('Test normal behavior with the plugin settings enabled', () => {
+    before(async () => {
+        await setSettings({ openInNewTab: true });;
+    });
+
+    beforeEach(async () => {
+        await workspacePage.loadWorkspaceLayout("empty");
+    });
+
+    tests();
 })

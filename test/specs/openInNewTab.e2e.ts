@@ -9,18 +9,9 @@ describe('Test my plugin', () => {
         await setSettings({ openInNewTab: true });
         await workspacePage.openFile("A.md");
         (await workspacePage.getLink("B")).click()
-        await browser.waitUntil(() => browser.execute(() => {
-            let result = false;
-            optl.app.workspace.iterateRootLeaves(l => {
-                if (l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "B.md") {
-                    result = true
-                }
-            })
-            return result;
-        }))
-        const open = await workspacePage.getAllLeaves()
-        expect(open).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
-        const active = await workspacePage.getActiveLeaf()
-        expect(active).to.eql(["markdown", "B.md"])
+
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
     })
 })

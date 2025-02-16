@@ -68,7 +68,7 @@ class WorkspacePage {
         })
     }
 
-    async getLink(text: string): Promise<ChainablePromiseElement> {
+    async getLink(text: string) {
         const link = await browser.execute((text) => {
             const el = optl.app.workspace.getActiveViewOfType(optl.obsidian.MarkdownView)!.containerEl;
             return [...el.querySelectorAll("a")].find(a => a.getText() == text)
@@ -101,6 +101,12 @@ class WorkspacePage {
             await expandAllButton.click()
         }
         await $(`.nav-files-container [data-path='${path}']`).click()
+    }
+
+    async setConfig(name: string, value: any) {
+        await browser.execute((name, value) => {
+            (optl.app.vault as any).setConfig(name, value);
+        }, name, value)
     }
 }
 

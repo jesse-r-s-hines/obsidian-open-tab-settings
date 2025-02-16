@@ -1,4 +1,3 @@
-import { ObsidianWorkerService, ObsidianLauncherService } from "obsidian-plugin-testing-library"
 import * as path from "path"
 
 export const config: WebdriverIO.Config = {
@@ -22,7 +21,7 @@ export const config: WebdriverIO.Config = {
         },
     }],
 
-    services: [[ObsidianWorkerService, {}], [ObsidianLauncherService, {}]],
+    services: ["obsidian"],
 
     framework: 'mocha',
 
@@ -35,8 +34,8 @@ export const config: WebdriverIO.Config = {
 
     waitforInterval: 100,
 
-    cacheDir: path.resolve(".optl-cache"),
+    cacheDir: path.resolve(".wdio-cache"),
 
-     logLevel: "warn",
+    logLevel: "warn",
 }
 

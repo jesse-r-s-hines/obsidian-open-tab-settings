@@ -1,4 +1,4 @@
-import { ElementBase, Key } from 'webdriverio'
+import { Key } from 'webdriverio'
 import type { WorkspaceLeaf } from "obsidian";
 
 import * as fsAsync from "fs/promises";

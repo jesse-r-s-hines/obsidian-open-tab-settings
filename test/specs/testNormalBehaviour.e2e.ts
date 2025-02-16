@@ -94,6 +94,48 @@ const tests = () => {
 
         expect(aParent).to.not.eql(bParent);
     })
+
+    it("open self link in new tab focusNewTab true", async () => {
+        await workspacePage.setConfig('focusNewTab', true);
+
+        await workspacePage.openFile("Loop.md");
+        const prevActiveLeaf = await workspacePage.getActiveLeafId();
+        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"], ["markdown", "Loop.md"]])
+
+        expect(await workspacePage.getActiveLeafId()).to.not.eql(prevActiveLeaf);
+    })
+
+    it("open self link in new tab focusNewTab false", async () => {
+        await workspacePage.setConfig('focusNewTab', false);
+
+        await workspacePage.openFile("Loop.md");
+        const prevActiveLeaf = await workspacePage.getActiveLeafId();
+        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"], ["markdown", "Loop.md"]])
+
+        expect(await workspacePage.getActiveLeafId()).to.eql(prevActiveLeaf);
+    })
+
+    it("open self link normally does nothing", async () => {
+        await workspacePage.openFile("Loop.md");
+        (await workspacePage.getLink("Loop.md")).click();
+        await new Promise(r => setTimeout(r, 100));
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"]])
+    })
+
+    it("pinned file", async () => {
+        await workspacePage.openFile("A.md");
+        await browser.executeObsidianCommand("workspace:toggle-pin");
+
+        (await workspacePage.getLink("B")).click();
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        const active = await workspacePage.getActiveLeaf()
+        expect(active).to.eql(["markdown", "B.md"])
+    })
 }
 
 

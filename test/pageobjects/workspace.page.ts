@@ -38,17 +38,19 @@ class WorkspacePage {
 
     async getActiveLeaf(): Promise<[string, string]> {
         return await browser.execute(() => {
-            let activeLeaf: [string, string]
-            optl.app.workspace.iterateRootLeaves(l => {
-                let file = ""
-                if (l.view instanceof optl.obsidian.MarkdownView) {
-                    file = l.view.file?.path ?? "";
-                }
-                if ((l as any).containerEl.hasClass('mod-active')) {
-                    activeLeaf = [l.view.getViewType(), file]
-                }
-            })
-            return activeLeaf!
+            const leaf = optl.app.workspace.getActiveViewOfType(optl.obsidian.View)!.leaf;
+            let file = ""
+            if (leaf.view instanceof optl.obsidian.MarkdownView) {
+                file = leaf.view.file?.path ?? ''
+            }
+            return [leaf.view.getViewType(), file]
+        })
+    }
+
+    async getActiveLeafId(): Promise<[string, string]> {
+        return await browser.execute(() => {
+            const leaf = optl.app.workspace.getActiveViewOfType(optl.obsidian.View)!.leaf;
+            return (leaf as any).id
         })
     }
 

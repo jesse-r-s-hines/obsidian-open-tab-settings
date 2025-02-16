@@ -1,5 +1,6 @@
-import type { ElementBase } from 'webdriverio'
+import { ElementBase, Key } from 'webdriverio'
 import type { WorkspaceLeaf } from "obsidian";
+
 import * as fsAsync from "fs/promises";
 import * as path from "path";
 
@@ -85,6 +86,21 @@ class WorkspacePage {
         await browser.waitUntil(async () =>
             JSON.parse(await fsAsync.readFile(workspacesFile, 'utf-8')).active == layout,
         );
+    }
+
+    async openFileViaModal(path: string): Promise<void> {
+        path = path.replace(/\.md$/, '')
+        await browser.keys([Key.Ctrl, 'o']);
+        await browser.keys(path);
+        await browser.keys(Key.Enter);
+    }
+
+    async openFileViaFileExplorer(path: string): Promise<void> {
+        const expandAllButton = $(".nav-action-button[aria-label='Expand all']");
+        if (await expandAllButton.isExisting()) {
+            await expandAllButton.click()
+        }
+        await $(`.nav-files-container [data-path='${path}']`).click()
     }
 }
 

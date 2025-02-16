@@ -9,12 +9,12 @@ class WorkspacePage {
      * Opens a markdown file in a new tab.
      */
     async openFile(path: string) {
-        await browser.execute(async (path) => {
-            const file = optl.app.vault.getFileByPath(path);
+        await browser.executeObsidian(async ({app}, path) => {
+            const file = app.vault.getFileByPath(path);
             if (!file) {
                 throw Error(`No file ${path} exists`);
             }
-            await optl.app.workspace.getLeaf('tab').openFile(file);
+            await app.workspace.getLeaf('tab').openFile(file);
         }, path)
     }
 
@@ -22,25 +22,25 @@ class WorkspacePage {
      * Focuses tab containing file.
      */
     async setActiveFile(path: string) {
-        await browser.execute(() => {
+        await browser.executeObsidian(({app, obsidian}) => {
             let leaf: WorkspaceLeaf|undefined
-            optl.app.workspace.iterateRootLeaves(l => {
-                if (l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == path && !leaf) {
+            app.workspace.iterateRootLeaves(l => {
+                if (l.view instanceof obsidian.MarkdownView && l.view.file?.path == path && !leaf) {
                     leaf = l
                 }
                 if (!leaf) {
                     throw new Error(`No leaf for ${path} found`)
                 }
-                optl.app.workspace.setActiveLeaf(leaf, {focus: true});
+                app.workspace.setActiveLeaf(leaf, {focus: true});
             })
         })
     }
 
     async getActiveLeaf(): Promise<[string, string]> {
-        return await browser.execute(() => {
-            const leaf = optl.app.workspace.getActiveViewOfType(optl.obsidian.View)!.leaf;
+        return await browser.executeObsidian(({app, obsidian}) => {
+            const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
             let file = ""
-            if (leaf.view instanceof optl.obsidian.MarkdownView) {
+            if (leaf.view instanceof obsidian.MarkdownView) {
                 file = leaf.view.file?.path ?? ''
             }
             return [leaf.view.getViewType(), file]
@@ -48,18 +48,18 @@ class WorkspacePage {
     }
 
     async getActiveLeafId(): Promise<[string, string]> {
-        return await browser.execute(() => {
-            const leaf = optl.app.workspace.getActiveViewOfType(optl.obsidian.View)!.leaf;
+        return await browser.executeObsidian(({app, obsidian}) => {
+            const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
             return (leaf as any).id
         })
     }
 
     async getAllLeaves(): Promise<[string, string][]> {
-        return await browser.execute(() => {
+        return await browser.executeObsidian(({app, obsidian}) => {
             const leaves: [string, string][] = []
-            optl.app.workspace.iterateRootLeaves(l => {
+            app.workspace.iterateRootLeaves(l => {
                 let file = ""
-                if (l.view instanceof optl.obsidian.MarkdownView) {
+                if (l.view instanceof obsidian.MarkdownView) {
                     file = l.view.file?.path ?? "";
                 }
                 const viewInfo = [l.view.getViewType(), file] as [string, string]
@@ -71,8 +71,8 @@ class WorkspacePage {
     }
 
     async getLink(text: string) {
-        const link = await browser.execute((text) => {
-            const el = optl.app.workspace.getActiveViewOfType(optl.obsidian.MarkdownView)!.containerEl;
+        const link = await browser.executeObsidian(({app, obsidian}, text) => {
+            const el = app.workspace.getActiveViewOfType(obsidian.MarkdownView)!.containerEl;
             return [...el.querySelectorAll("a")].find(a => a.getText() == text)
         }, text)
         if (!link) {
@@ -118,8 +118,8 @@ class WorkspacePage {
     }
 
     async setConfig(name: string, value: any) {
-        await browser.execute((name, value) => {
-            (optl.app.vault as any).setConfig(name, value);
+        await browser.executeObsidian(({app}, name, value) => {
+            (app.vault as any).setConfig(name, value);
         }, name, value)
     }
 }

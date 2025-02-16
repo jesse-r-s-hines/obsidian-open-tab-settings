@@ -70,11 +70,11 @@ const tests = () => {
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2);
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]]);
-        const [aParent, bParent] = await browser.execute(async () => {
+        const [aParent, bParent] = await browser.executeObsidian(async ({app, obsidian}) => {
             const leaves: WorkspaceLeaf[] = []
-            optl.app.workspace.iterateRootLeaves(l => { leaves.push(l) });
-            const a = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "A.md")!;
-            const b = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "B.md")!;
+            app.workspace.iterateRootLeaves(l => { leaves.push(l) });
+            const a = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "A.md")!;
+            const b = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "B.md")!;
             return [(a?.parent as any).id, (b?.parent as any).id]
         });
         expect(aParent).to.not.eql(bParent);
@@ -84,13 +84,15 @@ const tests = () => {
         await workspacePage.openFile("A.md");
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
 
-        const [aParent, bParent] = await browser.waitUntil(() => browser.execute(async () => {
-            const leaves: WorkspaceLeaf[] = []
-            optl.app.workspace.iterateAllLeaves(l => { leaves.push(l) });
-            const a = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "A.md")!;
-            const b = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "B.md")!;
-            return [(a.getRoot() as any).id, (b.getRoot() as any).id]
-        }));
+        const [aParent, bParent] = await browser.waitUntil(
+            () => browser.executeObsidian(async ({app, obsidian}) => {
+                const leaves: WorkspaceLeaf[] = []
+                app.workspace.iterateAllLeaves(l => { leaves.push(l) });
+                const a = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "A.md")!;
+                const b = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "B.md")!;
+                return [(a.getRoot() as any).id, (b.getRoot() as any).id]
+            })
+        );
 
         expect(aParent).to.not.eql(bParent);
     })

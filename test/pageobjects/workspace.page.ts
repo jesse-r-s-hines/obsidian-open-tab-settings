@@ -1,5 +1,7 @@
 import type { ElementBase } from 'webdriverio'
 import type { WorkspaceLeaf } from "obsidian";
+import * as fsAsync from "fs/promises";
+import * as path from "path";
 
 class WorkspacePage {
     /**
@@ -74,6 +76,15 @@ class WorkspacePage {
             throw Error(`No link "${text}" found`)
         }
         return $(link)
+    }
+
+    async loadWorkspaceLayout(layout: string): Promise<void> {
+        await browser.executeObsidianCommand("workspaces:load");
+        await $(`//*[contains(@class, 'suggestion-item') and text()="${layout}"]`).click();
+        const workspacesFile = path.join((await browser.getVaultPath())!, '.obsidian/workspaces.json');
+        await browser.waitUntil(async () =>
+            JSON.parse(await fsAsync.readFile(workspacesFile, 'utf-8')).active == layout,
+        );
     }
 }
 

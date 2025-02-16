@@ -1,4 +1,4 @@
-import { Key } from 'webdriverio'
+import { Key, ChainablePromiseElement } from 'webdriverio'
 import type { WorkspaceLeaf } from "obsidian";
 
 import * as fsAsync from "fs/promises";
@@ -79,7 +79,19 @@ class WorkspacePage {
         return $(link)
     }
 
+    async openLinkToRight(link: ChainablePromiseElement) {
+        await link.click({button: "right"});
+        await browser.$("//*[contains(@class, 'menu')]//*[text()='Open to the right']").click()
+    }
+
+    async openLinkInNewWindow(link: ChainablePromiseElement) {
+        await link.click({button: "right"});
+        await browser.$("//*[contains(@class, 'menu')]//*[text()='Open in new window']").click()
+    }
+
     async loadWorkspaceLayout(layout: string): Promise<void> {
+        // Click on the status-bar to focus the main window in case there are multiple Obsidian windows panes
+        await $(".status-bar").click()
         await browser.executeObsidianCommand("workspaces:load");
         await $(`//*[contains(@class, 'suggestion-item') and text()="${layout}"]`).click();
         const workspacesFile = path.join((await browser.getVaultPath())!, '.obsidian/workspaces.json');

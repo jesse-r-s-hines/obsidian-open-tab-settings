@@ -1,5 +1,6 @@
 import { browser } from '@wdio/globals'
 import { Key } from 'webdriverio'
+import { WorkspaceLeaf } from 'obsidian';
 import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
 import { setSettings } from './helpers';
@@ -62,6 +63,36 @@ const tests = () => {
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
         const active = await workspacePage.getActiveLeaf()
         expect(active).to.eql(["markdown", "B.md"])
+    })
+
+    it("Explicit open in new tab to the right still works", async () => {
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2);
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]]);
+        const [aParent, bParent] = await browser.execute(async () => {
+            const leaves: WorkspaceLeaf[] = []
+            optl.app.workspace.iterateRootLeaves(l => { leaves.push(l) });
+            const a = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "A.md")!;
+            const b = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "B.md")!;
+            return [(a?.parent as any).id, (b?.parent as any).id]
+        });
+        expect(aParent).to.not.eql(bParent);
+    })
+
+    it("Explicit open in new window still works", async () => {
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
+
+        const [aParent, bParent] = await browser.waitUntil(() => browser.execute(async () => {
+            const leaves: WorkspaceLeaf[] = []
+            optl.app.workspace.iterateAllLeaves(l => { leaves.push(l) });
+            const a = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "A.md")!;
+            const b = leaves.find(l => l.view instanceof optl.obsidian.MarkdownView && l.view.file?.path == "B.md")!;
+            return [(a.getRoot() as any).id, (b.getRoot() as any).id]
+        }));
+
+        expect(aParent).to.not.eql(bParent);
     })
 }
 

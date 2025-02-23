@@ -34,7 +34,7 @@ export const config: WebdriverIO.Config = {
 
     waitforInterval: 100,
 
-    cacheDir: path.resolve(".wdio-cache"),
+    cacheDir: path.resolve(".obsidian-cache"),
 
     logLevel: "warn",
 }

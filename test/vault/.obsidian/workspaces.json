@@ -6,11 +6,11 @@
         "type": "split",
         "children": [
           {
-            "id": "77b232e4dcf25d19",
+            "id": "1f7ffe569ed39d18",
             "type": "tabs",
             "children": [
               {
-                "id": "a4dd40b15e704039",
+                "id": "a4dd192d6ebd4e01",
                 "type": "leaf",
                 "state": {
                   "type": "empty",
@@ -133,6 +133,16 @@
                 }
               },
               {
+                "id": "a4dd40b15e704039",
+                "type": "leaf",
+                "state": {
+                  "type": "graph",
+                  "state": {},
+                  "icon": "lucide-git-fork",
+                  "title": "Graph view"
+                }
+              },
+              {
                 "id": "7fab82aed67881cf",
                 "type": "leaf",
                 "state": {
@@ -150,7 +160,7 @@
           }
         ],
         "direction": "horizontal",
-        "width": 300
+        "width": 367.5
       },
       "left-ribbon": {
         "hiddenItems": {
@@ -163,8 +173,8 @@
           "workspaces:Manage workspace layouts": false
         }
       },
-      "active": "a4dd40b15e704039",
-      "mtime": "2025-02-16T12:05:25-05:00"
+      "active": "a4dd192d6ebd4e01",
+      "mtime": "2025-02-24T18:44:15-05:00"
     }
   },
   "active": "empty"

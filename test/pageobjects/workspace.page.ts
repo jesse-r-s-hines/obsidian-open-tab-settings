@@ -93,13 +93,17 @@ class WorkspacePage {
 
     async loadWorkspaceLayout(layout: string): Promise<void> {
         // Click on the status-bar to focus the main window in case there are multiple Obsidian windows panes
-        await $(".status-bar").click()
-        await browser.executeObsidianCommand("workspaces:load");
-        await $(`//*[contains(@class, 'suggestion-item') and text()="${layout}"]`).click();
-        const workspacesFile = path.join((await browser.getVaultPath())!, '.obsidian/workspaces.json');
-        await browser.waitUntil(async () =>
-            JSON.parse(await fsAsync.readFile(workspacesFile, 'utf-8')).active == layout,
-        );
+        await $(".status-bar").click();
+        await browser.executeObsidian(async ({app}, layout) => {
+            await (app as any).internalPlugins.plugins['workspaces'].instance.loadWorkspace(layout);
+        }, layout);
+        // Alternative method going through the GUI
+        // await browser.executeObsidianCommand("workspaces:load");
+        // await $(`//*[contains(@class, 'suggestion-item') and text()="${layout}"]`).click();
+        // const workspacesFile = path.join((await browser.getVaultPath())!, '.obsidian/workspaces.json');
+        // await browser.waitUntil(async () =>
+        //     JSON.parse(await fsAsync.readFile(workspacesFile, 'utf-8')).active == layout,
+        // );
     }
 
     async openFileViaModal(path: string): Promise<void> {

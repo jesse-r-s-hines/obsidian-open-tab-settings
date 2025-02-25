@@ -83,12 +83,12 @@ class WorkspacePage {
 
     async openLinkToRight(link: ChainablePromiseElement) {
         await link.click({button: "right"});
-        await browser.$("//*[contains(@class, 'menu')]//*[text()='Open to the right']").click()
+        await browser.$(".menu").$("div.*=Open to the right").click()
     }
 
     async openLinkInNewWindow(link: ChainablePromiseElement) {
         await link.click({button: "right"});
-        await browser.$("//*[contains(@class, 'menu')]//*[text()='Open in new window']").click()
+        await browser.$(".menu").$("div.*=Open in new window").click()
     }
 
     async loadWorkspaceLayout(layout: string): Promise<void> {
@@ -99,7 +99,7 @@ class WorkspacePage {
         }, layout);
         // Alternative method going through the GUI
         // await browser.executeObsidianCommand("workspaces:load");
-        // await $(`//*[contains(@class, 'suggestion-item') and text()="${layout}"]`).click();
+        // await browser.$(".prompt").$(`div=${layout}`).click()
         // const workspacesFile = path.join((await browser.getVaultPath())!, '.obsidian/workspaces.json');
         // await browser.waitUntil(async () =>
         //     JSON.parse(await fsAsync.readFile(workspacesFile, 'utf-8')).active == layout,

@@ -1,5 +1,4 @@
 import { browser } from '@wdio/globals'
-import { Key } from 'webdriverio'
 import { WorkspaceLeaf } from 'obsidian';
 import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
@@ -41,6 +40,15 @@ const tests = () => {
         await workspacePage.openFileViaModal("B.md");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+    })
+
+    it("new file still works", async () => {
+        await workspacePage.openFile("A.md");
+        await browser.executeObsidianCommand("file-explorer:new-file");
+        // new file normally opens in new tab
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Untitled.md"])
+        await workspacePage.removeFile("Untitled.md");
     })
 
     it("Explicit open in new tab still works when focusNewTab is false", async () => {

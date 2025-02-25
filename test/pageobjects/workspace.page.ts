@@ -1,9 +1,6 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
 import type { WorkspaceLeaf } from "obsidian";
 
-import * as fsAsync from "fs/promises";
-import * as path from "path";
-
 class WorkspacePage {
     /**
      * Opens a markdown file in a new tab.
@@ -40,7 +37,7 @@ class WorkspacePage {
         return await browser.executeObsidian(({app, obsidian}) => {
             const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
             let file = ""
-            if (leaf.view instanceof obsidian.MarkdownView) {
+            if (leaf.view instanceof obsidian.FileView) {
                 file = leaf.view.file?.path ?? ''
             }
             return [leaf.view.getViewType(), file]
@@ -59,7 +56,7 @@ class WorkspacePage {
             const leaves: [string, string][] = []
             app.workspace.iterateRootLeaves(l => {
                 let file = ""
-                if (l.view instanceof obsidian.MarkdownView) {
+                if (l.view instanceof obsidian.FileView) {
                     file = l.view.file?.path ?? "";
                 }
                 const viewInfo = [l.view.getViewType(), file] as [string, string]
@@ -125,6 +122,12 @@ class WorkspacePage {
         await browser.executeObsidian(({app}, name, value) => {
             (app.vault as any).setConfig(name, value);
         }, name, value)
+    }
+
+    async removeFile(file: string) {
+        await browser.executeObsidian(async ({app, obsidian}, file) => {
+            await app.vault.delete(app.vault.getAbstractFileByPath(file)!);
+        }, file!);
     }
 }
 

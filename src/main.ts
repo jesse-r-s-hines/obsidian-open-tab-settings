@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, Workspace } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Workspace } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 
 // Remember to rename these classes and interfaces!
@@ -21,14 +21,24 @@ export default class MyPlugin extends Plugin {
         this.addSettingTab(new SampleSettingTab(this.app, this));
 
         // Patch getLeaf to always open in new tab
+        const plugin = this
         this.monkeyPatches.push(
             monkeyAround.around(this.app.workspace.constructor.prototype, {
                 getLeaf(oldMethod) {
                     return function(this: Workspace, newLeaf?: string|boolean, ...args: any[]) {
                         // newLeaf false or undefined means open in current tab. Here we replace those with 'tab' to
                         // always open in new tab.
-                        newLeaf = newLeaf || 'tab';
-                        return oldMethod.call(this, newLeaf, ...args)
+                        if (!newLeaf && plugin.settings.openInNewTab) {
+                            const leaf = oldMethod.call(this, 'tab', ...args);
+                            // Force focusing the new tab even if focusNewTab is false.
+                            if (!(plugin.app.vault as any).getConfig('focusNewTab')) {
+                                // Might be safer to do this after the layout-change event?
+                                plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
+                            }
+                            return leaf
+                        } else { // no change to behavior
+                            return oldMethod.call(this, newLeaf, ...args);
+                        }
                     }
                 }
             })

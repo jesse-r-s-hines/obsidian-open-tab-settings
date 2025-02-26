@@ -21,7 +21,7 @@ class WorkspacePage {
     async setActiveFile(path: string) {
         await browser.executeObsidian(({app, obsidian}, path) => {
             let leaf: WorkspaceLeaf|undefined
-            app.workspace.iterateRootLeaves(l => {
+            app.workspace.iterateAllLeaves(l => {
                 if (l.view instanceof obsidian.FileView && l.view.file?.path == path && !leaf) {
                     leaf = l
                 }
@@ -55,7 +55,7 @@ class WorkspacePage {
     async getLeafParent(path: string): Promise<string> {
         return  await browser.executeObsidian(async ({app, obsidian}, path) => {
             const leaves: WorkspaceLeaf[] = []
-            app.workspace.iterateRootLeaves(l => { leaves.push(l) });
+            app.workspace.iterateAllLeaves(l => { leaves.push(l) });
             const leaf = leaves.find(l => l.view instanceof obsidian.FileView && l.view.file?.path == path)!;
             return (leaf?.parent as any)?.id;
         }, path);
@@ -65,7 +65,7 @@ class WorkspacePage {
     async getLeafRoot(path: string): Promise<string> {
         return  await browser.executeObsidian(async ({app, obsidian}, path) => {
             const leaves: WorkspaceLeaf[] = []
-            app.workspace.iterateRootLeaves(l => { leaves.push(l) });
+            app.workspace.iterateAllLeaves(l => { leaves.push(l) });
             const leaf = leaves.find(l => l.view instanceof obsidian.FileView && l.view.file?.path == path)!;
             return (leaf?.getRoot() as any)?.id;
         }, path);

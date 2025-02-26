@@ -88,6 +88,7 @@ const tests = () => {
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
         const aParent = await workspacePage.getLeafRoot("A.md");
         const bParent = await workspacePage.getLeafRoot("B.md");
+        expect(!!(aParent && bParent)).to.eql(true)
         expect(aParent).to.not.eql(bParent);
     })
 

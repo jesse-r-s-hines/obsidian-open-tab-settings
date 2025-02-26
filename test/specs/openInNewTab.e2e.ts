@@ -157,4 +157,35 @@ describe('Test basic open in new tab', () => {
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Untitled.md"])
         await workspacePage.removeFile("Untitled.md");
     })
+
+    it('open new file via link', async () => {
+        await workspacePage.openFile("B.md");
+        (await workspacePage.getLink("C")).click()
+
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"], ["markdown", "C.md"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "C.md"])
+    })
+
+    it('open canvas opens in new tab', async () => {
+        await workspacePage.openFile("A.md");
+        (await workspacePage.getLink("Canvas.canvas")).click()
+
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["canvas", "Canvas.canvas"], ["markdown", "A.md"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["canvas", "Canvas.canvas"])
+    })
+
+    it('open link in canvas', async () => {
+        await workspacePage.openFile("Canvas.canvas");
+        // Focus a node
+        const node = browser.$(".canvas-node-label=A").$("..")
+        await node.click();
+        // click a link in the node
+        await node.$("a=B").click()
+
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["canvas", "Canvas.canvas"], ["markdown", "B.md"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+    })
 })

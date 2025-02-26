@@ -68,14 +68,10 @@ class WorkspacePage {
     }
 
     async getLink(text: string) {
-        const link = await browser.executeObsidian(({app, obsidian}, text) => {
-            const el = app.workspace.getActiveViewOfType(obsidian.MarkdownView)!.containerEl;
-            return [...el.querySelectorAll("a")].find(a => a.getText() == text)
-        }, text)
-        if (!link) {
-            throw Error(`No link "${text}" found`)
-        }
-        return $(link)
+        const activeView = $(await browser.executeObsidian(({app, obsidian}) =>
+            app.workspace.getActiveViewOfType(obsidian.View)!.containerEl
+        ))
+        return activeView.$(`a=${text}`)
     }
 
     async openLinkToRight(link: ChainablePromiseElement) {

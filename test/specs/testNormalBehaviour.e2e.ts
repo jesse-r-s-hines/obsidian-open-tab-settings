@@ -78,30 +78,16 @@ const tests = () => {
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2);
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]]);
-        const [aParent, bParent] = await browser.executeObsidian(async ({app, obsidian}) => {
-            const leaves: WorkspaceLeaf[] = []
-            app.workspace.iterateRootLeaves(l => { leaves.push(l) });
-            const a = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "A.md")!;
-            const b = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "B.md")!;
-            return [(a?.parent as any).id, (b?.parent as any).id]
-        });
+        const aParent = await workspacePage.getLeafParent("A.md");
+        const bParent = await workspacePage.getLeafParent("B.md");
         expect(aParent).to.not.eql(bParent);
     })
 
     it("Explicit open in new window still works", async () => {
         await workspacePage.openFile("A.md");
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
-
-        const [aParent, bParent] = await browser.waitUntil(
-            () => browser.executeObsidian(async ({app, obsidian}) => {
-                const leaves: WorkspaceLeaf[] = []
-                app.workspace.iterateAllLeaves(l => { leaves.push(l) });
-                const a = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "A.md")!;
-                const b = leaves.find(l => l.view instanceof obsidian.MarkdownView && l.view.file?.path == "B.md")!;
-                return [(a.getRoot() as any).id, (b.getRoot() as any).id]
-            })
-        );
-
+        const aParent = await workspacePage.getLeafRoot("A.md");
+        const bParent = await workspacePage.getLeafRoot("B.md");
         expect(aParent).to.not.eql(bParent);
     })
 

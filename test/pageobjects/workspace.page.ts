@@ -15,22 +15,33 @@ class WorkspacePage {
         }, path)
     }
 
-    /**
-     * Focuses tab containing file.
-     */
-    async setActiveFile(path: string) {
-        await browser.executeObsidian(({app, obsidian}, path) => {
-            let leaf: WorkspaceLeaf|undefined
+    /** Get ids of all leaves in the rootSplit or floating windows, excluding sidebars. */
+    async getAllLeafIds(): Promise<string[]> {
+        return await browser.executeObsidian(({app, obsidian}) => {
+            const leaves: string[] = []
             app.workspace.iterateAllLeaves(l => {
-                if (l.view instanceof obsidian.FileView && l.view.file?.path == path && !leaf) {
-                    leaf = l
+                const root = l.getRoot()
+                // Don't include sidebars and such, but do include popout windows
+                if (root instanceof obsidian.WorkspaceRoot || root instanceof obsidian.WorkspaceFloating) {
+                    leaves.push((l as any).id)
                 }
             })
-            if (!leaf) {
-                throw new Error(`No leaf for ${path} found`)
-            }
-            app.workspace.setActiveLeaf(leaf, {focus: true});
-        }, path)
+            return leaves.sort();
+        })
+    }
+
+    async getLeafIdByPath(path: string): Promise<string> {
+        const leafIds = await this.getAllLeafIds()
+        const leafId =  await browser.executeObsidian(async ({app, obsidian}, leafIds, path) => {
+            const leaf = leafIds
+                .map(id => app.workspace.getLeafById(id)!)
+                .find(l => l.view instanceof obsidian.FileView && l.view.file?.path == path);
+            return (leaf as any)?.id;
+        }, leafIds, path);
+        if (!leafId) {
+            throw new Error(`No leaf for ${path} found`)
+        }
+        return leafId;
     }
 
     async getActiveLeaf(): Promise<[string, string]> {
@@ -44,7 +55,18 @@ class WorkspacePage {
         })
     }
 
-    async getActiveLeafId(): Promise<[string, string]> {
+    /**
+     * Focuses tab containing file.
+     */
+    async setActiveFile(path: string) {
+        const leafId = await this.getLeafIdByPath(path);
+        await browser.executeObsidian(({app, obsidian}, leafId) => {
+            const leaf = app.workspace.getLeafById(leafId)!
+            app.workspace.setActiveLeaf(leaf, {focus: true});
+        }, leafId)
+    }
+
+    async getActiveLeafId(): Promise<string> {
         return await browser.executeObsidian(({app, obsidian}) => {
             const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
             return (leaf as any).id
@@ -53,38 +75,33 @@ class WorkspacePage {
 
     /** Get id of leaf's parent by path  */
     async getLeafParent(path: string): Promise<string> {
-        return  await browser.executeObsidian(async ({app, obsidian}, path) => {
-            const leaves: WorkspaceLeaf[] = []
-            app.workspace.iterateAllLeaves(l => { leaves.push(l) });
-            const leaf = leaves.find(l => l.view instanceof obsidian.FileView && l.view.file?.path == path)!;
-            return (leaf?.parent as any)?.id;
-        }, path);
+        const leafId = await this.getLeafIdByPath(path);
+        return await browser.executeObsidian(({app}, leafId) => {
+            return (app.workspace.getLeafById(leafId)?.parent as any).id
+        }, leafId)
     }
 
     /** Get id of leaf's root by path  */
     async getLeafRoot(path: string): Promise<string> {
-        return  await browser.executeObsidian(async ({app, obsidian}, path) => {
-            const leaves: WorkspaceLeaf[] = []
-            app.workspace.iterateAllLeaves(l => { leaves.push(l) });
-            const leaf = leaves.find(l => l.view instanceof obsidian.FileView && l.view.file?.path == path)!;
-            return (leaf?.getRoot() as any)?.id;
-        }, path);
+        const leafId = await this.getLeafIdByPath(path);
+        return await browser.executeObsidian(({app}, leafId) => {
+            return (app.workspace.getLeafById(leafId)?.getRoot() as any).id
+        }, leafId)
     }
 
     async getAllLeaves(): Promise<[string, string][]> {
-        return await browser.executeObsidian(({app, obsidian}) => {
-            const leaves: [string, string][] = []
-            app.workspace.iterateRootLeaves(l => {
+        const leafIds = await this.getAllLeafIds()
+        return await browser.executeObsidian(({app, obsidian}, leafIds) => {
+            const leaves = leafIds.map(id => {
+                const leaf = app.workspace.getLeafById(id)!;
                 let file = ""
-                if (l.view instanceof obsidian.FileView) {
-                    file = l.view.file?.path ?? "";
+                if (leaf.view instanceof obsidian.FileView) {
+                    file = leaf.view.file?.path ?? "";
                 }
-                const viewInfo = [l.view.getViewType(), file] as [string, string]
-                leaves.push(viewInfo)
+                return [leaf.view.getViewType(), file] as [string, string]
             })
-            leaves.sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
-            return leaves
-        })
+            return leaves.sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
+        }, leafIds)
     }
 
     async getLink(text: string) {

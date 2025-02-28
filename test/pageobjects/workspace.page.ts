@@ -31,17 +31,20 @@ class WorkspacePage {
     }
 
     async getLeafIdByPath(path: string): Promise<string> {
-        const leafIds = await this.getAllLeafIds()
-        const leafId =  await browser.executeObsidian(async ({app, obsidian}, leafIds, path) => {
-            const leaf = leafIds
+        const allLeaves = await this.getAllLeafIds()
+        const matches =  await browser.executeObsidian(async ({app, obsidian}, allLeaves, path) => {
+            const matches = allLeaves
                 .map(id => app.workspace.getLeafById(id)!)
-                .find(l => l.view instanceof obsidian.FileView && l.view.file?.path == path);
-            return (leaf as any)?.id;
-        }, leafIds, path);
-        if (!leafId) {
+                .filter(l => l.view instanceof obsidian.FileView && l.view.file?.path == path)
+                .map(l => (l as any).id);
+            return matches;
+        }, allLeaves, path);
+        if (matches.length < 1) {
             throw new Error(`No leaf for ${path} found`)
+        } else if (matches.length > 1) {
+            throw new Error(`Multiple leaves for ${path} found`)
         }
-        return leafId;
+        return matches[0];
     }
 
     async getActiveLeaf(): Promise<[string, string]> {

@@ -92,6 +92,13 @@ class WorkspacePage {
         }, leafId)
     }
 
+    async getLeafContainer(path: string): Promise<string> {
+        const leafId = await this.getLeafIdByPath(path);
+        return await browser.executeObsidian(({app}, leafId) => {
+            return (app.workspace.getLeafById(leafId)?.getContainer() as any).id
+        }, leafId)
+    }
+
     async getAllLeaves(): Promise<[string, string][]> {
         const leafIds = await this.getAllLeafIds()
         return await browser.executeObsidian(({app, obsidian}, leafIds) => {

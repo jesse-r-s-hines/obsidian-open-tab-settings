@@ -44,29 +44,30 @@ describe('Test open in new tab for splits and more', () => {
     })
 
     it("test new tabs in new windows", async () => {
-        await workspacePage.openFile("A.md");
-        await workspacePage.openFile("D.md");
-        await workspacePage.setActiveFile("D.md")
-        await browser.executeObsidianCommand("workspace:move-to-new-window");
-        await workspacePage.setActiveFile("A.md")
+        // A in main, D in a popout window
+        await workspacePage.loadWorkspaceLayout("popout-window");
+        // If I don't wait a bit here, there's a race condition and sometimes the popout window will end up
+        // focused despite setting the active file below. TODO: Figure out what I need to waitUtil
+        await new Promise(r => setTimeout(r, 100));
+        await workspacePage.setActiveFile("A.md");
 
         const mainWindow = await browser.getWindowHandle();
         const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
-        
+
         (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
-        const aRoot = await workspacePage.getLeafRoot("A.md");
-        const bRoot = await workspacePage.getLeafRoot("B.md");
-        expect(aRoot).to.eql(bRoot)
+        const aContainer = await workspacePage.getLeafContainer("A.md");
+        const bContainer = await workspacePage.getLeafContainer("B.md");
+        expect(aContainer).to.eql(bContainer)
 
         await browser.switchToWindow(otherWindow);
         await workspacePage.setActiveFile("D.md");
         await (await workspacePage.getLink("Loop")).click()
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 4)
-        const dRoot = await workspacePage.getLeafRoot("D.md");
-        const loopRoot = await workspacePage.getLeafRoot("Loop.md");
-        expect(dRoot).to.eql(loopRoot)
-        expect(aRoot).to.not.eql(dRoot)
+        const dContainer = await workspacePage.getLeafContainer("D.md");
+        const loopContainer = await workspacePage.getLeafContainer("Loop.md");
+        expect(dContainer).to.eql(loopContainer)
+        expect(aContainer).to.not.eql(dContainer)
 
         await browser.switchToWindow(mainWindow)
     })

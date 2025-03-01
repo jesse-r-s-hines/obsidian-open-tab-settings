@@ -2,6 +2,7 @@ import { browser } from '@wdio/globals'
 import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
 import { setSettings } from './helpers';
+import { WorkspaceLeaf } from 'obsidian';
 
 
 describe('Test open in new tab for splits and more', () => {
@@ -70,5 +71,26 @@ describe('Test open in new tab for splits and more', () => {
         expect(aContainer).to.not.eql(dContainer)
 
         await browser.switchToWindow(mainWindow)
+    })
+
+    it("test sidebars", async () => {
+        await workspacePage.loadWorkspaceLayout("file-a-in-sidebar");
+        const sidebar = $(await browser.executeObsidian(({app}) =>(app.workspace.rightSplit as any).containerEl))
+        await sidebar.$(`a=B`).click()
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves())[0][0] != 'empty')
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+        
+        const [sidebarId, aMatches] = await browser.executeObsidian(({app, obsidian}) => {
+            const sidebar = app.workspace.rightSplit
+            const matches: WorkspaceLeaf[] = []
+            app.workspace.iterateAllLeaves(l => {
+                if (l.view instanceof obsidian.MarkdownView && l.view.file?.path == "A.md") {
+                    matches.push(l)
+                }
+            })
+            return [(sidebar as any).id, matches.map(l => (l.getRoot() as any).id)]
+        })
+        expect(aMatches.length).to.eql(1);
+        expect(aMatches[0]).to.eql(sidebarId);
     })
 })

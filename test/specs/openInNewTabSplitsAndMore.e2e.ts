@@ -131,4 +131,33 @@ describe('Test open in new tab for splits and more', () => {
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
     })
+
+    it("Test disable setting", async () => {
+        await setSettings({ openInNewTab: false });
+
+        await workspacePage.openFile("A.md");
+        (await workspacePage.getLink("B")).click()
+
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+    })
+})
+
+
+describe('Test disabling the plugin', () => {
+    before(async () => {
+        await browser.disablePlugin("sample-plugin");
+        await workspacePage.loadWorkspaceLayout("empty");
+    });
+
+    after(async () => {
+        await browser.enablePlugin("sample-plugin");
+    });
+
+    it("Test disabling the plugin", async () => {
+        await workspacePage.openFile("A.md");
+        (await workspacePage.getLink("B")).click()
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]]);
+    })
 })

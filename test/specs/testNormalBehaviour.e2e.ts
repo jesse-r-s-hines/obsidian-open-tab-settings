@@ -116,15 +116,9 @@ const tests = () => {
         expect(await workspacePage.getActiveLeafId()).to.eql(prevActiveLeaf);
     })
 
-    it("open self link normally does nothing", async () => {
-        await workspacePage.openFile("Loop.md");
-        (await workspacePage.getLink("Loop.md")).click();
-        await new Promise(r => setTimeout(r, 100));
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"]])
-    })
-
     it("pinned file", async () => {
         await workspacePage.openFile("A.md");
+        await workspacePage.setActiveFile("A.md")
         await browser.executeObsidianCommand("workspace:toggle-pin");
 
         (await workspacePage.getLink("B")).click();

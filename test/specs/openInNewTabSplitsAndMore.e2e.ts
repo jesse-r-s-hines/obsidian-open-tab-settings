@@ -48,7 +48,7 @@ describe('Test open in new tab for splits and more', () => {
         await workspacePage.loadWorkspaceLayout("popout-window");
         // If I don't wait a bit here, there's a race condition and sometimes the popout window will end up
         // focused despite setting the active file below. TODO: Figure out what I need to waitUtil
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 250));
         await workspacePage.setActiveFile("A.md");
 
         const mainWindow = await browser.getWindowHandle();

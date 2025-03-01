@@ -135,7 +135,11 @@ class WorkspacePage {
         // Click on the status-bar to focus the main window in case there are multiple Obsidian windows panes
         await $(".status-bar").click();
         await browser.executeObsidian(async ({app}, layout) => {
-            await (app as any).internalPlugins.plugins['workspaces'].instance.loadWorkspace(layout);
+            const workspacesPlugin = (app as any).internalPlugins.plugins['workspaces'].instance
+            if (!workspacesPlugin.workspaces[layout]) {
+                throw new Error(`No workspace ${layout} found`)
+            }
+            await workspacesPlugin.loadWorkspace(layout);
         }, layout);
         // Alternative method going through the GUI
         // await browser.executeObsidianCommand("workspaces:load");

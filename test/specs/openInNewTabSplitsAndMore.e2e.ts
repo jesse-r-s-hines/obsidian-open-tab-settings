@@ -101,9 +101,6 @@ describe('Test open in new tab for splits and more', () => {
         const fileLeafId = await browser.executeObsidian(({app, obsidian}) => {
             return (app.workspace.rootSplit as any).children[0].children[0].id
         });
-        const outLinksLeafId = await browser.executeObsidian(({app, obsidian}) => {
-            return (app.workspace.rootSplit as any).children[1].children[0].id
-        });
         await browser.executeObsidian(({app}, leafId) => {
             const leaf = app.workspace.getLeafById(leafId)!
             app.workspace.setActiveLeaf(leaf, {focus: true});
@@ -115,5 +112,23 @@ describe('Test open in new tab for splits and more', () => {
             ["markdown", "A.md"], ["markdown", "B.md"], ["outgoing-link", "A.md"],
         ])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+    })
+
+    it("test back buttons", async () => {
+        await setSettings({ openInNewTab: false });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click();
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+        await setSettings({ openInNewTab: true });
+
+        // Still opens in the same tab
+        await browser.executeObsidianCommand("app:go-back");
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
+
+        await browser.executeObsidianCommand("app:go-forward");
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
     })
 })

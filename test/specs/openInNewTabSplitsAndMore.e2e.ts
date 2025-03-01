@@ -93,4 +93,27 @@ describe('Test open in new tab for splits and more', () => {
         expect(aMatches.length).to.eql(1);
         expect(aMatches[0]).to.eql(sidebarId);
     })
+
+    it("test linked files", async () => {
+        // A.md and outgoing links in left/right split
+        await workspacePage.loadWorkspaceLayout("linked-files");
+        
+        const fileLeafId = await browser.executeObsidian(({app, obsidian}) => {
+            return (app.workspace.rootSplit as any).children[0].children[0].id
+        });
+        const outLinksLeafId = await browser.executeObsidian(({app, obsidian}) => {
+            return (app.workspace.rootSplit as any).children[1].children[0].id
+        });
+        await browser.executeObsidian(({app}, leafId) => {
+            const leaf = app.workspace.getLeafById(leafId)!
+            app.workspace.setActiveLeaf(leaf, {focus: true});
+        }, fileLeafId);
+        (await workspacePage.getLink("B")).click();
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
+
+        expect(await workspacePage.getAllLeaves()).to.eql([
+            ["markdown", "A.md"], ["markdown", "B.md"], ["outgoing-link", "A.md"],
+        ])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+    })
 })

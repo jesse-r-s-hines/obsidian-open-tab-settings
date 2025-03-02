@@ -54,4 +54,33 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Loop.md"]);
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"]]);
     })
+
+    it('deduplicate via file explorer', async () => {
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.openFileViaFileExplorer("B.md")
+
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"
+        )
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+    })
+
+    it('deduplicate via sidebar', async () => {
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
+        await workspacePage.setActiveFile("A.md");
+        const button = await browser.$$(".workspace-tab-header").find(e => e.$("div.*=Outgoing links").isExisting()) as any
+        await button.click()
+        const item = await browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
+        await item.click()
+
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"
+        )
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+    })
 })

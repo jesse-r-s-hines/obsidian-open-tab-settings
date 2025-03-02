@@ -5,7 +5,7 @@ export const config: WebdriverIO.Config = {
     tsConfigPath: './test/tsconfig.json',
     
     specs: [
-        './test/specs/**/*.ts'
+        './test/specs/**/*.e2e.ts'
     ],
 
     // How many instances of Obsidian should be launched in parallel during testing.

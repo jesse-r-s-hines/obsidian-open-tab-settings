@@ -1,7 +1,7 @@
 {
-    "name": "obsidian-sample-plugin",
+    "name": "obsidian-open-tab-settings",
     "version": "1.0.0",
-    "description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+    "description": "Add settings to open in new tab by default and prevent duplicate tabs.",
     "main": "main.js",
     "scripts": {
         "dev": "node esbuild.config.mjs",
@@ -30,8 +30,8 @@
         "esbuild": "0.17.3",
         "mocha": "^11.1.0",
         "npm-run-all": "^4.1.5",
-        "obsidian": "latest",
-        "wdio-obsidian-service": ">=0.1.1",
+        "obsidian": "^1.8.0",
+        "wdio-obsidian-service": ">=0.1.4",
         "obsidian-typings": "^2.22.0",
         "tslib": "2.4.0",
         "tsx": "^4.19.2",

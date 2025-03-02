@@ -1,8 +1,8 @@
-import { MyPluginSettings } from "src/main.js"
+import { OpenTabSettingsPluginSettings } from "src/main.js"
 
-export async function setSettings(settings: Partial<MyPluginSettings>) {
+export async function setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
     await browser.executeObsidian(({app}, settings) => {
-        const plugin = (app as any).plugins.plugins['sample-plugin']
+        const plugin = (app as any).plugins.plugins['open-tab-settings']
         Object.assign(plugin.settings, settings);
         plugin.saveSettings();
     }, settings)

@@ -7,7 +7,7 @@ import { setSettings } from './helpers';
 describe('Test basic open in new tab', () => {
     beforeEach(async () => {
         await workspacePage.loadWorkspaceLayout("empty");
-        await setSettings({ openInNewTab: true });
+        await setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 

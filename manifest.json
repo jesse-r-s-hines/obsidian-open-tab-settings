@@ -1,9 +1,9 @@
 {
-    "id": "sample-plugin",
-    "name": "Sample Plugin",
+    "id": "open-tab-settings",
+    "name": "Open Tab Settings",
     "version": "1.0.0",
     "minAppVersion": "0.15.0",
-    "description": "Demonstrates some of the capabilities of the Obsidian API.",
+    "description": "Add settings to open in new tab by default and prevent duplicate tabs.",
     "author": "Obsidian",
     "authorUrl": "https://obsidian.md",
     "fundingUrl": "https://obsidian.md/pricing",

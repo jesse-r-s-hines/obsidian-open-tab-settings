@@ -8,7 +8,7 @@ import { WorkspaceLeaf } from 'obsidian';
 describe('Test open in new tab for splits and more', () => {
     beforeEach(async () => {
         await workspacePage.loadWorkspaceLayout("empty");
-        await setSettings({ openInNewTab: true });
+        await setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
@@ -146,12 +146,12 @@ describe('Test open in new tab for splits and more', () => {
 
 describe('Test disabling the plugin', () => {
     before(async () => {
-        await browser.disablePlugin("sample-plugin");
+        await browser.disablePlugin("open-tab-settings");
         await workspacePage.loadWorkspaceLayout("empty");
     });
 
     after(async () => {
-        await browser.enablePlugin("sample-plugin");
+        await browser.enablePlugin("open-tab-settings");
     });
 
     it("Test disabling the plugin", async () => {

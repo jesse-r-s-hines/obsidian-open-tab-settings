@@ -132,11 +132,11 @@ const tests = () => {
 
 describe('Test normal behavior without the plugin', () => {
     before(async () => {
-        await browser.disablePlugin("sample-plugin");
+        await browser.disablePlugin("open-tab-settings");
     });
 
     after(async () => {
-        await browser.enablePlugin("sample-plugin");
+        await browser.enablePlugin("open-tab-settings");
     });
 
     tests();
@@ -144,7 +144,7 @@ describe('Test normal behavior without the plugin', () => {
 
 describe('Test normal behavior with the plugin settings turned off', () => {
     before(async () => {
-        await setSettings({ openInNewTab: false });;
+        await setSettings({ openInNewTab: false, deduplicateTabs: false });
     })
 
     tests();
@@ -152,7 +152,7 @@ describe('Test normal behavior with the plugin settings turned off', () => {
 
 describe('Test normal behavior with the plugin settings enabled', () => {
     before(async () => {
-        await setSettings({ openInNewTab: true });;
+        await setSettings({ openInNewTab: true, deduplicateTabs: true });
     });
 
     tests();

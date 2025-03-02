@@ -6,24 +6,24 @@ import * as monkeyAround from 'monkey-around';
 
 // Remember to rename these classes and interfaces!
 
-export interface MyPluginSettings {
+export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
+const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
 }
 
-export default class MyPlugin extends Plugin {
-    settings: MyPluginSettings = DEFAULT_SETTINGS;
+export default class OpenTabSettingsPlugin extends Plugin {
+    settings: OpenTabSettingsPluginSettings = DEFAULT_SETTINGS;
     private monkeyPatches: (() => void)[] = []
 
     async onload() {
         await this.loadSettings();
 
-        this.addSettingTab(new SampleSettingTab(this.app, this));
+        this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
 
         // Patch getLeaf to always open in new tab
         const plugin = this
@@ -109,10 +109,10 @@ export default class MyPlugin extends Plugin {
     }
 }
 
-class SampleSettingTab extends PluginSettingTab {
-    plugin: MyPlugin;
+class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
+    plugin: OpenTabSettingsPlugin;
 
-    constructor(app: App, plugin: MyPlugin) {
+    constructor(app: App, plugin: OpenTabSettingsPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }

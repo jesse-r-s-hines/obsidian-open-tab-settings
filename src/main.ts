@@ -26,9 +26,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
         await this.loadSettings();
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
+        const plugin = this;
 
         // Patch getLeaf to always open in new tab
-        const plugin = this
         this.monkeyPatches.push(
             monkeyAround.around(Workspace.prototype, {
                 getLeaf(oldMethod: any) {
@@ -55,6 +55,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             })
         );
 
+        // Patch openFile to deduplicate tabs
         this.monkeyPatches.push(
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {

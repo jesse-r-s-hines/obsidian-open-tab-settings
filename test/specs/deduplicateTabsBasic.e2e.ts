@@ -139,4 +139,27 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Loop.md"])
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Loop.md"], ["markdown", "Loop.md"]])
     })
+
+    it('dedup images', async () => {
+        await workspacePage.openFile("image.png");
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFileViaModal("image.png")
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "image.png"
+        )
+        expect(await workspacePage.getAllLeaves()).to.eql([["image", "image.png"], ["markdown", "A.md"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["image", "image.png"])
+    })
+
+    it('dedup png', async () => {
+        await workspacePage.openFile("pdf.pdf");
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFileViaModal("pdf.pdf")
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "pdf.pdf"
+        )
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["pdf", "pdf.pdf"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["pdf", "pdf.pdf"])
+    })
+
 })

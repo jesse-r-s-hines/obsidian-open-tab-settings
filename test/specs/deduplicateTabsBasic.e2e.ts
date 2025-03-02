@@ -83,4 +83,60 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
     })
+
+    it('deduplicate via file modal', async () => {
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
+        await workspacePage.setActiveFile("B.md");
+        await workspacePage.openFileViaModal("A.md")
+
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "A.md"
+        )
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+    })
+
+    it('deduplicate with multiple matches', async () => {
+        await setSettings({ deduplicateTabs: false });
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
+        await workspacePage.openFile("B.md");
+        await setSettings({ deduplicateTabs: true });
+
+        await workspacePage.setActiveFile("A.md");
+        (await workspacePage.getLink("B")).click();
+
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 3 && (await workspacePage.getActiveLeaf())[1] == "B.md"
+        )
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"]])
+    })
+
+    it('deduplicate with multiple matches on current file', async () => {
+        await setSettings({ deduplicateTabs: false });
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("Loop.md");
+        await workspacePage.openFile("Loop.md");
+        await setSettings({ deduplicateTabs: true });
+
+        const [loop1, loop2] = await browser.executeObsidian(async ({app}) => {
+            const loop1: string = (app.workspace.rootSplit as any).children[0].children[1].id
+            const loop2: string = (app.workspace.rootSplit as any).children[0].children[2].id
+            return [loop1, loop2]
+        });
+        // set the second Loop.md as active
+        await browser.executeObsidian(async ({app}, leafId) => {
+            await app.workspace.setActiveLeaf(app.workspace.getLeafById(leafId)!, {focus: true})
+        }, loop2);
+
+        (await workspacePage.getLink("Loop")).click();
+
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 3 && await workspacePage.getActiveLeafId() == loop2
+        )
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Loop.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Loop.md"], ["markdown", "Loop.md"]])
+    })
 })

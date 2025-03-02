@@ -61,12 +61,13 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 openFile(oldMethod: any) {
                     return async function(this: WorkspaceLeaf, file, openState, ...args) {
                         // if the leaf was opened via an explicit new tab or open in right etc. don't deduplicate.
-                        const openedExplicitly = !!(this as any)[ORIGINAL_PANE_TYPE_KEY];
-                        const isEmpty = this.view.getViewType() == "empty";
-                        if (plugin.settings.deduplicateTabs && (!isEmpty || !openedExplicitly)) {
+                        const openedExplicitly = (
+                            this.view.getViewType() == "empty" && !!(this as any)[ORIGINAL_PANE_TYPE_KEY]
+                        )
+                        if (plugin.settings.deduplicateTabs && !openedExplicitly) {
                             // Check if there are any duplicate tabs
                             const matches = await plugin.findMatchingLeaves(file);
-                            if (matches.length > 0) {
+                            if (!matches.includes(this) && matches.length > 0) {
                                 const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
 
                                 const result = await oldMethod.call(matches[0], file, {

@@ -1,6 +1,6 @@
 {
     "name": "obsidian-open-tab-settings",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Add settings to open in new tab by default and prevent duplicate tabs.",
     "main": "main.js",
     "scripts": {

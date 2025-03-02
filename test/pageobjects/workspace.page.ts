@@ -31,19 +31,28 @@ class WorkspacePage {
         })
     }
 
-    async getLeafIdByPath(path: string): Promise<string> {
+
+    /**
+     * Returns leaf id for a path. Can also be passed the id directly in which case it returns the id if it exists.
+     * @param pathOrId 
+     */
+
+    async getLeaf(pathOrId: string): Promise<string> {
         const allLeaves = await this.getAllLeafIds()
-        const matches =  await browser.executeObsidian(async ({app, obsidian}, allLeaves, path) => {
+        const matches =  await browser.executeObsidian(async ({app, obsidian}, allLeaves, pathOrId) => {
             const matches = allLeaves
                 .map(id => app.workspace.getLeafById(id)!)
-                .filter(l => l.view instanceof obsidian.FileView && l.view.file?.path == path)
+                .filter(l => (
+                    (l as any).id == pathOrId ||
+                    (l.view instanceof obsidian.FileView && l.view.file?.path == pathOrId)
+                ))
                 .map(l => (l as any).id);
             return matches;
-        }, allLeaves, path);
+        }, allLeaves, pathOrId);
         if (matches.length < 1) {
-            throw new Error(`No leaf for ${path} found`)
+            throw new Error(`No leaf for ${pathOrId} found`)
         } else if (matches.length > 1) {
-            throw new Error(`Multiple leaves for ${path} found`)
+            throw new Error(`Multiple leaves for ${pathOrId} found`)
         }
         return matches[0];
     }
@@ -62,8 +71,8 @@ class WorkspacePage {
     /**
      * Focuses tab containing file.
      */
-    async setActiveFile(path: string) {
-        const leafId = await this.getLeafIdByPath(path);
+    async setActiveFile(pathOrId: string) {
+        const leafId = await this.getLeaf(pathOrId);
         await browser.executeObsidian(({app, obsidian}, leafId) => {
             const leaf = app.workspace.getLeafById(leafId)!
             app.workspace.setActiveLeaf(leaf, {focus: true});
@@ -77,24 +86,24 @@ class WorkspacePage {
         })
     }
 
-    /** Get id of leaf's parent by path  */
-    async getLeafParent(path: string): Promise<string> {
-        const leafId = await this.getLeafIdByPath(path);
+    /** Get id of leaf's parent by path or */
+    async getLeafParent(pathOrId: string): Promise<string> {
+        const leafId = await this.getLeaf(pathOrId);
         return await browser.executeObsidian(({app}, leafId) => {
             return (app.workspace.getLeafById(leafId)?.parent as any).id
         }, leafId)
     }
 
     /** Get id of leaf's root by path  */
-    async getLeafRoot(path: string): Promise<string> {
-        const leafId = await this.getLeafIdByPath(path);
+    async getLeafRoot(pathOrId: string): Promise<string> {
+        const leafId = await this.getLeaf(pathOrId);
         return await browser.executeObsidian(({app}, leafId) => {
             return (app.workspace.getLeafById(leafId)?.getRoot() as any).id
         }, leafId)
     }
 
-    async getLeafContainer(path: string): Promise<string> {
-        const leafId = await this.getLeafIdByPath(path);
+    async getLeafContainer(pathOrId: string): Promise<string> {
+        const leafId = await this.getLeaf(pathOrId);
         return await browser.executeObsidian(({app}, leafId) => {
             return (app.workspace.getLeafById(leafId)?.getContainer() as any).id
         }, leafId)

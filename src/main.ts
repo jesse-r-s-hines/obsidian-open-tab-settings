@@ -1,6 +1,6 @@
 import {
     App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
-    EditableFileView,
+    EditableFileView, View, TFile,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 
@@ -59,44 +59,32 @@ export default class OpenTabSettingsPlugin extends Plugin {
         this.monkeyPatches.push(
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
-                    return async function(this: WorkspaceLeaf, file, ...args) {
+                    return async function(this: WorkspaceLeaf, file, openState, ...args) {
                         // if the leaf was opened via an explicit new tab or open in right etc. don't deduplicate.
                         const openedExplicitly = !!(this as any)[ORIGINAL_PANE_TYPE_KEY];
                         const isEmpty = this.view.getViewType() == "empty";
                         if (plugin.settings.deduplicateTabs && (!isEmpty || !openedExplicitly)) {
                             // Check if there are any duplicate tabs
-                            const matches: WorkspaceLeaf[] = []; 
-                            plugin.app.workspace.iterateAllLeaves(leaf => {
-                                const root = leaf.getRoot();
-                                // Only check files in the main area or floating windows, not sidebars
-                                const isMainLeaf = (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
-                                // Check that the file path matches and its a normal file leaf. "FileView" type includes
-                                // views like outgoing-links which we don't want to switch to. EditableFileView includes
-                                // Markdown, PDF, and images but not views like outgoing-links.
-                                const fileMatch = (
-                                    leaf.view instanceof EditableFileView &&
-                                    leaf.view.file?.path == file.path
-                                );
-                                if (isMainLeaf && fileMatch) {
-                                    matches.push(leaf);
-                                }
-                            });
-
+                            const matches = await plugin.findMatchingLeaves(file);
                             if (matches.length > 0) {
-                                // switch to first matching leaf
-                                await plugin.app.workspace.setActiveLeaf(matches[0], {focus: true})
+                                const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
+
+                                const result = await oldMethod.call(matches[0], file, {
+                                    ...openState,
+                                    active: activeLeaf == this,
+                                }, ...args);
                                 // If openInNewTab is also enabled, then it will be called first and make a new tab.
-                                // Here we just close the tab before we jump to the existing one.
+                                // Here we just close the tab after switching to the existing tab.
                                 // TODO: Is there a cleaner way to do this?
                                 if (this.view.getViewType() == "empty") {
-                                    this.detach();
+                                    await this.detach();
                                 }
-                                return oldMethod.call(matches[0], file, ...args);
+                                return result;
                             }
                         }
 
                         // use default behavior
-                        return oldMethod.call(this, file, ...args)
+                        return oldMethod.call(this, file, openState, ...args)
                     }
                 }
             })
@@ -115,6 +103,26 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
     async saveSettings() {
         await this.saveData(this.settings);
+    }
+
+    private async findMatchingLeaves(file: TFile) {
+        const matches: WorkspaceLeaf[] = []; 
+        this.app.workspace.iterateAllLeaves(leaf => {
+            const root = leaf.getRoot();
+            // Only check files in the main area or floating windows, not sidebars
+            const isMainLeaf = (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
+            // Check that the file path matches and its a normal file leaf. "FileView" type includes
+            // views like outgoing-links which we don't want to switch to. EditableFileView includes
+            // Markdown, PDF, and images but not views like outgoing-links.
+            const fileMatch = (
+                leaf.view instanceof EditableFileView &&
+                leaf.view.file?.path == file.path
+            );
+            if (isMainLeaf && fileMatch) {
+                matches.push(leaf);
+            }
+        });
+        return matches;
     }
 }
 

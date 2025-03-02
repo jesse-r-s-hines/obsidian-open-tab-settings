@@ -1,5 +1,6 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
-import type { WorkspaceLeaf } from "obsidian";
+import * as path from "path"
+import * as fs from "fs"
 
 class WorkspacePage {
     /**
@@ -131,23 +132,24 @@ class WorkspacePage {
         await browser.$(".menu").$("div.*=Open in new window").click()
     }
 
-    async loadWorkspaceLayout(layout: string): Promise<void> {
+    async loadWorkspaceLayout(layoutName: string): Promise<void> {
+        // read from .obsidian/workspaces.json like the built-in workspaces plugin does
+        const vaultPath = (await browser.getVaultPath())!;
+        const workspacesPath = path.join(vaultPath, '.obsidian/workspaces.json');
+
+        let layout: any = undefined
+        if (fs.existsSync(workspacesPath)) {
+            layout = JSON.parse(await fs.promises.readFile(workspacesPath, 'utf-8')).workspaces?.[layoutName];
+        }
+        if (!layout) {
+            throw new Error(`No workspace ${layout} found in .obsidian/workspaces.json`)
+        }
+
         // Click on the status-bar to focus the main window in case there are multiple Obsidian windows panes
         await $(".status-bar").click();
-        await browser.executeObsidian(async ({app}, layout) => {
-            const workspacesPlugin = (app as any).internalPlugins.plugins['workspaces'].instance
-            if (!workspacesPlugin.workspaces[layout]) {
-                throw new Error(`No workspace ${layout} found`)
-            }
-            await workspacesPlugin.loadWorkspace(layout);
-        }, layout);
-        // Alternative method going through the GUI
-        // await browser.executeObsidianCommand("workspaces:load");
-        // await browser.$(".prompt").$(`div=${layout}`).click()
-        // const workspacesFile = path.join((await browser.getVaultPath())!, '.obsidian/workspaces.json');
-        // await browser.waitUntil(async () =>
-        //     JSON.parse(await fsAsync.readFile(workspacesFile, 'utf-8')).active == layout,
-        // );
+        await browser.executeObsidian(({app}, layout) => {
+            app.workspace.changeLayout(layout)
+        }, layout)
     }
 
     async openFileViaModal(path: string): Promise<void> {

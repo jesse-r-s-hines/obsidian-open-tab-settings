@@ -16,6 +16,8 @@ const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     deduplicateTabs: true,
 }
 
+const ORIGINAL_PANE_TYPE_KEY = "openTabSettingsPluginOriginalPaneType" as const;
+
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = DEFAULT_SETTINGS;
     private monkeyPatches: (() => void)[] = []
@@ -33,18 +35,21 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     return function(this: Workspace, newLeaf, ...args) {
                         // newLeaf false or undefined means open in current tab. Here we replace those with 'tab' to
                         // always open in new tab.
+                        let leaf: WorkspaceLeaf;
                         if (plugin.settings.openInNewTab && !newLeaf) {
-                            const leaf = oldMethod.call(this, 'tab', ...args);
+                            leaf = oldMethod.call(this, 'tab', ...args);
                             // Force focusing the new tab even if focusNewTab is false.
                             if (!(plugin.app.vault as any).getConfig('focusNewTab')) {
                                 // Might be safer to do this after the layout-change event?
                                 plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
                             }
-                            return leaf
+                        } else {
+                            // use default behavior
+                            leaf = oldMethod.call(this, newLeaf, ...args);
                         }
-
-                        // use default behavior
-                        return oldMethod.call(this, newLeaf, ...args);
+                        // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
+                        (leaf as any)[ORIGINAL_PANE_TYPE_KEY] = newLeaf;
+                        return leaf;
                     }
                 }
             })
@@ -54,9 +59,12 @@ export default class OpenTabSettingsPlugin extends Plugin {
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
                     return async function(this: WorkspaceLeaf, file, ...args) {
-                        if (plugin.settings.deduplicateTabs) {
+                        // if the leaf was opened via an explicit new tab or open in right etc. don't deduplicate.
+                        const openedExplicitly = !!(this as any)[ORIGINAL_PANE_TYPE_KEY];
+                        const isEmpty = this.view.getViewType() == "empty";
+                        if (plugin.settings.deduplicateTabs && (!isEmpty || !openedExplicitly)) {
                             // Check if there are any duplicate tabs
-                            const matches: WorkspaceLeaf[] = [];
+                            const matches: WorkspaceLeaf[] = []; 
                             plugin.app.workspace.iterateAllLeaves(leaf => {
                                 const root = leaf.getRoot();
                                 // Only check files in the main area or floating windows, not sidebars
@@ -122,12 +130,24 @@ class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
 
         new Setting(this.containerEl)
             .setName('Always open in new tab')
-            .setDesc('Always open files in a new tab.')
+            .setDesc('Open files in a new tab by default.')
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.openInNewTab)
                     .onChange(async (value) => {
                         this.plugin.settings.openInNewTab = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        new Setting(this.containerEl)
+            .setName('Deduplicate tabs')
+            .setDesc('If a tab is already open, focus it instead of re-opening it.')
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.deduplicateTabs)
+                    .onChange(async (value) => {
+                        this.plugin.settings.deduplicateTabs = value;
                         await this.plugin.saveSettings();
                     })
             );

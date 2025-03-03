@@ -78,19 +78,19 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens file from pdfs opens in new tab', async () => {
-        await workspacePage.openFile("A.md");
-        await workspacePage.openFileViaModal("pdf.pdf")
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["pdf", "pdf.pdf"]])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["pdf", "pdf.pdf"])
-    })
-
-    it('graph view opens in new tab', async () => {
         await workspacePage.openFile("pdf.pdf");
         await workspacePage.openFileViaModal("A.md");
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["pdf", "pdf.pdf"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
+    })
+
+    it('graph view opens in new tab', async () => {
+        await workspacePage.openFile("A.md");
+        await browser.executeObsidianCommand("graph:open");
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["graph", ""], ["markdown", "A.md"]])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["graph", ""])
     })
 
     it('open file while on graph view opens in new tab', async () => {

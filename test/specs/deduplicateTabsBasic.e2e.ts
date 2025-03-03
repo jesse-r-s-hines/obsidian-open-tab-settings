@@ -173,4 +173,19 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
     })
+
+    it('explicit new tab', async () => {
+        await workspacePage.setConfig('focusNewTab', true);
+        await workspacePage.openFile("B.md");
+        const b1 = await workspacePage.getLeaf("B.md");
+        await workspacePage.openFile("A.md");
+        (await workspacePage.getLink("B")).click({button: "middle"});
+
+        // Should open duplicate if opened in new tab explicitly
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        const b2 = await workspacePage.getActiveLeafId();
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"]]);
+        expect(b1).to.not.eql(b2);
+    })
 })

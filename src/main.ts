@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     deduplicateTabs: true,
 }
 
-const ORIGINAL_PANE_TYPE_KEY = "openTabSettingsPluginOriginalPaneType" as const;
+const IMPLICIT_NEW_TAB = "openTabSettingsPluginImplicitNewTab" as const;
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = DEFAULT_SETTINGS;
@@ -43,12 +43,12 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 // Might be safer to do this after the layout-change event?
                                 plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
                             }
+                            // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
+                            (leaf as any)[IMPLICIT_NEW_TAB] = true;
                         } else {
                             // use default behavior
                             leaf = oldMethod.call(this, newLeaf, ...args);
                         }
-                        // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
-                        (leaf as any)[ORIGINAL_PANE_TYPE_KEY] = newLeaf;
                         return leaf;
                     }
                 }
@@ -61,10 +61,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 openFile(oldMethod: any) {
                     return async function(this: WorkspaceLeaf, file, openState, ...args) {
                         // if the leaf was opened via an explicit new tab or open in right etc. don't deduplicate.
-                        const openedExplicitly = (
-                            this.view.getViewType() == "empty" && !!(this as any)[ORIGINAL_PANE_TYPE_KEY]
-                        )
-                        if (plugin.settings.deduplicateTabs && !openedExplicitly) {
+                        const implicitNewTab = !!(this as any)[IMPLICIT_NEW_TAB];
+                        const isEmpty = this.view.getViewType() == "empty";
+                        if (plugin.settings.deduplicateTabs && (!isEmpty || implicitNewTab)) {
                             // Check if there are any duplicate tabs
                             const matches = await plugin.findMatchingLeaves(file);
                             if (!matches.includes(this) && matches.length > 0) {
@@ -77,7 +76,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 // If openInNewTab is also enabled, then it will be called first and make a new tab.
                                 // Here we just close the tab after switching to the existing tab.
                                 // TODO: Is there a cleaner way to do this?
-                                if (this.view.getViewType() == "empty") {
+                                if (isEmpty && implicitNewTab) {
                                     await this.detach();
                                 }
                                 return result;

@@ -166,11 +166,11 @@ describe('Test basic deduplicate', () => {
         await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("A.md")
-        // This behavior is a little weird it will end up auto-closing empty tabs
+        // TODO: This behavior is a little weird, if you are in an empty tab that bypasses deduplicate logic
         await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 1 && (await workspacePage.getActiveLeaf())[1] == "A.md"
+            (await workspacePage.getActiveLeaf())[1] == "A.md"
         )
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "A.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
     })
 

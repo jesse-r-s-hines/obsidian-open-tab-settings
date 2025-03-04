@@ -46,4 +46,35 @@ describe('Test deduplicate for splits and more', () => {
         expect(b1).to.not.eql(b2);
         expect(await workspacePage.getLeafContainer(b1)).to.not.eql(await workspacePage.getLeafContainer(b2));
     })
+
+    it('dedup across panes', async () => {
+        // A and Loop split left/right
+        await workspacePage.loadWorkspaceLayout("split");
+        await workspacePage.setActiveFile("Loop.md");
+        (await workspacePage.getLink("B")).click();
+
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
+        await workspacePage.setActiveFile("A.md");
+        (await workspacePage.getLink("B")).click();
+
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
+
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+    })
+
+    it('dedup across windows', async () => {
+        // A and Loop split left/right
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
+        await browser.executeObsidianCommand('workspace:move-to-new-window')
+        await sleep(250);
+        
+        await workspacePage.setActiveFile("A.md");
+        (await workspacePage.getLink("B")).click();
+
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+    })
 })

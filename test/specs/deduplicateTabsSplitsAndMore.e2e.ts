@@ -77,4 +77,15 @@ describe('Test deduplicate for splits and more', () => {
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
     })
+
+    it('outlinks', async () => {
+        // Make sure outlinks don't get picked up as a file
+        await workspacePage.loadWorkspaceLayout("outgoing-links");
+        await workspacePage.setActiveFile("A.md");
+        (await workspacePage.getLink("B")).click();
+
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"], ["outgoing-link", "B.md"]])
+    })
 })

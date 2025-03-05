@@ -75,7 +75,7 @@ describe('Test open in new tab for splits and more', () => {
 
     it("test sidebars", async () => {
         await workspacePage.loadWorkspaceLayout("file-a-in-sidebar");
-        const sidebar = $(await browser.executeObsidian(({app}) =>(app.workspace.rightSplit as any).containerEl))
+        const sidebar = $(await browser.executeObsidian(({app}) => app.workspace.rightSplit.containerEl))
         await sidebar.$(`a=B`).click()
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves())[0][0] != 'empty')
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
@@ -88,7 +88,7 @@ describe('Test open in new tab for splits and more', () => {
                     matches.push(l)
                 }
             })
-            return [(sidebar as any).id, matches.map(l => (l.getRoot() as any).id)]
+            return [sidebar.id, matches.map(l => l.getRoot().id)]
         })
         expect(aMatches.length).to.eql(1);
         expect(aMatches[0]).to.eql(sidebarId);
@@ -98,7 +98,7 @@ describe('Test open in new tab for splits and more', () => {
         // A.md and outgoing links in left/right split
         await workspacePage.loadWorkspaceLayout("linked-files");
         
-        const fileLeafId = await browser.executeObsidian(({app, obsidian}) => {
+        const fileLeafId = await browser.executeObsidian(({app}) => {
             return (app.workspace.rootSplit as any).children[0].children[0].id
         });
         await browser.executeObsidian(({app}, leafId) => {

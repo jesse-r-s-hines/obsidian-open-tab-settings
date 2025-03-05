@@ -1,6 +1,7 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
 import * as path from "path"
 import * as fs from "fs"
+import { ConfigItem } from 'obsidian-typings'
 
 class WorkspacePage {
     /**
@@ -24,7 +25,7 @@ class WorkspacePage {
                 const root = l.getRoot()
                 // Don't include sidebars and such, but do include popout windows
                 if (root instanceof obsidian.WorkspaceRoot || root instanceof obsidian.WorkspaceFloating) {
-                    leaves.push((l as any).id)
+                    leaves.push(l.id)
                 }
             })
             return leaves.sort();
@@ -43,10 +44,10 @@ class WorkspacePage {
             const matches = allLeaves
                 .map(id => app.workspace.getLeafById(id)!)
                 .filter(l => (
-                    (l as any).id == pathOrId ||
+                    l.id == pathOrId ||
                     (l.view instanceof obsidian.FileView && l.view.file?.path == pathOrId)
                 ))
-                .map(l => (l as any).id);
+                .map(l => l.id);
             return matches;
         }, allLeaves, pathOrId);
         if (matches.length < 1) {
@@ -82,7 +83,7 @@ class WorkspacePage {
     async getActiveLeafId(): Promise<string> {
         return await browser.executeObsidian(({app, obsidian}) => {
             const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
-            return (leaf as any).id
+            return leaf.id
         })
     }
 
@@ -90,7 +91,7 @@ class WorkspacePage {
     async getLeafParent(pathOrId: string): Promise<string> {
         const leafId = await this.getLeaf(pathOrId);
         return await browser.executeObsidian(({app}, leafId) => {
-            return (app.workspace.getLeafById(leafId)?.parent as any).id
+            return app.workspace.getLeafById(leafId)!.parent.id
         }, leafId)
     }
 
@@ -98,14 +99,14 @@ class WorkspacePage {
     async getLeafRoot(pathOrId: string): Promise<string> {
         const leafId = await this.getLeaf(pathOrId);
         return await browser.executeObsidian(({app}, leafId) => {
-            return (app.workspace.getLeafById(leafId)?.getRoot() as any).id
+            return app.workspace.getLeafById(leafId)!.getRoot().id
         }, leafId)
     }
 
     async getLeafContainer(pathOrId: string): Promise<string> {
         const leafId = await this.getLeaf(pathOrId);
         return await browser.executeObsidian(({app}, leafId) => {
-            return (app.workspace.getLeafById(leafId)?.getContainer() as any).id
+            return app.workspace.getLeafById(leafId)!.getContainer().id
         }, leafId)
     }
 
@@ -176,9 +177,9 @@ class WorkspacePage {
         await $(`.nav-files-container [data-path='${path}']`).click()
     }
 
-    async setConfig(name: string, value: any) {
+    async setConfig(name: ConfigItem, value: any) {
         await browser.executeObsidian(({app}, name, value) => {
-            (app.vault as any).setConfig(name, value);
+            app.vault.setConfig(name, value);
         }, name, value)
     }
 

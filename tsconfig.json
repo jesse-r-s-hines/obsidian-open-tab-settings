@@ -23,7 +23,8 @@
       "node",
       "@wdio/globals/types",
       "@wdio/mocha-framework",
-      "wdio-obsidian-service"
+      "wdio-obsidian-service",
+      "obsidian-typings"
     ],
     "skipLibCheck": true
   },

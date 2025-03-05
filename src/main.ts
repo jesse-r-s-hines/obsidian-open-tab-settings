@@ -39,7 +39,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         if (plugin.settings.openInNewTab && !newLeaf) {
                             leaf = oldMethod.call(this, 'tab', ...args);
                             // Force focusing the new tab even if focusNewTab is false.
-                            if (!(plugin.app.vault as any).getConfig('focusNewTab')) {
+                            if (!plugin.app.vault.getConfig('focusNewTab')) {
                                 // Might be safer to do this after the layout-change event?
                                 plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
                             }

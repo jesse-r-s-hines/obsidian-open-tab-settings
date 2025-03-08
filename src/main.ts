@@ -4,8 +4,6 @@ import {
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 
-// Remember to rename these classes and interfaces!
-
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
@@ -177,5 +175,8 @@ class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     })
             );
+
+        new Setting(this.containerEl)
+            .setDesc('See also: "Always focus in new tab" in Obsidian Editor options')
     }
 }

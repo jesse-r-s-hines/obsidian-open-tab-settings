@@ -1,6 +1,6 @@
 import {
     App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
-    EditableFileView, View, TFile,
+    View, TFile,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 
@@ -109,16 +109,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const matches: WorkspaceLeaf[] = []; 
         this.app.workspace.iterateAllLeaves(leaf => {
             const root = leaf.getRoot();
-            // Only check files in the main area or floating windows, not sidebars
+
+            // Only match files in the main area or floating windows, not sidebars
             const isMainLeaf = (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
-            // Check that the file path matches and its a normal file leaf. "FileView" type includes
-            // views like outgoing-links which we don't want to switch to. EditableFileView includes
-            // Markdown, PDF, and images but not views like outgoing-links.
-            const fileMatch = (
-                leaf.view instanceof EditableFileView &&
-                leaf.view.file?.path == file.path
-            );
-            if (isMainLeaf && fileMatch) {
+            const isFileMatch = leaf.getViewState()?.state?.file == file.path;
+            // we only want to switch to another leaf if its a basic file, not if its outgoing-links etc.
+            const isTypeMatch = this.app.viewRegistry.getTypeByExtension(file.extension) == leaf.view.getViewType();
+
+            if (isMainLeaf && isFileMatch && isTypeMatch) {
                 matches.push(leaf);
             }
         });

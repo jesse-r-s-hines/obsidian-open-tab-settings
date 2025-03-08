@@ -69,7 +69,7 @@ describe('Test deduplicate for splits and more', () => {
         await workspacePage.openFile("B.md");
         await browser.executeObsidianCommand('workspace:move-to-new-window')
         await sleep(250);
-        
+
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
 
@@ -98,5 +98,24 @@ describe('Test deduplicate for splits and more', () => {
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md")
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"], ["outgoing-link", "B.md"]])
+    })
+
+    it('deferred views', async () => {
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
+        await workspacePage.setActiveFile("A.md");
+        await browser.reloadObsidian();
+        
+        expect(await workspacePage.getLeavesWithDeferred()).to.eql([
+            ['markdown', 'A.md', false], ['markdown', 'B.md', true],
+        ])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"]);
+
+        (await workspacePage.getLink("B")).click();
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"]);
+        expect(await workspacePage.getLeavesWithDeferred()).to.eql([
+            ['markdown', 'A.md', false], ['markdown', 'B.md', false],
+        ])
     })
 })

@@ -125,6 +125,16 @@ class WorkspacePage {
         }, leafIds)
     }
 
+    async getLeavesWithDeferred(): Promise<[string, string, boolean][]> {
+        const leafIds = await workspacePage.getAllLeafIds();
+        return await browser.executeObsidian(({ app }, leafIds) => {
+            return leafIds
+                .map(l => app.workspace.getLeafById(l)!)
+                .map(l => [l.view.getViewType(), l.getViewState()?.state?.file ?? "", l.isDeferred] as [string, string, boolean])
+                .sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))
+        }, leafIds)
+    }
+
     async getLink(text: string) {
         const activeView = $(await browser.executeObsidian(({app, obsidian}) =>
             app.workspace.getActiveViewOfType(obsidian.View)!.containerEl

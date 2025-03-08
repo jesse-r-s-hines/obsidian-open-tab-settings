@@ -138,4 +138,17 @@ describe('Test deduplicate for splits and more', () => {
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
     })
+
+    it('stacked tabs', async () => {
+        // Make sure outlinks don't get picked up as a file
+        await workspacePage.loadWorkspaceLayout("stacked");
+        await workspacePage.setActiveFile("A.md");
+        (await workspacePage.getLink("B")).click();
+
+        await browser.waitUntil(async () => 
+            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"
+        )
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+    })
 })

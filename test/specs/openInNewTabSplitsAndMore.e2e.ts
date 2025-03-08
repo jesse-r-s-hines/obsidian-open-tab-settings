@@ -131,4 +131,16 @@ describe('Test open in new tab for splits and more', () => {
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
     })
+
+    it('stacked tabs', async () => {
+        await workspacePage.loadWorkspaceLayout("stacked");
+        await workspacePage.setActiveFile("A.md");
+        (await workspacePage.getLink("B")).click()
+
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
+        expect(await workspacePage.getAllLeaves()).to.eql([
+            ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],
+        ])
+        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+    })
 })

@@ -7,7 +7,6 @@ import { setSettings, sleep } from './helpers';
 describe('Test disable options', () => {
     beforeEach(async () => {
         await workspacePage.loadWorkspaceLayout("empty");
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
@@ -68,5 +67,22 @@ describe('Test disabling the plugin', () => {
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"], ["markdown", "B.md"]])
+    })
+})
+
+describe('Test bypass new tab', () => {
+    beforeEach(async () => {
+        await workspacePage.loadWorkspaceLayout("empty");
+        await workspacePage.setConfig('focusNewTab', false);
+    });
+
+    it("Test bypass new tab", async () => {
+        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkInSameTab(await workspacePage.getLink("B"))
+
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
     })
 })

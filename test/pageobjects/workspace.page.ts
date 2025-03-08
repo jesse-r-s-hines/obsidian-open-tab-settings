@@ -152,6 +152,11 @@ class WorkspacePage {
         await browser.$(".menu").$("div.*=Open in new window").click()
     }
 
+    async openLinkInSameTab(link: ChainablePromiseElement) {
+        await link.click({button: "right"});
+        await browser.$(".menu").$("div.*=Open in same tab").click()
+    }
+
     async loadWorkspaceLayout(layoutName: string): Promise<void> {
         // read from .obsidian/workspaces.json like the built-in workspaces plugin does
         const vaultPath = (await browser.getVaultPath())!;

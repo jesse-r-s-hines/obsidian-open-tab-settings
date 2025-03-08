@@ -1,6 +1,6 @@
 import {
     App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
-    View, TFile,
+    View, TFile, PaneType,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 
@@ -33,7 +33,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         this.monkeyPatches.push(
             monkeyAround.around(Workspace.prototype, {
                 getLeaf(oldMethod: any) {
-                    return function(this: Workspace, newLeaf, ...args) {
+                    return function(this: Workspace, newLeaf?: PaneType|boolean|"same", ...args) {
                         // newLeaf false or undefined means open in current tab. Here we replace those with 'tab' to
                         // always open in new tab.
                         let leaf: WorkspaceLeaf;
@@ -47,6 +47,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             }
                         } else {
                             // use default behavior
+                            newLeaf = newLeaf == 'same' ? false : newLeaf;
                             leaf = oldMethod.call(this, newLeaf, ...args);
                         }
                         // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
@@ -90,6 +91,21 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         return oldMethod.call(this, file, openState, ...args)
                     }
                 },
+            })
+        );
+
+        this.registerEvent(
+            this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
+                if (file instanceof TFile) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("file-minus")
+                        item.setTitle("Open in same tab");
+                        item.onClick(() => {
+                            this.app.workspace.getLeaf('same' as any).openFile(file);
+                        });
+                    });
+                }
             })
         );
     }

@@ -1,7 +1,7 @@
 import { browser } from '@wdio/globals'
-import { WorkspaceLeaf } from 'obsidian';
 import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
+import { obsidianPage } from "wdio-obsidian-service"
 import { setSettings } from './helpers';
 
 // Test that normal behaviors aren't broken by the plugin
@@ -9,7 +9,7 @@ import { setSettings } from './helpers';
 
 const tests = () => {
     beforeEach(async () => {
-        await workspacePage.loadWorkspaceLayout("empty");
+        await obsidianPage.loadWorkspaceLayout("empty");
         await workspacePage.setConfig('focusNewTab', true);
     });
 
@@ -28,14 +28,14 @@ const tests = () => {
     })
 
     it("new tab still works", async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         expect(await workspacePage.getAllLeaves()).to.eql([["empty", ""], ["markdown", "A.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["empty", ""])
     })
 
     it("empty tabs still get replaced", async () => {
-        await workspacePage.openFile("A.md")
+        await obsidianPage.openFile("A.md")
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("B.md");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
@@ -43,7 +43,7 @@ const tests = () => {
     })
 
     it("new file still works", async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file");
         // new file normally opens in new tab
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
@@ -54,7 +54,7 @@ const tests = () => {
     it("Explicit open in new tab still works when focusNewTab is false", async () => {
         await workspacePage.setConfig('focusNewTab', false);
 
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
@@ -65,7 +65,7 @@ const tests = () => {
     it("Explicit open in new tab still works when focusNewTab is true", async () => {
         await workspacePage.setConfig('focusNewTab', true);
 
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
@@ -74,7 +74,7 @@ const tests = () => {
     })
 
     it("Explicit open in new tab to the right still works", async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2);
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]]);
@@ -84,7 +84,7 @@ const tests = () => {
     })
 
     it("Explicit open in new window still works", async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
         const aParent = await workspacePage.getLeafRoot("A.md");
         const bParent = await workspacePage.getLeafRoot("B.md");
@@ -93,7 +93,7 @@ const tests = () => {
     })
 
     it("pinned file", async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await workspacePage.setActiveFile("A.md")
         await browser.executeObsidianCommand("workspace:toggle-pin");
 
@@ -109,7 +109,7 @@ const noDedupTests = () => {
     it("open self link in new tab focusNewTab true", async () => {
         await workspacePage.setConfig('focusNewTab', true);
 
-        await workspacePage.openFile("Loop.md");
+        await obsidianPage.openFile("Loop.md");
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
         (await workspacePage.getLink("Loop.md")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -121,7 +121,7 @@ const noDedupTests = () => {
     it("open self link in new tab focusNewTab false", async () => {
         await workspacePage.setConfig('focusNewTab', false);
 
-        await workspacePage.openFile("Loop.md");
+        await obsidianPage.openFile("Loop.md");
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
         (await workspacePage.getLink("Loop.md")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -133,11 +133,11 @@ const noDedupTests = () => {
 
 describe('Test normal behavior without the plugin', () => {
     before(async () => {
-        await browser.disablePlugin("open-tab-settings");
+        await obsidianPage.disablePlugin("open-tab-settings");
     });
 
     after(async () => {
-        await browser.enablePlugin("open-tab-settings");
+        await obsidianPage.enablePlugin("open-tab-settings");
     });
 
     tests();

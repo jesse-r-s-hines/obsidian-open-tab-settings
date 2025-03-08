@@ -1,19 +1,20 @@
 import { browser } from '@wdio/globals'
 import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
+import { obsidianPage } from 'wdio-obsidian-service';
 import { setSettings, sleep } from './helpers';
 import { WorkspaceLeaf } from 'obsidian';
 
 
 describe('Test open in new tab for splits and more', () => {
     beforeEach(async () => {
-        await workspacePage.loadWorkspaceLayout("empty");
+        await obsidianPage.loadWorkspaceLayout("empty");
         await setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
     it('test split view left', async () => {
-        await workspacePage.loadWorkspaceLayout("split");
+        await obsidianPage.loadWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
@@ -30,7 +31,7 @@ describe('Test open in new tab for splits and more', () => {
     })
 
     it('test split view right', async () => {
-        await workspacePage.loadWorkspaceLayout("split");
+        await obsidianPage.loadWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("Loop.md");
         (await workspacePage.getLink("B")).click();
@@ -46,7 +47,7 @@ describe('Test open in new tab for splits and more', () => {
 
     it("test new tabs in new windows", async () => {
         // A in main, D in a popout window
-        await workspacePage.loadWorkspaceLayout("popout-window");
+        await obsidianPage.loadWorkspaceLayout("popout-window");
         // If I don't wait a bit here, there's a race condition and sometimes the popout window will end up
         // focused despite setting the active file below. TODO: Figure out what I need to waitUtil
         await sleep(250);
@@ -74,7 +75,7 @@ describe('Test open in new tab for splits and more', () => {
     })
 
     it("test sidebars", async () => {
-        await workspacePage.loadWorkspaceLayout("file-a-in-sidebar");
+        await obsidianPage.loadWorkspaceLayout("file-a-in-sidebar");
         const sidebar = $(await browser.executeObsidian(({app}) => app.workspace.rightSplit.containerEl))
         await sidebar.$(`a=B`).click()
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves())[0][0] != 'empty')
@@ -96,7 +97,7 @@ describe('Test open in new tab for splits and more', () => {
 
     it("test linked files", async () => {
         // A.md and outgoing links in left/right split
-        await workspacePage.loadWorkspaceLayout("linked-files");
+        await obsidianPage.loadWorkspaceLayout("linked-files");
         
         const fileLeafId = await browser.executeObsidian(({app}) => {
             return (app.workspace.rootSplit as any).children[0].children[0].id
@@ -116,7 +117,7 @@ describe('Test open in new tab for splits and more', () => {
 
     it("test back buttons", async () => {
         await setSettings({ openInNewTab: false });
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
@@ -133,7 +134,7 @@ describe('Test open in new tab for splits and more', () => {
     })
 
     it('stacked tabs', async () => {
-        await workspacePage.loadWorkspaceLayout("stacked");
+        await obsidianPage.loadWorkspaceLayout("stacked");
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click()
 

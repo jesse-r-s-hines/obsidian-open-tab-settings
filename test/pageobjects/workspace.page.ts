@@ -4,19 +4,6 @@ import * as fs from "fs"
 import { ConfigItem } from 'obsidian-typings'
 
 class WorkspacePage {
-    /**
-     * Opens a markdown file in a new tab.
-     */
-    async openFile(path: string) {
-        await browser.executeObsidian(async ({app}, path) => {
-            const file = app.vault.getFileByPath(path);
-            if (!file) {
-                throw Error(`No file ${path} exists`);
-            }
-            await app.workspace.getLeaf('tab').openFile(file);
-        }, path)
-    }
-
     /** Get ids of all leaves in the rootSplit or floating windows, excluding sidebars. */
     async getAllLeafIds(): Promise<string[]> {
         return await browser.executeObsidian(({app, obsidian}) => {
@@ -31,7 +18,6 @@ class WorkspacePage {
             return leaves.sort();
         })
     }
-
 
     /**
      * Returns leaf id for a path. Can also be passed the id directly in which case it returns the id if it exists.
@@ -155,26 +141,6 @@ class WorkspacePage {
     async openLinkInSameTab(link: ChainablePromiseElement) {
         await link.click({button: "right"});
         await browser.$(".menu").$("div.*=Open in same tab").click()
-    }
-
-    async loadWorkspaceLayout(layoutName: string): Promise<void> {
-        // read from .obsidian/workspaces.json like the built-in workspaces plugin does
-        const vaultPath = (await browser.getVaultPath())!;
-        const workspacesPath = path.join(vaultPath, '.obsidian/workspaces.json');
-
-        let layout: any = undefined
-        if (fs.existsSync(workspacesPath)) {
-            layout = JSON.parse(await fs.promises.readFile(workspacesPath, 'utf-8')).workspaces?.[layoutName];
-        }
-        if (!layout) {
-            throw new Error(`No workspace ${layout} found in .obsidian/workspaces.json`)
-        }
-
-        // Click on the status-bar to focus the main window in case there are multiple Obsidian windows panes
-        await $(".status-bar").click();
-        await browser.executeObsidian(({app}, layout) => {
-            app.workspace.changeLayout(layout)
-        }, layout)
     }
 
     async openFileViaModal(path: string): Promise<void> {

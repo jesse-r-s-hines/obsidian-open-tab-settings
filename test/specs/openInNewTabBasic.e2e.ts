@@ -1,19 +1,20 @@
 import { browser } from '@wdio/globals'
 import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
+import { obsidianPage } from 'wdio-obsidian-service';
 import { setSettings } from './helpers';
 
 
 describe('Test basic open in new tab', () => {
     beforeEach(async () => {
-        await workspacePage.loadWorkspaceLayout("empty");
+        await obsidianPage.loadWorkspaceLayout("empty");
         await setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
     it('opens in new tab and focuses when focusNewTab is false', async () => {
         await workspacePage.setConfig('focusNewTab', false);
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click()
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -24,7 +25,7 @@ describe('Test basic open in new tab', () => {
     it('opens in new tab and focuses when focusNewTab is true', async () => {
         await workspacePage.setConfig('focusNewTab', true);
         // The new tab should focus regardless of focusNewTab setting.
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click()
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -33,7 +34,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens in new tab from file explorer', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md");
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -42,7 +43,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens in new tab from file modal', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md");
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -51,7 +52,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens in new tab from sidebar outgoing links', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         const button = await browser.$$(".workspace-tab-header").find(e => e.$("div.*=Outgoing links").isExisting()) as any
         await button.click()
         const item = await browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
@@ -62,7 +63,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens images in new tab', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("image.png")
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).to.eql([["image", "image.png"], ["markdown", "A.md"]])
@@ -70,7 +71,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens pdfs in new tab', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("pdf.pdf")
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["pdf", "pdf.pdf"]])
@@ -78,7 +79,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens file from pdfs opens in new tab', async () => {
-        await workspacePage.openFile("pdf.pdf");
+        await obsidianPage.openFile("pdf.pdf");
         await workspacePage.openFileViaModal("A.md");
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["pdf", "pdf.pdf"]])
@@ -86,7 +87,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('graph view opens in new tab', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("graph:open");
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).to.eql([["graph", ""], ["markdown", "A.md"]])
@@ -102,7 +103,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('open daily note opens in new tab', async () => {
-        await workspacePage.openFile("A.md")
+        await obsidianPage.openFile("A.md")
         await browser.executeObsidianCommand("daily-notes");
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         const leaves = await workspacePage.getAllLeaves();
@@ -113,7 +114,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('opens in new tab from bookmarks', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         const button = await browser.$$(".workspace-tab-header").find(e => e.$("div.*=Bookmarks").isExisting()) as any
         await button.click()
         const item = await browser.$(".workspace-leaf-content[data-type='bookmarks'] [data-path=B]");
@@ -124,7 +125,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('open self link', async () => {
-        await workspacePage.openFile("Loop.md");
+        await obsidianPage.openFile("Loop.md");
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
         (await workspacePage.getLink("Loop.md")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -133,7 +134,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('re-open file', async () => {
-        await workspacePage.openFile("Loop.md");
+        await obsidianPage.openFile("Loop.md");
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
         await workspacePage.openFileViaModal("Loop.md");
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -142,7 +143,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it("open new file", async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Untitled.md"])
@@ -150,7 +151,7 @@ describe('Test basic open in new tab', () => {
     })
     
     it("open new file in current tab", async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file-in-current-tab");
         // TODO: Should probably fix this behavior
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
@@ -159,7 +160,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('open new file via link', async () => {
-        await workspacePage.openFile("B.md");
+        await obsidianPage.openFile("B.md");
         (await workspacePage.getLink("C")).click()
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -168,7 +169,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('open canvas opens in new tab', async () => {
-        await workspacePage.openFile("A.md");
+        await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("Canvas.canvas")).click()
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
@@ -177,7 +178,7 @@ describe('Test basic open in new tab', () => {
     })
 
     it('open link in canvas', async () => {
-        await workspacePage.openFile("Canvas.canvas");
+        await obsidianPage.openFile("Canvas.canvas");
         // Focus a node
         const node = browser.$(".canvas-node-label=A").$("..")
         await node.click();

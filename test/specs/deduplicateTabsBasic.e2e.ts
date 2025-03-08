@@ -55,6 +55,24 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"]]);
     })
 
+    it("open self link in new tab focusNewTab true", async () => {
+        await workspacePage.setConfig('focusNewTab', true);
+
+        await workspacePage.openFile("Loop.md");
+        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await sleep(250);
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"]])
+    })
+
+    it("open self link in new tab focusNewTab false", async () => {
+        await workspacePage.setConfig('focusNewTab', false);
+
+        await workspacePage.openFile("Loop.md");
+        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await sleep(250);
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"]])
+    })
+
     it('deduplicate via file explorer', async () => {
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
@@ -166,26 +184,20 @@ describe('Test basic deduplicate', () => {
         await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("A.md")
-        // TODO: This behavior is a little weird, if you are in an empty tab that bypasses deduplicate logic
-        await browser.waitUntil(async () => 
-            (await workspacePage.getActiveLeaf())[1] == "A.md"
-        )
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "A.md"]])
+        await browser.waitUntil(async () =>  (await workspacePage.getActiveLeaf())[1] == "A.md")
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
     })
 
     it('explicit new tab', async () => {
         await workspacePage.setConfig('focusNewTab', true);
         await workspacePage.openFile("B.md");
-        const b1 = await workspacePage.getLeaf("B.md");
         await workspacePage.openFile("A.md");
         (await workspacePage.getLink("B")).click({button: "middle"});
 
-        // Should open duplicate if opened in new tab explicitly
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
+        // Should still deduplicate if opened in new tab explicitly
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
-        const b2 = await workspacePage.getActiveLeafId();
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"]]);
-        expect(b1).to.not.eql(b2);
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]]);
     })
 })

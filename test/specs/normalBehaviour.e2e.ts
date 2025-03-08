@@ -92,6 +92,20 @@ const tests = () => {
         expect(aParent).to.not.eql(bParent);
     })
 
+    it("pinned file", async () => {
+        await workspacePage.openFile("A.md");
+        await workspacePage.setActiveFile("A.md")
+        await browser.executeObsidianCommand("workspace:toggle-pin");
+
+        (await workspacePage.getLink("B")).click();
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        const active = await workspacePage.getActiveLeaf()
+        expect(active).to.eql(["markdown", "B.md"])
+    })
+}
+
+const noDedupTests = () => {
     it("open self link in new tab focusNewTab true", async () => {
         await workspacePage.setConfig('focusNewTab', true);
 
@@ -115,20 +129,7 @@ const tests = () => {
 
         expect(await workspacePage.getActiveLeafId()).to.eql(prevActiveLeaf);
     })
-
-    it("pinned file", async () => {
-        await workspacePage.openFile("A.md");
-        await workspacePage.setActiveFile("A.md")
-        await browser.executeObsidianCommand("workspace:toggle-pin");
-
-        (await workspacePage.getLink("B")).click();
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
-        const active = await workspacePage.getActiveLeaf()
-        expect(active).to.eql(["markdown", "B.md"])
-    })
 }
-
 
 describe('Test normal behavior without the plugin', () => {
     before(async () => {
@@ -140,18 +141,37 @@ describe('Test normal behavior without the plugin', () => {
     });
 
     tests();
+    noDedupTests();
 })
 
 describe('Test normal behavior with the plugin settings turned off', () => {
-    before(async () => {
+    beforeEach(async () => {
         await setSettings({ openInNewTab: false, deduplicateTabs: false });
+    })
+
+    tests();
+    noDedupTests();
+})
+
+describe('Test normal behavior with openInNewTab turned off', () => {
+    beforeEach(async () => {
+        await setSettings({ openInNewTab: false, deduplicateTabs: true });
     })
 
     tests();
 })
 
+describe('Test normal behavior with deduplicateTabs turned off', () => {
+    beforeEach(async () => {
+        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+    })
+
+    tests();
+    noDedupTests();
+})
+
 describe('Test normal behavior with the plugin settings enabled', () => {
-    before(async () => {
+    beforeEach(async () => {
         await setSettings({ openInNewTab: true, deduplicateTabs: true });
     });
 

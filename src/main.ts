@@ -16,7 +16,8 @@ const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     deduplicateTabs: true,
 }
 
-const IMPLICIT_NEW_TAB = "openTabSettingsPluginImplicitNewTab" as const;
+/** We use this key to check if can safely close a recently created empty leaf during file deduplication. */
+const ORIGINAL_PANE_TYPE = "openTabSettingsOriginalPaneType" as const;
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = DEFAULT_SETTINGS;
@@ -37,21 +38,22 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         // always open in new tab.
                         let leaf: WorkspaceLeaf;
                         if (plugin.settings.openInNewTab && !newLeaf) {
-                            leaf = oldMethod.call(this, 'tab', ...args);
+                            newLeaf = "tab"
+                            leaf = oldMethod.call(this, newLeaf, ...args);
                             // Force focusing the new tab even if focusNewTab is false.
                             if (!plugin.app.vault.getConfig('focusNewTab')) {
                                 // Might be safer to do this after the layout-change event?
                                 plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
                             }
-                            // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
-                            (leaf as any)[IMPLICIT_NEW_TAB] = true;
                         } else {
                             // use default behavior
                             leaf = oldMethod.call(this, newLeaf, ...args);
                         }
+                        // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
+                        (leaf as any)[ORIGINAL_PANE_TYPE] = newLeaf || 'same';
                         return leaf;
                     }
-                }
+                },
             })
         );
 
@@ -60,10 +62,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
                     return async function(this: WorkspaceLeaf, file, openState, ...args) {
-                        // if the leaf was opened via an explicit new tab or open in right etc. don't deduplicate.
-                        const implicitNewTab = !!(this as any)[IMPLICIT_NEW_TAB];
+                        // if the leaf was open via open in new window or open in right, don't deduplicate.
+                        const isSpecialOpen = !['same', 'tab'].includes((this as any)[ORIGINAL_PANE_TYPE])
                         const isEmpty = this.view.getViewType() == "empty";
-                        if (plugin.settings.deduplicateTabs && (!isEmpty || implicitNewTab)) {
+                        if (plugin.settings.deduplicateTabs && (!isEmpty || !isSpecialOpen)) {
                             // Check if there are any duplicate tabs
                             const matches = await plugin.findMatchingLeaves(file);
                             if (!matches.includes(this) && matches.length > 0) {
@@ -73,10 +75,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                     ...openState,
                                     active: activeLeaf == this,
                                 }, ...args);
-                                // If openInNewTab is also enabled, then it will be called first and make a new tab.
-                                // Here we just close the tab after switching to the existing tab.
+                                // If a file is opened in new tab, either from middle click or if openInNewTab is
+                                // enabled, then getLeaf('tab') will be called first and make a new empty tab. Here we
+                                // just close the tab after switching to the existing tab.
                                 // TODO: Is there a cleaner way to do this?
-                                if (isEmpty && implicitNewTab) {
+                                if (isEmpty) {
                                     await this.detach();
                                 }
                                 return result;
@@ -86,7 +89,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         // use default behavior
                         return oldMethod.call(this, file, openState, ...args)
                     }
-                }
+                },
             })
         );
     }

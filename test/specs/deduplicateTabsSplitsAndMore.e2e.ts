@@ -118,4 +118,24 @@ describe('Test deduplicate for splits and more', () => {
             ['markdown', 'A.md', false], ['markdown', 'B.md', false],
         ])
     })
+
+    it("back buttons", async () => {
+        await setSettings({ deduplicateTabs: false });
+        await workspacePage.openFile("B.md");
+        await workspacePage.openFile("B.md");
+        await (await workspacePage.getLink("A")).click();
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        await setSettings({ deduplicateTabs: true });
+
+        // Still opens in the same tab
+        // TODO: Should we override go-back behavior as well?
+        await browser.executeObsidianCommand("app:go-back");
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"], ["markdown", "B.md"]])
+
+        await browser.executeObsidianCommand("app:go-forward");
+        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md");
+        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+    })
 })

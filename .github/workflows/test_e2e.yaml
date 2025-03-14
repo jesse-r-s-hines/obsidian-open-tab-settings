@@ -1,0 +1,60 @@
+name: Test e2e
+description: "Run end to end tests"
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  # Allow manually triggering the workflow
+  workflow_dispatch:
+  # Allow calling from another workflow (used in the test_scheduled workflow)
+  workflow_call:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          # Enable these if you want to test your plugin on different platforms
+          # - windows-latest
+          # - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: 'npm'
+
+      - id: get-version-list
+        name: "Get version list"
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            console.log("RUNNER_NAME", process.env.RUNNER_NAME)
+
+      # - name: Cache .obsidian-cache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: .obsidian-cache
+      #     key: obsidian-cache-{{matrix.os}}-{{ hashFiles('./obsidian-versions.json') }}
+      #     restore-keys: obsidian-cache-{{matrix.os}}-
+
+      # - name: Build
+      #   run: |
+      #     npm ci
+      #     npm run build
+
+      # - name: Run e2e tests
+      #   # On linux we need to use xvfb-run to setup a virtual display server
+      #   run: |
+      #     {{ matrix.os == 'ubuntu-latest' && 'xvfb-run --server-args="-screen 0 1280x1024x24"  \' || '' }}
+      #     npm run test:e2e
+      #   env:
+      #     WDIO_MAX_INSTANCES: 4
+      #     # Secrets won't be available when run on a PR
+      #     OBSIDIAN_USERNAME: {{ secrets.OBSIDIAN_USERNAME }}
+      #     OBSIDIAN_PASSWORD: {{ secrets.OBSIDIAN_PASSWORD }}

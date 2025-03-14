@@ -1,0 +1,70 @@
+name: Test
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    env:
+        MY_VAR: "FOO"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: 
+          - ubuntu-latest
+          # - windows-latest
+          # - macos-latest
+        node-version: ["18.x"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - run: |
+          echo github.event.pull_request.base.repo.full_name "${{github.event.pull_request.base.repo.full_name}}"
+          echo github.event.pull_request.head.repo.full_name "${{github.event.pull_request.head.repo.full_name}}"
+          echo github.repository "${{github.repository}}"
+          echo MY_VAR"${{ env.MY_VAR }}"
+          echo GITHUB_ACTOR "$GITHUB_ACTOR"
+          echo GITHUB_BASE_REF "$GITHUB_BASE_REF"
+          echo GITHUB_EVENT_NAME "$GITHUB_EVENT_NAME"
+          echo GITHUB_HEAD_REF "$GITHUB_HEAD_REF"
+          echo GITHUB_REF "$GITHUB_REF"
+          echo GITHUB_REF_NAME "$GITHUB_REF_NAME"
+          if [[ -z $variable ]]; then
+            echo "TEST_SECRET MISSING"
+          else
+            echo TEST_SECRET "$TEST_SECRET"
+          fi
+        env:
+          TEST_SECRET: ${{ secrets.TEST_SECRET }}
+      # - uses: actions/checkout@v4
+      # - name: Use Node.js {{ matrix.node-version }}
+      #   if: 
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: {{ matrix.node-version }}
+      #     cache: 'npm'
+
+      # - name: Cache .obsidian-cache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: .obsidian-cache
+      #     key: obsidian-cache-{{matrix.os}}-{{ hashFiles('./obsidian-versions.json') }}
+      #     restore-keys: obsidian-cache-{{matrix.os}}-
+
+      # - name: Build
+      #   run: |
+      #     npm ci
+      #     npm run build
+
+      # - name: Run e2e tests
+      #   # On linux we need to use xvfb-run to setup a virtual display server
+      #   run: |
+      #     {{ matrix.os == 'ubuntu-latest' && 'xvfb-run --server-args="-screen 0 1280x1024x24"  \' || '' }}
+      #     npm run test:e2e
+      #   env:
+      #     WDIO_MAX_INSTANCES: 4
+      #     # Secrets won't be available when run on a PR
+      #     OBSIDIAN_USERNAME: {{ secrets.OBSIDIAN_USERNAME }}
+      #     OBSIDIAN_PASSWORD: {{ secrets.OBSIDIAN_PASSWORD }}

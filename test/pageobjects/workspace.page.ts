@@ -129,16 +129,19 @@ class WorkspacePage {
     }
 
     async openLinkToRight(link: ChainablePromiseElement) {
+        await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
         await browser.$(".menu").$("div.*=Open to the right").click()
     }
 
     async openLinkInNewWindow(link: ChainablePromiseElement) {
+        await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
         await browser.$(".menu").$("div.*=Open in new window").click()
     }
 
     async openLinkInSameTab(link: ChainablePromiseElement) {
+        await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
         await browser.$(".menu").$("div.*=Open in same tab").click()
     }

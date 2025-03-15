@@ -131,49 +131,56 @@ const noDedupTests = () => {
     })
 }
 
-describe('Test normal behavior without the plugin', () => {
-    before(async () => {
-        await obsidianPage.disablePlugin("open-tab-settings");
-    });
+describe("Test normal behavior", function() {
+    describe('without the plugin', function() {
+        before(async () => {
+            await obsidianPage.disablePlugin("open-tab-settings");
+            await workspacePage.setConfig('focusNewTab', true);
+        });
 
-    after(async () => {
-        await obsidianPage.enablePlugin("open-tab-settings");
-    });
+        after(async () => {
+            await obsidianPage.enablePlugin("open-tab-settings");
+        });
 
-    tests();
-    noDedupTests();
-})
-
-describe('Test normal behavior with the plugin settings turned off', () => {
-    beforeEach(async () => {
-        await setSettings({ openInNewTab: false, deduplicateTabs: false });
+        tests();
+        noDedupTests();
     })
 
-    tests();
-    noDedupTests();
-})
+    describe('with the plugin settings turned off', function() {
+        beforeEach(async () => {
+            await setSettings({ openInNewTab: false, deduplicateTabs: false });
+            await workspacePage.setConfig('focusNewTab', true);
+        })
 
-describe('Test normal behavior with openInNewTab turned off', () => {
-    beforeEach(async () => {
-        await setSettings({ openInNewTab: false, deduplicateTabs: true });
+        tests();
+        noDedupTests();
     })
 
-    tests();
-})
+    describe('with openInNewTab turned off', function() {
+        beforeEach(async () => {
+            await setSettings({ openInNewTab: false, deduplicateTabs: true });
+            await workspacePage.setConfig('focusNewTab', true);
+        })
 
-describe('Test normal behavior with deduplicateTabs turned off', () => {
-    beforeEach(async () => {
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+        tests();
     })
 
-    tests();
-    noDedupTests();
-})
+    describe('with deduplicateTabs turned off', function() {
+        beforeEach(async () => {
+            await setSettings({ openInNewTab: true, deduplicateTabs: false });
+            await workspacePage.setConfig('focusNewTab', true);
+        })
 
-describe('Test normal behavior with the plugin settings enabled', () => {
-    beforeEach(async () => {
-        await setSettings({ openInNewTab: true, deduplicateTabs: true });
-    });
+        tests();
+        noDedupTests();
+    })
 
-    tests();
+    describe('with the plugin settings enabled', function() {
+        beforeEach(async () => {
+            await setSettings({ openInNewTab: true, deduplicateTabs: true });
+            await workspacePage.setConfig('focusNewTab', true);
+        });
+
+        tests();
+    })
 })

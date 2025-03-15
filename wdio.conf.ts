@@ -1,20 +1,30 @@
 import * as path from "path"
+import { obsidianBetaAvailable, resolveObsidianVersions } from "wdio-obsidian-service";
+
+const cacheDir = path.resolve(".obsidian-cache");
 
 let versions: [string, string][]; // [appVersion, installerVersion][]
-if (process.env['OBSIDIAN_VERSIONS']) {
-    const appVersions = process.env['OBSIDIAN_VERSIONS'].split(/[ ,]+/);
-    let installerVersions: string[];
-    if (process.env['OBSIDIAN_INSTALLER_VERSIONS']) {
-        installerVersions = process.env['OBSIDIAN_INSTALLER_VERSIONS'].split(/[ ,]+/);
-    } else {
-        installerVersions = appVersions.map(() => "earliest");
+if (process.env.OBSIDIAN_VERSIONS) {
+    // Space separated list of appVersion/installerVersion, e.g. "1.7.7/latest latest/earliest"
+    versions = process.env.OBSIDIAN_VERSIONS.split(/[ ,]+/).map(v => {
+        const [app, installer = "earliest"] = v.split("/"); // default to earliest installer
+        return [app, installer];
+    })
+} else if (process.env.CI) {
+    // Running in GitHub workflow.
+    // You can use RUNNER_OS to select different versions on different platforms in the workflow matrix if you want
+    versions = [["earliest", "earliest"], ["latest", "latest"]];
+    if (await obsidianBetaAvailable(cacheDir)) {
+        versions.push(["latest-beta", "latest"]);
     }
-    if (installerVersions.length != appVersions.length) {
-        throw Error("OBSIDIAN_VERSIONS and OBSIDIAN_INSTALLER_VERSIONS must be the same length");
+
+    // Print the resolved Obsidian versions for use as the workflow cache key (see test_e2e.yaml)
+    for (let [app, installer] of versions) {
+        [app, installer] = await resolveObsidianVersions(app, installer, cacheDir);
+        console.log(`${app}/${installer}`);
     }
-    versions = appVersions.map((v, i) => [v, installerVersions[i]]);
 } else {
-    versions = [["earliest", "earliest"], ["latest", "latest"]]
+    versions = [["latest", "earliest"]];
 }
 
 export const config: WebdriverIO.Config = {
@@ -50,7 +60,7 @@ export const config: WebdriverIO.Config = {
 
     waitforInterval: 100,
 
-    cacheDir: path.resolve(".obsidian-cache"),
+    cacheDir: cacheDir,
 
     logLevel: "warn",
 }

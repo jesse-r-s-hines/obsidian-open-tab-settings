@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Test e2e
+# Run end to end tests
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  # Allow manually triggering the workflow
+  workflow_dispatch:
+  # Allow calling from another workflow (used in the test_schedule workflow)
+  workflow_call:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          # Enable these if you want to test your plugin on different platforms
+          # - windows-latest
+          # - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: 'npm'
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          brew install coreutils # Install sha256sum
+
+      # Get key to use for the .obsidian-cache GitHub cache.
+      # Run the wdio.conf.ts file directly, which logs the Obsidian versions to test, and use that
+      # output as the cache key.
+      - id: get-cache-key
+        name: "Get cache key"
+        shell: bash
+        run: |
+          CACHE_KEY=$(npx tsx wdio.conf.ts | sha256sum | cut -d' ' -f1)
+          echo "key=$CACHE_KEY" >> "$GITHUB_OUTPUT"
+          # Delete the cache created by wdio.conf.ts so it doesn't conflict with restore
+          rm -rf .obsidian-cache
+        env:
+          # Beta versions require authentication to download, so if you want to test beta versions,
+          # you'll need to have an Obsidian account with Catalyst. Just add your credentials to
+          # GitHub secrets as OBSIDIAN_USERNAME and OBSIDIAN_PASSWORD. 2FA needs to be disabled.
+          # Note that workflows triggered by fork PRs won't have access to GitHub secrets.
+          OBSIDIAN_USERNAME: ${{ secrets.OBSIDIAN_USERNAME }}
+          OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}
+
+      - name: Cache .obsidian-cache
+        uses: actions/cache@v4
+        with:
+          path: .obsidian-cache
+          key: obsidian-cache-${{ matrix.os }}-${{ steps.get-cache-key.outputs.key }}
+
+      - name: Run e2e tests
+        # Obsidian won't run headless. On the ubuntu runner, we need to use xvfb-run to setup a
+        # virtual display server. windows and macos runners can run graphical apps by default.
+        run: |
+          ${{ matrix.os == 'ubuntu-latest' && 'xvfb-run --server-args="-screen 0 1280x1024x24"  \' || '' }}
+          npm run test:e2e
+        env:
+          WDIO_MAX_INSTANCES: 2
+          OBSIDIAN_USERNAME: ${{ secrets.OBSIDIAN_USERNAME }}
+          OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}

@@ -1,9 +1,15 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Release Obsidian plugin
-
+# Create a release when a new version tag is created
+# You can trigger this like so:
+#     npm version 1.0.0
+#     # push the created commit and tag
+#     git push
+#     git push origin tag 1.0.0
+# See also: https://docs.obsidian.md/Plugins/Releasing/Release+your+plugin+with+GitHub+Actions
 on:
   push:
-    tags:
-      - "*.*.*"
+    tags: ["*.*.*"]
 
 jobs:
   build:

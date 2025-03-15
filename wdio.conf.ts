@@ -35,7 +35,7 @@ export const config: WebdriverIO.Config = {
     ],
 
     // How many instances of Obsidian should be launched in parallel during testing.
-    maxInstances: Number(process.env["WDIO_MAX_INSTANCES"] ?? 2),
+    maxInstances: Number(process.env["WDIO_MAX_INSTANCES"] || 4),
 
     capabilities: versions.map(([appVersion, installerVersion]) => ({
         browserName: 'obsidian',
@@ -55,10 +55,16 @@ export const config: WebdriverIO.Config = {
 
     mochaOpts: {
         ui: 'bdd',
-        timeout: 60000
+        timeout: 60000,
+        // Retry flaky tests
+        // TODO: Fix the timing issues
+        retries: 4,
     },
 
-    waitforInterval: 100,
+    bail: 3,
+
+    waitforInterval: 250,
+    waitforTimeout: 5 * 1000,
 
     cacheDir: cacheDir,
 

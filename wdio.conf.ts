@@ -41,7 +41,7 @@ export const config: WebdriverIO.Config = {
 
     framework: 'mocha',
 
-    reporters: ['spec'],
+    reporters: ['obsidian'],
 
     mochaOpts: {
         ui: 'bdd',

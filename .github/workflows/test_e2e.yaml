@@ -12,7 +12,7 @@ on:
   workflow_call:
 
 jobs:
-  test:
+  test-e2e:
     strategy:
       fail-fast: false
       matrix:

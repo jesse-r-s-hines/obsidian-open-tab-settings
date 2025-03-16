@@ -38,7 +38,7 @@ jobs:
             const dateDiff = lastWorkflowRunTime.getTime() - lastObsidianUpdateTime.getTime();
             return (dateDiff < 15 * 60 * 1000);
 
-  test:
+  test-schedule:
     needs: ["check"]
     if: ${{ needs.check.outputs.new-version == 'true' }}
     uses: ./.github/workflows/test_e2e.yaml
@@ -49,7 +49,7 @@ jobs:
   # See https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
   keepalive:
     if: ${{ always() }}
-    needs: ["test"]
+    needs: ["test-schedule"]
     runs-on: ubuntu-latest
     permissions:
       actions: write

@@ -1,10 +1,13 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Test unit
+# Run the unit tests
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  # Allow manually triggering the workflow
+  workflow_dispatch:
 
 jobs:
   test-unit:

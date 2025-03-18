@@ -35,10 +35,6 @@ jobs:
           npm ci
           npm run build
 
-      - if: ${{ matrix.os == 'macos-latest' }}
-        run: |
-          brew install coreutils # Install sha256sum
-
       # Get key to use for the .obsidian-cache GitHub cache.
       # Run the wdio.conf.ts file directly, which logs the Obsidian versions to test, and use that
       # output as the cache key.
@@ -46,6 +42,8 @@ jobs:
         name: "Get cache key"
         shell: bash
         run: |
+          shopt -s expand_aliases
+          ${{ matrix.os == 'macos-latest' && 'alias sha256sum="shasum -a 256"' || '' }}
           CACHE_KEY=$(npx tsx wdio.conf.ts | sha256sum | cut -d' ' -f1)
           echo "key=$CACHE_KEY" >> "$GITHUB_OUTPUT"
           # Delete the cache created by wdio.conf.ts so it doesn't conflict with restore

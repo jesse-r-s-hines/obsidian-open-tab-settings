@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Test schedule
 # Schedule to run e2e tests whenever there's a new Obsidian version
-# If you have setup Obsidian Catalyst secrets, this can test against the beta versions
+# If you set up Obsidian Catalyst secrets, this can test against the Obsidian beta versions
+# If you have forked your repo from the sample repo, GitHub may not enable the schedule by
+# default. You'll need to enable it manually on the GitHub Actions page.
 on:
   schedule: # Run daily
     - cron: '42 13 * * *'
@@ -10,17 +12,20 @@ jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
-      new-version: ${{ steps.check.outputs.result }}
+      found-new-version: ${{ steps.check.outputs.result }}
     steps:
       - name: "Check if there's a new Obsidian version"
         id: check
         uses: actions/github-script@v7
         with:
           script: |
+            // Get timestamp of the latest Obsidian version (wdio-obsidian-service uses this file to get Obsidian
+            // versions and their metadata)
             const obsidianVersionsUrl = 'https://raw.githubusercontent.com/jesse-r-s-hines/wdio-obsidian-service/HEAD/obsidian-versions.json';
             const versions = await fetch(obsidianVersionsUrl).then(r => r.json());
             const lastObsidianUpdateTime = new Date(versions.metadata.timestamp);
 
+            // Get timestamp of last run of this workflow
             const workflowId = process.env.GITHUB_WORKFLOW_REF.match(/.*?\/.*?\/(.*)@.*/)[1];
             const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner, repo: context.repo.repo,
@@ -40,12 +45,12 @@ jobs:
 
   test-schedule:
     needs: ["check"]
-    if: ${{ needs.check.outputs.new-version == 'true' }}
+    if: ${{ needs.check.outputs.found-new-version == 'true' }}
     uses: ./.github/workflows/test_e2e.yaml
     secrets: inherit
 
   # GitHub will disable schedule workflows after 60 days of repository "inactivity"
-  # This action force re-enables the schedule to prevent that
+  # This action force re-enables the workflow to prevent that
   # See https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
   keepalive:
     if: ${{ always() }}

@@ -24,7 +24,7 @@ if (process.env.OBSIDIAN_VERSIONS) {
         console.log(`${app}/${installer}`);
     }
 } else {
-    versions = [["latest", "earliest"]];
+    versions = [["latest", "latest"], ["earliest", "earliest"]];
 }
 
 export const config: WebdriverIO.Config = {
@@ -47,10 +47,8 @@ export const config: WebdriverIO.Config = {
         },
     })),
 
-    services: ["obsidian"],
-
     framework: 'mocha',
-
+    services: ["obsidian"],
     reporters: ['obsidian'],
 
     mochaOpts: {

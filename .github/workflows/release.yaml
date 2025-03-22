@@ -1,5 +1,5 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-name: Release Obsidian plugin
+name: Release
 # Create a draft release when a new version tag is created
 # You can trigger this like so:
 #     npm version 1.0.0

@@ -11,7 +11,7 @@
         "version": "node version-bump.mjs && git add manifest.json versions.json",
         "test": "run-s test:*",
         "test:unit": "tsc --noEmit && mocha",
-        "test:e2e": "npx wdio run ./wdio.conf.ts"
+        "test:e2e": "npm run build && npx wdio run ./wdio.conf.ts"
     },
     "keywords": [],
     "author": "",
@@ -34,8 +34,8 @@
         "tslib": "^2.8.1",
         "tsx": "^4.19.2",
         "typescript": "^5.8.2",
-        "wdio-obsidian-reporter": "^0.5.0",
-        "wdio-obsidian-service": "^0.5.0"
+        "wdio-obsidian-reporter": "^0.5.1",
+        "wdio-obsidian-service": "^0.5.1"
     },
     "dependencies": {
         "monkey-around": "^3.0.0"

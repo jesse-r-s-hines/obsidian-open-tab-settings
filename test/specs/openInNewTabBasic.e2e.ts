@@ -7,6 +7,7 @@ import { setSettings } from './helpers';
 
 describe('Test basic open in new tab', () => {
     beforeEach(async () => {
+        await obsidianPage.resetVault();
         await obsidianPage.loadWorkspaceLayout("empty");
         await setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
@@ -110,7 +111,6 @@ describe('Test basic open in new tab', () => {
         expect(leaves[1]).to.eql(['markdown', "A.md"])
         const activeLeaf = await workspacePage.getActiveLeaf();
         expect(activeLeaf[1]).to.match(/\d\d\d\d-\d\d-\d\d/)
-        workspacePage.removeFile(activeLeaf[1]);
     })
 
     it('opens in new tab from bookmarks', async () => {
@@ -147,7 +147,6 @@ describe('Test basic open in new tab', () => {
         await browser.executeObsidianCommand("file-explorer:new-file");
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Untitled.md"])
-        await workspacePage.removeFile("Untitled.md");
     })
     
     it("open new file in current tab", async () => {
@@ -156,7 +155,6 @@ describe('Test basic open in new tab', () => {
         // TODO: Should probably fix this behavior
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Untitled.md"])
-        await workspacePage.removeFile("Untitled.md");
     })
 
     it('open new file via link', async () => {

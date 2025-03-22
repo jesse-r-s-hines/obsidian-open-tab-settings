@@ -9,6 +9,7 @@ import { setSettings } from './helpers';
 
 const tests = () => {
     beforeEach(async () => {
+        await obsidianPage.resetVault();
         await obsidianPage.loadWorkspaceLayout("empty");
         await workspacePage.setConfig('focusNewTab', true);
     });
@@ -48,7 +49,6 @@ const tests = () => {
         // new file normally opens in new tab
         expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
         expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Untitled.md"])
-        await workspacePage.removeFile("Untitled.md");
     })
 
     it("Explicit open in new tab still works when focusNewTab is false", async () => {

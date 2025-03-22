@@ -1,3 +1,4 @@
+[![Test](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml)
 # Obsidian Open Tab Settings
 
 Add settings to open in new tab by default and prevent duplicate tabs.

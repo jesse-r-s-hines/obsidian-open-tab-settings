@@ -34,8 +34,8 @@
         "tslib": "^2.8.1",
         "tsx": "^4.19.2",
         "typescript": "^5.8.2",
-        "wdio-obsidian-reporter": "^0.3.1",
-        "wdio-obsidian-service": "^0.3.1"
+        "wdio-obsidian-reporter": "^0.5.0",
+        "wdio-obsidian-service": "^0.5.0"
     },
     "dependencies": {
         "monkey-around": "^3.0.0"

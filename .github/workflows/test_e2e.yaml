@@ -69,6 +69,6 @@ jobs:
           ${{ matrix.os == 'ubuntu-latest' && 'xvfb-run --server-args="-screen 0 1280x1024x24"  \' || '' }}
           npm run test:e2e
         env:
-          WDIO_MAX_INSTANCES: 2
+          WDIO_MAX_INSTANCES: 3
           OBSIDIAN_USERNAME: ${{ secrets.OBSIDIAN_USERNAME }}
           OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}

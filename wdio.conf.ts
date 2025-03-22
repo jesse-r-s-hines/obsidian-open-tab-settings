@@ -59,12 +59,11 @@ export const config: WebdriverIO.Config = {
         // Retry flaky tests
         // TODO: Fix the timing issues
         retries: 4,
+        bail: true,
     },
 
-    bail: 3,
-
     waitforInterval: 250,
-    waitforTimeout: 5 * 1000,
+    waitforTimeout: 2.5 * 1000,
 
     cacheDir: cacheDir,
 

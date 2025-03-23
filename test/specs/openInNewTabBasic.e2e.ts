@@ -54,7 +54,9 @@ describe('Test basic open in new tab', () => {
 
     it('opens in new tab from sidebar outgoing links', async () => {
         await obsidianPage.openFile("A.md");
-        const button = await browser.$$(".workspace-tab-header").find(e => e.$("div.*=Outgoing links").isExisting()) as any
+        const button = await browser
+            .$$(".workspace-tab-header")
+            .find(e => e.$("div.*=Outgoing links").isExisting()) as ChainablePromiseElement
         await button.click()
         const item = await browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
         await item.click()
@@ -115,7 +117,9 @@ describe('Test basic open in new tab', () => {
 
     it('opens in new tab from bookmarks', async () => {
         await obsidianPage.openFile("A.md");
-        const button = await browser.$$(".workspace-tab-header").find(e => e.$("div.*=Bookmarks").isExisting()) as any
+        const button = await browser
+            .$$(".workspace-tab-header")
+            .find(e => e.$("div.*=Bookmarks").isExisting()) as ChainablePromiseElement
         await button.click()
         const item = await browser.$(".workspace-leaf-content[data-type='bookmarks'] [data-path=B]");
         await item.click()

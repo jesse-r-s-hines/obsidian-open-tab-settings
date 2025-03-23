@@ -91,7 +91,9 @@ describe('Test basic deduplicate', () => {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
-        const button = await browser.$$(".workspace-tab-header").find(e => e.$("div.*=Outgoing links").isExisting()) as any
+        const button = await browser
+            .$$(".workspace-tab-header")
+            .find(e => e.$("div.*=Outgoing links").isExisting()) as ChainablePromiseElement;
         await button.click()
         const item = await browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
         await item.click()

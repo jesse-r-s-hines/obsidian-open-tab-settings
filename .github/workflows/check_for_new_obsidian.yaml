@@ -13,6 +13,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     steps:
       - name: "Check if there's a new Obsidian version"
         id: check
@@ -29,7 +31,7 @@ jobs:
             const workflowId = process.env.GITHUB_WORKFLOW_REF.match(/.*?\/.*?\/(.*)@.*/)[1];
             const response = await github.rest.actions.listWorkflowRuns({
                 owner: context.repo.owner, repo: context.repo.repo,
-                workflow_id: workflowId, status: 'completed',
+                workflow_id: workflowId, status: 'success',
                 per_page: 1,
             });
             const lastWorkflowRun = response.data.workflow_runs[0];

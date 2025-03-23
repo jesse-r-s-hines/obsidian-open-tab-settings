@@ -31,10 +31,16 @@ jobs:
       - name: Release
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+  
+          if [ -e styles.css ]; then
+              FILES="main.js manifest.json styles.css"
+          else
+              FILES="main.js manifest.json"
+          fi
 
           gh release create "$tag" \
             --title="$tag" \
             --draft \
-            main.js manifest.json styles.css
+            $FILES
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

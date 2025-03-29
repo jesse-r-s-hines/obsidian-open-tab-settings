@@ -31,7 +31,7 @@ jobs:
       - name: Release
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-  
+
           if [ -e styles.css ]; then
               FILES="main.js manifest.json styles.css"
           else

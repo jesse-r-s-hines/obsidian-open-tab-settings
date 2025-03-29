@@ -33,14 +33,14 @@ jobs:
         run: npm run test:unit
 
       # Get key to use for the .obsidian-cache GitHub cache.
-      # Run the wdio.conf.ts file directly, which logs the Obsidian versions to test, and use that
-      # output as the cache key.
+      # Run wdio.conf.mts directly, which will logs the Obsidian versions to test (see the
+      # `if (process.env.CI)` bit in wdio.conf.mts). We'll use that output as the cache key.
       - id: get-cache-key
         name: "Get Obsidian cache key"
         shell: bash
         run: |
-          npx tsx wdio.conf.ts > obsidian-versions-lock.txt
-          # Delete the cache created by wdio.conf.ts so it doesn't conflict with restore
+          npx tsx wdio.conf.mts > obsidian-versions-lock.txt
+          # Delete the cache created by wdio.conf.mts so it doesn't conflict with restore
           rm -rf .obsidian-cache
         env:
           # Beta versions require authentication to download, so if you want to test beta versions,

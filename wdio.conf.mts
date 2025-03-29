@@ -11,20 +11,21 @@ if (process.env.OBSIDIAN_VERSIONS) {
         return [app, installer];
     })
 } else if (process.env.CI) {
-    // Running in GitHub workflow.
-    // You can use RUNNER_OS to select different versions on different platforms in the workflow matrix if you want
+    // Running in GitHub CI. You can use RUNNER_OS to select different versions on different
+    // platforms in the workflow matrix if you want
     versions = [["earliest", "earliest"], ["latest", "latest"]];
     if (await obsidianBetaAvailable(cacheDir)) {
         versions.push(["latest-beta", "latest"]);
     }
 
-    // Print the resolved Obsidian versions for use as the workflow cache key (see test_e2e.yaml)
+    // Print the resolved Obsidian versions to use as the workflow cache key
+    // (see .github/workflows/test.yaml)
     for (let [app, installer] of versions) {
         [app, installer] = await resolveObsidianVersions(app, installer, cacheDir);
         console.log(`${app}/${installer}`);
     }
 } else {
-    versions = [["latest", "latest"], ["earliest", "earliest"]];
+    versions = [["earliest", "earliest"], ["latest", "latest"]];
 }
 
 export const config: WebdriverIO.Config = {

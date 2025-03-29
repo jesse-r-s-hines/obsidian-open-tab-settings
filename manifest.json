@@ -1,7 +1,7 @@
 {
 	"id": "open-tab-settings",
 	"name": "Open Tab Settings",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"minAppVersion": "1.8.3",
 	"description": "Add settings to open in new tab by default and prevent duplicate tabs.",
 	"author": "Obsidian",

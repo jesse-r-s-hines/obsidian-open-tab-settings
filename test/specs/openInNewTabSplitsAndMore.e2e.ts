@@ -1,5 +1,4 @@
 import { browser } from '@wdio/globals'
-import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
 import { setSettings, sleep } from './helpers';
@@ -19,15 +18,15 @@ describe('Test open in new tab for splits and more', () => {
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
-        expect(await workspacePage.getAllLeaves()).to.eql([
+        expect(await workspacePage.getAllLeaves()).toEqual([
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "Loop.md"],
         ])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
 
         // Should open in the left pane since we clicked the link in the left pane.
         const aParent = await workspacePage.getLeafParent("A.md");
         const bParent = await workspacePage.getLeafParent("B.md");
-        expect(aParent).to.eql(bParent);
+        expect(aParent).toEqual(bParent);
     })
 
     it('test split view right', async () => {
@@ -36,13 +35,13 @@ describe('Test open in new tab for splits and more', () => {
         await workspacePage.setActiveFile("Loop.md");
         (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
-        expect(await workspacePage.getAllLeaves()).to.eql([
+        expect(await workspacePage.getAllLeaves()).toEqual([
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "Loop.md"],
         ])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
         const bParent = await workspacePage.getLeafParent("B.md");
         const loopParent = await workspacePage.getLeafParent("Loop.md");
-        expect(bParent).to.eql(loopParent);
+        expect(bParent).toEqual(loopParent);
     })
 
     it("test new tabs in new windows", async () => {
@@ -60,7 +59,7 @@ describe('Test open in new tab for splits and more', () => {
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
         const aContainer = await workspacePage.getLeafContainer("A.md");
         const bContainer = await workspacePage.getLeafContainer("B.md");
-        expect(aContainer).to.eql(bContainer)
+        expect(aContainer).toEqual(bContainer)
 
         await browser.switchToWindow(otherWindow);
         await workspacePage.setActiveFile("D.md");
@@ -68,8 +67,8 @@ describe('Test open in new tab for splits and more', () => {
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 4)
         const dContainer = await workspacePage.getLeafContainer("D.md");
         const loopContainer = await workspacePage.getLeafContainer("Loop.md");
-        expect(dContainer).to.eql(loopContainer)
-        expect(aContainer).to.not.eql(dContainer)
+        expect(dContainer).toEqual(loopContainer)
+        expect(aContainer).not.toEqual(dContainer)
 
         await browser.switchToWindow(mainWindow)
     })
@@ -79,7 +78,7 @@ describe('Test open in new tab for splits and more', () => {
         const sidebar = $(await browser.executeObsidian(({app}) => app.workspace.rightSplit.containerEl))
         await sidebar.$(`a=B`).click()
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves())[0][0] != 'empty')
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
         
         const [sidebarId, aMatches] = await browser.executeObsidian(({app, obsidian}) => {
             const sidebar = app.workspace.rightSplit
@@ -91,8 +90,8 @@ describe('Test open in new tab for splits and more', () => {
             })
             return [sidebar.id, matches.map(l => l.getRoot().id)]
         })
-        expect(aMatches.length).to.eql(1);
-        expect(aMatches[0]).to.eql(sidebarId);
+        expect(aMatches.length).toEqual(1);
+        expect(aMatches[0]).toEqual(sidebarId);
     })
 
     it("test linked files", async () => {
@@ -109,10 +108,10 @@ describe('Test open in new tab for splits and more', () => {
         (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
 
-        expect(await workspacePage.getAllLeaves()).to.eql([
+        expect(await workspacePage.getAllLeaves()).toEqual([
             ["markdown", "A.md"], ["markdown", "B.md"], ["outgoing-link", "A.md"],
         ])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
     })
 
     it("test back buttons", async () => {
@@ -120,17 +119,17 @@ describe('Test open in new tab for splits and more', () => {
         await obsidianPage.openFile("A.md");
         await (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
         await setSettings({ openInNewTab: true });
 
         // Still opens in the same tab
         await browser.executeObsidianCommand("app:go-back");
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]])
 
         await browser.executeObsidianCommand("app:go-forward");
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
     })
 
     it('stacked tabs', async () => {
@@ -139,9 +138,9 @@ describe('Test open in new tab for splits and more', () => {
         (await workspacePage.getLink("B")).click()
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
-        expect(await workspacePage.getAllLeaves()).to.eql([
+        expect(await workspacePage.getAllLeaves()).toEqual([
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],
         ])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
     })
 })

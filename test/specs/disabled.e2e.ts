@@ -1,5 +1,4 @@
 import { browser } from '@wdio/globals'
-import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
 import { setSettings } from './helpers';
 import { obsidianPage } from 'wdio-obsidian-service';
@@ -18,7 +17,7 @@ describe('Test disable options', () => {
         (await workspacePage.getLink("B")).click()
 
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
     })
 
     it("Test disable deduplicateTabs", async () => {
@@ -32,8 +31,8 @@ describe('Test disable options', () => {
         await browser.waitUntil(async () => 
             (await workspacePage.getAllLeaves()).length == 3 && (await workspacePage.getActiveLeaf())[1] == "B.md"
         )
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"]])
     })
 })
 
@@ -56,7 +55,7 @@ describe('Test disabling the plugin', () => {
         await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click()
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]]);
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]]);
     })
 
     it("Test disable deduplicateTabs", async () => {
@@ -66,8 +65,8 @@ describe('Test disabling the plugin', () => {
         (await workspacePage.getLink("B")).click();
 
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"], ["markdown", "B.md"]])
     })
 })
 
@@ -84,6 +83,6 @@ describe('Test bypass new tab', () => {
         await workspacePage.openLinkInSameTab(await workspacePage.getLink("B"))
 
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
     })
 })

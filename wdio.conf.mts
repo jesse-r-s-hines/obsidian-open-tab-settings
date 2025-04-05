@@ -55,9 +55,6 @@ export const config: WebdriverIO.Config = {
     mochaOpts: {
         ui: 'bdd',
         timeout: 60000,
-        // Retry flaky tests
-        // TODO: Fix the timing issues
-        retries: 4,
         bail: true,
     },
 

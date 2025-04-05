@@ -62,6 +62,22 @@ class WorkspacePage {
         })
     }
 
+    /** Seems like there should be a built-in WebdriverIO way to do this... */
+    async waitUntilEqual(func: () => any|Promise<any>, expected: any) {
+        let result: any
+        await browser.waitUntil(async () => {
+            result = await func();
+            try {
+                expect(result).toEqual(expected); // using expect will allow using matchers and such
+                return true;
+            } catch {
+                return false;
+            }
+        });
+        // Call expect again, this will give us nice error messages if value doesn't match.
+        expect(result).toEqual(expected)
+    }
+
     /**
      * Focuses tab containing file.
      */

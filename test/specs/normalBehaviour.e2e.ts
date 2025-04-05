@@ -15,7 +15,7 @@ const tests = () => {
     it('Open first file via open modal works', async () => {
         await workspacePage.openFileViaModal("A.md");
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
     })
 
     it("Open first file via file explorer works", async () => {
@@ -23,14 +23,14 @@ const tests = () => {
         
         await workspacePage.openFileViaModal("A.md");
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
     })
 
     it("new tab still works", async () => {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         expect(await workspacePage.getAllLeaves()).toEqual([["empty", ""], ["markdown", "A.md"]])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["empty", ""])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["empty", ""]);
     })
 
     it("empty tabs still get replaced", async () => {
@@ -38,7 +38,7 @@ const tests = () => {
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("B.md");
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 
     it("new file still works", async () => {
@@ -46,7 +46,7 @@ const tests = () => {
         await browser.executeObsidianCommand("file-explorer:new-file");
         // new file normally opens in new tab
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "Untitled.md"]])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "Untitled.md"])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "Untitled.md"]);
     })
 
     it("Explicit open in new tab still works when focusNewTab is false", async () => {
@@ -56,8 +56,7 @@ const tests = () => {
         (await workspacePage.getLink("B")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
-        const active = await workspacePage.getActiveLeaf()
-        expect(active).toEqual(["markdown", "A.md"])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
     })
 
     it("Explicit open in new tab still works when focusNewTab is true", async () => {
@@ -67,8 +66,7 @@ const tests = () => {
         (await workspacePage.getLink("B")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
-        const active = await workspacePage.getActiveLeaf()
-        expect(active).toEqual(["markdown", "B.md"])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 
     it("Explicit open in new tab to the right still works", async () => {
@@ -98,8 +96,7 @@ const tests = () => {
         (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
-        const active = await workspacePage.getActiveLeaf()
-        expect(active).toEqual(["markdown", "B.md"])
+        workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 }
 

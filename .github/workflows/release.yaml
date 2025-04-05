@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Release
-# Create a draft release when a new version tag is created
+# Create a release when a new version tag is created
 # You can trigger this like so:
 #     npm version 1.0.0
 #     # push the created commit and tag
@@ -30,7 +30,7 @@ jobs:
 
       - name: Release
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          TAG="${GITHUB_REF#refs/tags/}"
 
           if [ -e styles.css ]; then
               FILES="main.js manifest.json styles.css"
@@ -38,9 +38,8 @@ jobs:
               FILES="main.js manifest.json"
           fi
 
-          gh release create "$tag" \
-            --title="$tag" \
-            --draft \
+          gh release create "$TAG" \
+            --title="$TAG" \
             $FILES
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

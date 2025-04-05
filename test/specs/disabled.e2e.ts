@@ -1,6 +1,5 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
-import { setSettings } from './helpers';
 import { obsidianPage } from 'wdio-obsidian-service';
 
 
@@ -11,7 +10,7 @@ describe('Test disable options', () => {
     });
 
     it("Test disable openInNewTab", async () => {
-        await setSettings({ openInNewTab: false, deduplicateTabs: true });
+        await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
 
         await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click()
@@ -21,7 +20,7 @@ describe('Test disable options', () => {
     })
 
     it("Test disable deduplicateTabs", async () => {
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
 
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
@@ -77,7 +76,7 @@ describe('Test bypass new tab', () => {
     });
 
     it("Test bypass new tab", async () => {
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
 
         await obsidianPage.openFile("A.md");
         await workspacePage.openLinkInSameTab(await workspacePage.getLink("B"))

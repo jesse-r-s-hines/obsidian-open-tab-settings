@@ -1,9 +1,16 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
-import * as path from "path"
-import * as fs from "fs"
 import { ConfigItem } from 'obsidian-typings'
+import type { default as OpenTabSettingsPlugin, OpenTabSettingsPluginSettings } from "src/main.js"
 
 class WorkspacePage {
+    async setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
+        await browser.executeObsidian(({app}, settings) => {
+            const plugin = app.plugins.plugins['open-tab-settings'] as OpenTabSettingsPlugin
+            Object.assign(plugin.settings, settings);
+            plugin.saveSettings();
+        }, settings)
+    }
+
     /** Get ids of all leaves in the rootSplit or floating windows, excluding sidebars. */
     async getAllLeafIds(): Promise<string[]> {
         return await browser.executeObsidian(({app, obsidian}) => {
@@ -53,6 +60,22 @@ class WorkspacePage {
             }
             return [leaf.view.getViewType(), file]
         })
+    }
+
+    /** Seems like there should be a built-in WebdriverIO way to do this... */
+    async waitUntilEqual(func: () => any|Promise<any>, expected: any) {
+        let result: any
+        await browser.waitUntil(async () => {
+            result = await func();
+            try {
+                expect(result).toEqual(expected); // using expect will allow using matchers and such
+                return true;
+            } catch {
+                return false;
+            }
+        });
+        // Call expect again, this will give us nice error messages if value doesn't match.
+        expect(result).toEqual(expected)
     }
 
     /**

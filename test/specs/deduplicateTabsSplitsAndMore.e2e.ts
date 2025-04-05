@@ -1,13 +1,13 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { setSettings, sleep } from './helpers';
+import { sleep } from './helpers';
 
 
 describe('Test deduplicate for splits and more', () => {
     beforeEach(async () => {
         await obsidianPage.loadWorkspaceLayout("empty");
-        await setSettings({ openInNewTab: false, deduplicateTabs: true });
+        await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
         await workspacePage.setConfig('focusNewTab', true);
     });
 
@@ -120,13 +120,13 @@ describe('Test deduplicate for splits and more', () => {
     })
 
     it("back buttons", async () => {
-        await setSettings({ deduplicateTabs: false });
+        await workspacePage.setSettings({ deduplicateTabs: false });
         await obsidianPage.openFile("B.md");
         await obsidianPage.openFile("B.md");
         await (await workspacePage.getLink("A")).click();
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md");
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
-        await setSettings({ deduplicateTabs: true });
+        await workspacePage.setSettings({ deduplicateTabs: true });
 
         // Still opens in the same tab
         // TODO: Should we override go-back behavior as well?

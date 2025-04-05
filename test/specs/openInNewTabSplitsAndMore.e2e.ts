@@ -1,14 +1,14 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { setSettings, sleep } from './helpers';
+import { sleep } from './helpers';
 import { WorkspaceLeaf } from 'obsidian';
 
 
 describe('Test open in new tab for splits and more', () => {
     beforeEach(async () => {
         await obsidianPage.loadWorkspaceLayout("empty");
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
@@ -115,12 +115,12 @@ describe('Test open in new tab for splits and more', () => {
     })
 
     it("test back buttons", async () => {
-        await setSettings({ openInNewTab: false });
+        await workspacePage.setSettings({ openInNewTab: false });
         await obsidianPage.openFile("A.md");
         await (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
-        await setSettings({ openInNewTab: true });
+        await workspacePage.setSettings({ openInNewTab: true });
 
         // Still opens in the same tab
         await browser.executeObsidianCommand("app:go-back");

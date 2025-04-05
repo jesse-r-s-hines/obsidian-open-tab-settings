@@ -1,13 +1,13 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { setSettings, sleep } from './helpers';
+import { sleep } from './helpers';
 
 
 describe('Test basic deduplicate', () => {
     beforeEach(async () => {
         await obsidianPage.loadWorkspaceLayout("empty");
-        await setSettings({ openInNewTab: false, deduplicateTabs: true });
+        await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
@@ -118,11 +118,11 @@ describe('Test basic deduplicate', () => {
     })
 
     it('deduplicate with multiple matches', async () => {
-        await setSettings({ deduplicateTabs: false });
+        await workspacePage.setSettings({ deduplicateTabs: false });
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await obsidianPage.openFile("B.md");
-        await setSettings({ deduplicateTabs: true });
+        await workspacePage.setSettings({ deduplicateTabs: true });
 
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
@@ -135,11 +135,11 @@ describe('Test basic deduplicate', () => {
     })
 
     it('deduplicate with multiple matches on current file', async () => {
-        await setSettings({ deduplicateTabs: false });
+        await workspacePage.setSettings({ deduplicateTabs: false });
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("Loop.md");
         await obsidianPage.openFile("Loop.md");
-        await setSettings({ deduplicateTabs: true });
+        await workspacePage.setSettings({ deduplicateTabs: true });
 
         const [loop1, loop2] = await browser.executeObsidian(async ({app}) => {
             const loop1: string = (app.workspace.rootSplit as any).children[0].children[1].id

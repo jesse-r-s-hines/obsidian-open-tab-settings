@@ -1,14 +1,13 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { setSettings } from './helpers';
 
 
 describe('Test basic open in new tab', () => {
     beforeEach(async () => {
         await obsidianPage.resetVault();
         await obsidianPage.loadWorkspaceLayout("empty");
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 

@@ -1,7 +1,6 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from "wdio-obsidian-service"
-import { setSettings } from './helpers';
 
 // Test that normal behaviors aren't broken by the plugin
 // We'll run these tests 3 times: with the plugin disabled, with the settings disabled, and with the settings enabled
@@ -147,7 +146,7 @@ describe("Test normal behavior", function() {
 
     describe('with the plugin settings turned off', function() {
         beforeEach(async () => {
-            await setSettings({ openInNewTab: false, deduplicateTabs: false });
+            await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: false });
             await workspacePage.setConfig('focusNewTab', true);
         })
 
@@ -157,7 +156,7 @@ describe("Test normal behavior", function() {
 
     describe('with openInNewTab turned off', function() {
         beforeEach(async () => {
-            await setSettings({ openInNewTab: false, deduplicateTabs: true });
+            await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
             await workspacePage.setConfig('focusNewTab', true);
         })
 
@@ -166,7 +165,7 @@ describe("Test normal behavior", function() {
 
     describe('with deduplicateTabs turned off', function() {
         beforeEach(async () => {
-            await setSettings({ openInNewTab: true, deduplicateTabs: false });
+            await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
             await workspacePage.setConfig('focusNewTab', true);
         })
 
@@ -176,7 +175,7 @@ describe("Test normal behavior", function() {
 
     describe('with the plugin settings enabled', function() {
         beforeEach(async () => {
-            await setSettings({ openInNewTab: true, deduplicateTabs: true });
+            await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
             await workspacePage.setConfig('focusNewTab', true);
         });
 

@@ -1,5 +1,4 @@
 import { browser } from '@wdio/globals'
-import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
 import { setSettings, sleep } from './helpers';
 import { obsidianPage } from 'wdio-obsidian-service';
@@ -21,8 +20,8 @@ describe('Test basic deduplicate', () => {
         await browser.waitUntil(async () => 
             (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"
         )
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
     })
 
     it('basic new tab', async () => {
@@ -30,15 +29,15 @@ describe('Test basic deduplicate', () => {
         (await workspacePage.getLink("B")).click();
 
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length == 2)
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
     })
 
     it('self link', async () => {
         await obsidianPage.openFile("Loop.md");
         (await workspacePage.getLink("Loop.md")).click();
         await sleep(250);
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Loop.md"]);
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"]]);
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "Loop.md"]);
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]]);
     })
 })

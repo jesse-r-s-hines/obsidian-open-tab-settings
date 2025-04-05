@@ -1,5 +1,4 @@
 import { browser } from '@wdio/globals'
-import { expect } from 'chai';
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from "wdio-obsidian-service"
 import { setSettings } from './helpers';
@@ -16,39 +15,39 @@ const tests = () => {
 
     it('Open first file via open modal works', async () => {
         await workspacePage.openFileViaModal("A.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"])
     })
 
     it("Open first file via file explorer works", async () => {
-        expect(await workspacePage.getAllLeaves()).to.eql([['empty', '']]); // Make sure loadWorkspaceLayout is working
+        expect(await workspacePage.getAllLeaves()).toEqual([['empty', '']]); // Make sure loadWorkspaceLayout is working
         
         await workspacePage.openFileViaModal("A.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"]])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "A.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"])
     })
 
     it("new tab still works", async () => {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
-        expect(await workspacePage.getAllLeaves()).to.eql([["empty", ""], ["markdown", "A.md"]])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["empty", ""])
+        expect(await workspacePage.getAllLeaves()).toEqual([["empty", ""], ["markdown", "A.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["empty", ""])
     })
 
     it("empty tabs still get replaced", async () => {
         await obsidianPage.openFile("A.md")
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("B.md");
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "B.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
     })
 
     it("new file still works", async () => {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file");
         // new file normally opens in new tab
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "Untitled.md"]])
-        expect(await workspacePage.getActiveLeaf()).to.eql(["markdown", "Untitled.md"])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "Untitled.md"]])
+        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "Untitled.md"])
     })
 
     it("Explicit open in new tab still works when focusNewTab is false", async () => {
@@ -57,9 +56,9 @@ const tests = () => {
         await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
         const active = await workspacePage.getActiveLeaf()
-        expect(active).to.eql(["markdown", "A.md"])
+        expect(active).toEqual(["markdown", "A.md"])
     })
 
     it("Explicit open in new tab still works when focusNewTab is true", async () => {
@@ -68,19 +67,19 @@ const tests = () => {
         await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
         const active = await workspacePage.getActiveLeaf()
-        expect(active).to.eql(["markdown", "B.md"])
+        expect(active).toEqual(["markdown", "B.md"])
     })
 
     it("Explicit open in new tab to the right still works", async () => {
         await obsidianPage.openFile("A.md");
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2);
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]]);
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]]);
         const aParent = await workspacePage.getLeafParent("A.md");
         const bParent = await workspacePage.getLeafParent("B.md");
-        expect(aParent).to.not.eql(bParent);
+        expect(aParent).not.toEqual(bParent);
     })
 
     it("Explicit open in new window still works", async () => {
@@ -88,8 +87,8 @@ const tests = () => {
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
         const aParent = await workspacePage.getLeafRoot("A.md");
         const bParent = await workspacePage.getLeafRoot("B.md");
-        expect(!!(aParent && bParent)).to.eql(true)
-        expect(aParent).to.not.eql(bParent);
+        expect(!!(aParent && bParent)).toEqual(true)
+        expect(aParent).not.toEqual(bParent);
     })
 
     it("pinned file", async () => {
@@ -99,9 +98,9 @@ const tests = () => {
 
         (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "A.md"], ["markdown", "B.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
         const active = await workspacePage.getActiveLeaf()
-        expect(active).to.eql(["markdown", "B.md"])
+        expect(active).toEqual(["markdown", "B.md"])
     })
 }
 
@@ -113,9 +112,9 @@ const noDedupTests = () => {
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
         (await workspacePage.getLink("Loop.md")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"], ["markdown", "Loop.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"], ["markdown", "Loop.md"]])
 
-        expect(await workspacePage.getActiveLeafId()).to.not.eql(prevActiveLeaf);
+        expect(await workspacePage.getActiveLeafId()).not.toEqual(prevActiveLeaf);
     })
 
     it("open self link in new tab focusNewTab false", async () => {
@@ -125,9 +124,9 @@ const noDedupTests = () => {
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
         (await workspacePage.getLink("Loop.md")).click({button: "middle"});
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
-        expect(await workspacePage.getAllLeaves()).to.eql([["markdown", "Loop.md"], ["markdown", "Loop.md"]])
+        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"], ["markdown", "Loop.md"]])
 
-        expect(await workspacePage.getActiveLeafId()).to.eql(prevActiveLeaf);
+        expect(await workspacePage.getActiveLeafId()).toEqual(prevActiveLeaf);
     })
 }
 

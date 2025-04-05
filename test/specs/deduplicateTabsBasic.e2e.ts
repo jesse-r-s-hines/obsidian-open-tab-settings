@@ -17,11 +17,10 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"],
+        ]);
     })
 
     it('basic deduplicate 3 files', async () => {
@@ -32,11 +31,10 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setActiveFile("B.md");
         (await workspacePage.getLink("A")).click();
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 3 && (await workspacePage.getActiveLeaf())[1] == "A.md"
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "D.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "D.md"],
+        ]);
     })
 
     it('re-open file', async () => {
@@ -79,11 +77,10 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md")
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"],
+        ])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 
     it('deduplicate via sidebar', async () => {
@@ -97,11 +94,10 @@ describe('Test basic deduplicate', () => {
         const item = await browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
         await item.click()
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"],
+        ])
     })
 
     it('deduplicate via file modal', async () => {
@@ -110,11 +106,10 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setActiveFile("B.md");
         await workspacePage.openFileViaModal("A.md")
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "A.md"
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"],
+        ]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
     })
 
     it('deduplicate with multiple matches', async () => {
@@ -127,11 +122,10 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 3 && (await workspacePage.getActiveLeaf())[1] == "B.md"
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],
+        ]);
     })
 
     it('deduplicate with multiple matches on current file', async () => {
@@ -153,42 +147,38 @@ describe('Test basic deduplicate', () => {
 
         (await workspacePage.getLink("Loop")).click();
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 3 && await workspacePage.getActiveLeafId() == loop2
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "Loop.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "Loop.md"], ["markdown", "Loop.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "Loop.md"]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "Loop.md"], ["markdown", "Loop.md"],
+        ]);
     })
 
     it('dedup images', async () => {
         await obsidianPage.openFile("image.png");
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("image.png")
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "image.png"
-        )
-        expect(await workspacePage.getAllLeaves()).toEqual([["image", "image.png"], ["markdown", "A.md"]])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["image", "image.png"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["image", "image.png"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["image", "image.png"], ["markdown", "A.md"],
+        ]);
     })
 
     it('dedup png', async () => {
         await obsidianPage.openFile("pdf.pdf");
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("pdf.pdf")
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "pdf.pdf"
-        )
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["pdf", "pdf.pdf"]])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["pdf", "pdf.pdf"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["pdf", "pdf.pdf"]);
+        await workspacePage.waitUntilEqual(() =>  workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["pdf", "pdf.pdf"],
+        ]);
     })
 
     it('empty tab', async () => {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("A.md")
-        await browser.waitUntil(async () =>  (await workspacePage.getActiveLeaf())[1] == "A.md")
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [["markdown", "A.md"]])
     })
 
     it('explicit new tab', async () => {
@@ -198,8 +188,9 @@ describe('Test basic deduplicate', () => {
         (await workspacePage.getLink("B")).click({button: "middle"});
 
         // Should still deduplicate if opened in new tab explicitly
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"],
+        ]);
     })
 })

@@ -17,11 +17,10 @@ describe('Test open in new tab for splits and more', () => {
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
-        expect(await workspacePage.getAllLeaves()).toEqual([
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "Loop.md"],
-        ])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        ]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
 
         // Should open in the left pane since we clicked the link in the left pane.
         const aParent = await workspacePage.getLeafParent("A.md");
@@ -34,11 +33,10 @@ describe('Test open in new tab for splits and more', () => {
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("Loop.md");
         (await workspacePage.getLink("B")).click();
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
-        expect(await workspacePage.getAllLeaves()).toEqual([
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "Loop.md"],
-        ])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        ]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         const bParent = await workspacePage.getLeafParent("B.md");
         const loopParent = await workspacePage.getLeafParent("Loop.md");
         expect(bParent).toEqual(loopParent);
@@ -77,8 +75,7 @@ describe('Test open in new tab for splits and more', () => {
         await obsidianPage.loadWorkspaceLayout("file-a-in-sidebar");
         const sidebar = $(await browser.executeObsidian(({app}) => app.workspace.rightSplit.containerEl))
         await sidebar.$(`a=B`).click()
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves())[0][0] != 'empty')
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [["markdown", "B.md"]]);
         
         const [sidebarId, aMatches] = await browser.executeObsidian(({app, obsidian}) => {
             const sidebar = app.workspace.rightSplit
@@ -106,29 +103,28 @@ describe('Test open in new tab for splits and more', () => {
             app.workspace.setActiveLeaf(leaf, {focus: true});
         }, fileLeafId);
         (await workspacePage.getLink("B")).click();
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
 
-        expect(await workspacePage.getAllLeaves()).toEqual([
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["outgoing-link", "A.md"],
         ])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 
     it("test back buttons", async () => {
         await workspacePage.setSettings({ openInNewTab: false });
         await obsidianPage.openFile("A.md");
         await (await workspacePage.getLink("B")).click();
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [["markdown", "B.md"]]);
         await workspacePage.setSettings({ openInNewTab: true });
 
         // Still opens in the same tab
         await browser.executeObsidianCommand("app:go-back");
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "A.md");
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]])
 
         await browser.executeObsidianCommand("app:go-forward");
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
     })
 
@@ -137,10 +133,9 @@ describe('Test open in new tab for splits and more', () => {
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click()
 
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
-        expect(await workspacePage.getAllLeaves()).toEqual([
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],
         ])
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 })

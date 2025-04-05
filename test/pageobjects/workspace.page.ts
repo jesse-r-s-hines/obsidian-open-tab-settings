@@ -1,6 +1,7 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
 import { ConfigItem } from 'obsidian-typings'
 import type { default as OpenTabSettingsPlugin, OpenTabSettingsPluginSettings } from "src/main.js"
+import { equals } from "@jest/expect-utils";
 
 class WorkspacePage {
     async setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
@@ -60,6 +61,19 @@ class WorkspacePage {
             }
             return [leaf.view.getViewType(), file]
         })
+    }
+
+    /** Seems like there should be a built-in WebdriverIO way to do this... */
+    async waitUntilEqual(func: () => any|Promise<any>, expected: any) {
+        let result: any
+        try {
+            await browser.waitUntil(async () => {
+                result = await func();
+                return equals(result, expected);
+            });
+        } catch {}
+        // Call expect again, this will give us nice error messages if value doesn't match.
+        expect(result).toEqual(expected)
     }
 
     /**

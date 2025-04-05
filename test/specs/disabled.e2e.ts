@@ -1,6 +1,5 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
-import { setSettings } from './helpers';
 import { obsidianPage } from 'wdio-obsidian-service';
 
 
@@ -11,28 +10,27 @@ describe('Test disable options', () => {
     });
 
     it("Test disable openInNewTab", async () => {
-        await setSettings({ openInNewTab: false, deduplicateTabs: true });
+        await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
 
         await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click()
 
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
     })
 
     it("Test disable deduplicateTabs", async () => {
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
 
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
 
-        await browser.waitUntil(async () => 
-            (await workspacePage.getAllLeaves()).length == 3 && (await workspacePage.getActiveLeaf())[1] == "B.md"
-        )
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"]])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
+            ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],
+        ])
     })
 })
 
@@ -54,7 +52,7 @@ describe('Test disabling the plugin', () => {
     it("Test disabling the plugin new tabs", async () => {
         await obsidianPage.openFile("A.md");
         (await workspacePage.getLink("B")).click()
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]]);
     })
 
@@ -64,8 +62,7 @@ describe('Test disabling the plugin', () => {
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click();
 
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md")
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "B.md"])
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"], ["markdown", "B.md"]])
     })
 })
@@ -77,12 +74,12 @@ describe('Test bypass new tab', () => {
     });
 
     it("Test bypass new tab", async () => {
-        await setSettings({ openInNewTab: true, deduplicateTabs: false });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
 
         await obsidianPage.openFile("A.md");
         await workspacePage.openLinkInSameTab(await workspacePage.getLink("B"))
 
-        await browser.waitUntil(async () => (await workspacePage.getActiveLeaf())[1] == "B.md");
+        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
     })
 })

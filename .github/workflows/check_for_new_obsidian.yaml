@@ -6,6 +6,8 @@ name: Check for new Obsidian
 
 # If you have created your repo from the sample repo, GitHub may not enable the schedule by
 # default. You'll need to enable it manually on the GitHub Actions page.
+
+# Note that GitHub will disable schedule workflows after 60 days of repository "inactivity"
 on:
   schedule: # Run daily
     - cron: '42 13 * * *'
@@ -54,15 +56,3 @@ jobs:
                 console.log("No new Obsidian version.")
             }
 
-  # GitHub will disable schedule workflows after 60 days of repository "inactivity"
-  # This action force re-enables the workflow to prevent that
-  # See https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
-  keepalive:
-    if: ${{ always() }}
-    needs: ["check"]
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: gautamkrishnar/keepalive-workflow@v2

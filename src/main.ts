@@ -15,10 +15,9 @@ const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
 }
 
 /** We use this key to check if can safely close a recently created empty leaf during file deduplication. */
-const ORIGINAL_PANE_TYPE = "openTabSettingsOriginalPaneType" as const;
 type PaneTypePatch = PaneType|"same";
 type LeafPatch = WorkspaceLeaf & {
-    openTabSettingsOriginalPaneType?: PaneTypePatch|boolean,
+    openTabSettingsLastOpenType?: PaneTypePatch,
 }
 
 
@@ -50,11 +49,13 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             }
                         } else {
                             // use default behavior
-                            newLeaf = newLeaf == 'same' ? false : newLeaf;
-                            leaf = oldMethod.call(this, newLeaf, ...args);
+                            leaf = oldMethod.call(this, (newLeaf == 'same' ? false : newLeaf), ...args);
+                        }
+                        if (typeof newLeaf == 'boolean' || newLeaf == undefined) {
+                            newLeaf = newLeaf ? 'tab' : 'same';
                         }
                         // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
-                        (leaf as LeafPatch).openTabSettingsOriginalPaneType = newLeaf || 'same';
+                        (leaf as LeafPatch).openTabSettingsLastOpenType = newLeaf;
                         return leaf;
                     }
                 },
@@ -66,13 +67,17 @@ export default class OpenTabSettingsPlugin extends Plugin {
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
                     return async function(this: LeafPatch, file, openState, ...args) {
-                        // if the leaf was open via open in new window or open in right, don't deduplicate.
-                        const isSpecialOpen = (
-                            typeof this.openTabSettingsOriginalPaneType != 'string' ||
-                            !['same', 'tab'].includes(this.openTabSettingsOriginalPaneType)
-                        )
                         const isEmpty = this.view.getViewType() == "empty";
-                        if (plugin.settings.deduplicateTabs && (!isEmpty || !isSpecialOpen)) {
+                        // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
+                        // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
+                        // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
+                        // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the
+                        // leaf was created before the plugin was loaded or such.
+                        const isSpecialOpen = isEmpty && (
+                            !this.openTabSettingsLastOpenType ||
+                            !['same', 'tab'].includes(this.openTabSettingsLastOpenType)
+                        );
+                        if (plugin.settings.deduplicateTabs && !isSpecialOpen) {
                             // Check if there are any duplicate tabs
                             const matches = await plugin.findMatchingLeaves(file);
                             if (!matches.includes(this) && matches.length > 0) {
@@ -131,7 +136,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     private async findMatchingLeaves(file: TFile) {
-        const matches: WorkspaceLeaf[] = []; 
+        const matches: WorkspaceLeaf[] = [];
         this.app.workspace.iterateAllLeaves(leaf => {
             const root = leaf.getRoot();
 

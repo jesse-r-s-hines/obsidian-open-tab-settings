@@ -4,14 +4,14 @@ import { obsidianPage } from 'wdio-obsidian-service';
 import { sleep } from './helpers';
 
 
-describe('Test basic deduplicate', () => {
-    beforeEach(async () => {
+describe('Test basic deduplicate', function() {
+    beforeEach(async function() {
         await obsidianPage.loadWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
-    it('basic deduplicate', async () => {
+    it('basic deduplicate', async function() {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
@@ -23,7 +23,7 @@ describe('Test basic deduplicate', () => {
         ]);
     })
 
-    it('basic deduplicate 3 files', async () => {
+    it('basic deduplicate 3 files', async function() {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await obsidianPage.openFile("D.md");
@@ -37,7 +37,7 @@ describe('Test basic deduplicate', () => {
         ]);
     })
 
-    it('re-open file', async () => {
+    it('re-open file', async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("A.md");
         await sleep(250);
@@ -45,7 +45,7 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]]);
     })
 
-    it('re-open self link', async () => {
+    it('re-open self link', async function() {
         await obsidianPage.openFile("Loop.md");
         (await workspacePage.getLink("Loop.md")).click();
         await sleep(250);
@@ -53,7 +53,7 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]]);
     })
 
-    it("open self link in new tab focusNewTab true", async () => {
+    it("open self link in new tab focusNewTab true", async function() {
         await workspacePage.setConfig('focusNewTab', true);
 
         await obsidianPage.openFile("Loop.md");
@@ -62,7 +62,7 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]])
     })
 
-    it("open self link in new tab focusNewTab false", async () => {
+    it("open self link in new tab focusNewTab false", async function() {
         await workspacePage.setConfig('focusNewTab', false);
 
         await obsidianPage.openFile("Loop.md");
@@ -71,7 +71,7 @@ describe('Test basic deduplicate', () => {
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]])
     })
 
-    it('deduplicate via file explorer', async () => {
+    it('deduplicate via file explorer', async function() {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
@@ -83,7 +83,7 @@ describe('Test basic deduplicate', () => {
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 
-    it('deduplicate via sidebar', async () => {
+    it('deduplicate via sidebar', async function() {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
@@ -100,7 +100,7 @@ describe('Test basic deduplicate', () => {
         ])
     })
 
-    it('deduplicate via file modal', async () => {
+    it('deduplicate via file modal', async function() {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("B.md");
@@ -112,7 +112,7 @@ describe('Test basic deduplicate', () => {
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
     })
 
-    it('deduplicate with multiple matches', async () => {
+    it('deduplicate with multiple matches', async function() {
         await workspacePage.setSettings({ deduplicateTabs: false });
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
@@ -128,7 +128,7 @@ describe('Test basic deduplicate', () => {
         ]);
     })
 
-    it('deduplicate with multiple matches on current file', async () => {
+    it('deduplicate with multiple matches on current file', async function() {
         await workspacePage.setSettings({ deduplicateTabs: false });
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("Loop.md");
@@ -153,7 +153,7 @@ describe('Test basic deduplicate', () => {
         ]);
     })
 
-    it('dedup images', async () => {
+    it('dedup images', async function() {
         await obsidianPage.openFile("image.png");
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("image.png")
@@ -163,7 +163,7 @@ describe('Test basic deduplicate', () => {
         ]);
     })
 
-    it('dedup png', async () => {
+    it('dedup png', async function() {
         await obsidianPage.openFile("pdf.pdf");
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("pdf.pdf")
@@ -173,7 +173,7 @@ describe('Test basic deduplicate', () => {
         ]);
     })
 
-    it('empty tab', async () => {
+    it('empty tab', async function() {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("A.md")
@@ -181,7 +181,7 @@ describe('Test basic deduplicate', () => {
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [["markdown", "A.md"]])
     })
 
-    it('explicit new tab', async () => {
+    it('explicit new tab', async function() {
         await workspacePage.setConfig('focusNewTab', true);
         await obsidianPage.openFile("B.md");
         await obsidianPage.openFile("A.md");

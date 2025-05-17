@@ -5,14 +5,14 @@ import { sleep } from './helpers';
 import { WorkspaceLeaf } from 'obsidian';
 
 
-describe('Test open in new tab for splits and more', () => {
-    beforeEach(async () => {
+describe('Test open in new tab for splits and more', function() {
+    beforeEach(async function() {
         await obsidianPage.loadWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
-    it('test split view left', async () => {
+    it('test split view left', async function() {
         await obsidianPage.loadWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("A.md");
@@ -28,7 +28,7 @@ describe('Test open in new tab for splits and more', () => {
         expect(aParent).toEqual(bParent);
     })
 
-    it('test split view right', async () => {
+    it('test split view right', async function() {
         await obsidianPage.loadWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("Loop.md");
@@ -42,7 +42,7 @@ describe('Test open in new tab for splits and more', () => {
         expect(bParent).toEqual(loopParent);
     })
 
-    it("test new tabs in new windows", async () => {
+    it("test new tabs in new windows", async function() {
         // A in main, D in a popout window
         await obsidianPage.loadWorkspaceLayout("popout-window");
         // If I don't wait a bit here, there's a race condition and sometimes the popout window will end up
@@ -71,7 +71,7 @@ describe('Test open in new tab for splits and more', () => {
         await browser.switchToWindow(mainWindow)
     })
 
-    it("test sidebars", async () => {
+    it("test sidebars", async function() {
         await obsidianPage.loadWorkspaceLayout("file-a-in-sidebar");
         const sidebar = $(await browser.executeObsidian(({app}) => app.workspace.rightSplit.containerEl))
         await sidebar.$(`a=B`).click()
@@ -91,7 +91,7 @@ describe('Test open in new tab for splits and more', () => {
         expect(aMatches[0]).toEqual(sidebarId);
     })
 
-    it("test linked files", async () => {
+    it("test linked files", async function() {
         // A.md and outgoing links in left/right split
         await obsidianPage.loadWorkspaceLayout("linked-files");
         
@@ -110,7 +110,7 @@ describe('Test open in new tab for splits and more', () => {
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 
-    it("test back buttons", async () => {
+    it("test back buttons", async function() {
         await workspacePage.setSettings({ openInNewTab: false });
         await obsidianPage.openFile("A.md");
         await (await workspacePage.getLink("B")).click();
@@ -128,7 +128,7 @@ describe('Test open in new tab for splits and more', () => {
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
     })
 
-    it('stacked tabs', async () => {
+    it('stacked tabs', async function() {
         await obsidianPage.loadWorkspaceLayout("stacked");
         await workspacePage.setActiveFile("A.md");
         (await workspacePage.getLink("B")).click()

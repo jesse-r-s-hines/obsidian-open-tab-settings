@@ -1,4 +1,3 @@
-import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
 
@@ -13,7 +12,7 @@ describe('Test disable options', function() {
         await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
 
         await obsidianPage.openFile("A.md");
-        (await workspacePage.getLink("B")).click()
+        await (await workspacePage.getLink("B")).click()
 
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
@@ -25,7 +24,7 @@ describe('Test disable options', function() {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
-        (await workspacePage.getLink("B")).click();
+        await (await workspacePage.getLink("B")).click();
 
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
@@ -51,7 +50,7 @@ describe('Test disabling the plugin', function() {
 
     it("Test disabling the plugin new tabs", async function() {
         await obsidianPage.openFile("A.md");
-        (await workspacePage.getLink("B")).click()
+        await (await workspacePage.getLink("B")).click()
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]]);
     })
@@ -60,7 +59,7 @@ describe('Test disabling the plugin', function() {
         await obsidianPage.openFile("A.md");
         await obsidianPage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
-        (await workspacePage.getLink("B")).click();
+        await (await workspacePage.getLink("B")).click();
 
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"], ["markdown", "B.md"]])

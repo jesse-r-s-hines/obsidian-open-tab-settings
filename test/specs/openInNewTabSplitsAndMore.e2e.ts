@@ -16,7 +16,7 @@ describe('Test open in new tab for splits and more', function() {
         await obsidianPage.loadWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("A.md");
-        (await workspacePage.getLink("B")).click();
+        await (await workspacePage.getLink("B")).click();
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "Loop.md"],
         ]);
@@ -32,7 +32,7 @@ describe('Test open in new tab for splits and more', function() {
         await obsidianPage.loadWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("Loop.md");
-        (await workspacePage.getLink("B")).click();
+        await (await workspacePage.getLink("B")).click();
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "Loop.md"],
         ]);
@@ -53,7 +53,7 @@ describe('Test open in new tab for splits and more', function() {
         const mainWindow = await browser.getWindowHandle();
         const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
 
-        (await workspacePage.getLink("B")).click();
+        await (await workspacePage.getLink("B")).click();
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 3)
         const aContainer = await workspacePage.getLeafContainer("A.md");
         const bContainer = await workspacePage.getLeafContainer("B.md");
@@ -102,7 +102,7 @@ describe('Test open in new tab for splits and more', function() {
             const leaf = app.workspace.getLeafById(leafId)!
             app.workspace.setActiveLeaf(leaf, {focus: true});
         }, fileLeafId);
-        (await workspacePage.getLink("B")).click();
+        await (await workspacePage.getLink("B")).click();
 
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["outgoing-link", "A.md"],
@@ -131,7 +131,7 @@ describe('Test open in new tab for splits and more', function() {
     it('stacked tabs', async function() {
         await obsidianPage.loadWorkspaceLayout("stacked");
         await workspacePage.setActiveFile("A.md");
-        (await workspacePage.getLink("B")).click()
+        await (await workspacePage.getLink("B")).click()
 
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],

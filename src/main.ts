@@ -92,7 +92,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 // just close the tab after switching to the existing tab.
                                 // TODO: Is there a cleaner way to do this?
                                 if (isEmpty) {
-                                    await this.detach();
+                                    this.detach();
                                 }
                                 return result;
                             }
@@ -112,8 +112,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         item.setSection("open");
                         item.setIcon("file-minus")
                         item.setTitle("Open in same tab");
-                        item.onClick(() => {
-                            this.app.workspace.getLeaf('same' as PaneType).openFile(file);
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf('same' as PaneType).openFile(file);
                         });
                     });
                 }

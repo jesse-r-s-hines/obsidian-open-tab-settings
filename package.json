@@ -8,6 +8,7 @@
         "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
         "build-dev": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs development",
         "version": "node version-bump.mjs && git add manifest.json versions.json",
+        "lint": "eslint src test",
         "test": "run-s test:*",
         "test:unit": "tsc --noEmit && mocha",
         "test:e2e": "npm run build && npx wdio run ./wdio.conf.mts"
@@ -37,6 +38,9 @@
         "wdio-obsidian-service": "^1.0.0"
     },
     "dependencies": {
-        "monkey-around": "^3.0.0"
+        "@eslint/js": "^9.27.0",
+        "eslint": "^9.27.0",
+        "monkey-around": "^3.0.0",
+        "typescript-eslint": "^8.32.1"
     }
 }

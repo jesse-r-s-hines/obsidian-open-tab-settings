@@ -57,7 +57,7 @@ const tests = () => {
         await workspacePage.setConfig('focusNewTab', false);
 
         await obsidianPage.openFile("A.md");
-        (await workspacePage.getLink("B")).click({button: "middle"});
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"],
         ])
@@ -68,7 +68,7 @@ const tests = () => {
         await workspacePage.setConfig('focusNewTab', true);
 
         await obsidianPage.openFile("A.md");
-        (await workspacePage.getLink("B")).click({button: "middle"});
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"],
         ])
@@ -117,7 +117,7 @@ const noDedupTests = () => {
 
         await obsidianPage.openFile("Loop.md");
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
-        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "Loop.md"], ["markdown", "Loop.md"],
         ]);
@@ -129,7 +129,7 @@ const noDedupTests = () => {
 
         await obsidianPage.openFile("Loop.md");
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
-        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "Loop.md"], ["markdown", "Loop.md"],
         ]);

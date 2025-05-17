@@ -149,6 +149,12 @@ class WorkspacePage {
         return activeView.$(`a=${text}`)
     }
 
+    async openLinkInNewTab(link: ChainablePromiseElement) {
+        await workspacePage.setConfig('nativeMenus', false);
+        await link.click({button: "right"});
+        await browser.$(".menu").$("div.*=Open in new tab").click()
+    }
+
     async openLinkToRight(link: ChainablePromiseElement) {
         await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});

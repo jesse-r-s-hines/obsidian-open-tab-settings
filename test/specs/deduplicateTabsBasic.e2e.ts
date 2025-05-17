@@ -57,7 +57,7 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setConfig('focusNewTab', true);
 
         await obsidianPage.openFile("Loop.md");
-        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
         await sleep(250);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]])
     })
@@ -66,7 +66,7 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setConfig('focusNewTab', false);
 
         await obsidianPage.openFile("Loop.md");
-        (await workspacePage.getLink("Loop.md")).click({button: "middle"});
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
         await sleep(250);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]])
     })
@@ -185,8 +185,7 @@ describe('Test basic deduplicate', () => {
         await workspacePage.setConfig('focusNewTab', true);
         await obsidianPage.openFile("B.md");
         await obsidianPage.openFile("A.md");
-        (await workspacePage.getLink("B")).click({button: "middle"});
-
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
         // Should still deduplicate if opened in new tab explicitly
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [

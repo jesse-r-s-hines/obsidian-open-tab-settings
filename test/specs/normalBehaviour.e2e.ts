@@ -103,7 +103,7 @@ const tests = () => {
         await workspacePage.setActiveFile("A.md")
         await browser.executeObsidianCommand("workspace:toggle-pin");
 
-        await (await workspacePage.getLink("B")).click();
+        await workspacePage.openLink(await workspacePage.getLink("B"));
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"],
         ])

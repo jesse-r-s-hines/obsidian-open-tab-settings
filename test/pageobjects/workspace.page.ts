@@ -149,6 +149,16 @@ class WorkspacePage {
         return activeView.$(`a=${text}`)
     }
 
+    async openLink(link: ChainablePromiseElement) {
+        await link.click();
+        // Normally I'd just use .click(), but on emulate-mobile link click seems to get captured by the editor somehow.
+        // Using the context menu is more reliable.
+        // await workspacePage.setConfig('nativeMenus', false);
+        // await link.click({button: "right"});
+        // const menu = browser.$(".menu");
+        // await menu.$('//div[text()="Open link"] | //div[text()="Create this file"]').click();
+    }
+
     async openLinkInNewTab(link: ChainablePromiseElement) {
         await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});

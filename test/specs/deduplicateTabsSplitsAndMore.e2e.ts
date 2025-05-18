@@ -51,11 +51,11 @@ describe('Test deduplicate for splits and more', function() {
         // A and Loop split left/right
         await obsidianPage.loadWorkspaceLayout("split");
         await workspacePage.setActiveFile("Loop.md");
-        await (await workspacePage.getLink("B")).click();
+        await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         await workspacePage.setActiveFile("A.md");
-        await (await workspacePage.getLink("B")).click();
+        await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
@@ -71,7 +71,7 @@ describe('Test deduplicate for splits and more', function() {
         await sleep(250);
 
         await workspacePage.setActiveFile("A.md");
-        await (await workspacePage.getLink("B")).click();
+        await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
@@ -83,7 +83,7 @@ describe('Test deduplicate for splits and more', function() {
         // Make sure outlinks don't get picked up as a file
         await obsidianPage.loadWorkspaceLayout("outgoing-links");
         await workspacePage.setActiveFile("A.md");
-        await (await workspacePage.getLink("B")).click();
+        await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
@@ -114,7 +114,7 @@ describe('Test deduplicate for splits and more', function() {
         ])
         expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"]);
 
-        await (await workspacePage.getLink("B")).click();
+        await workspacePage.openLink(await workspacePage.getLink("B"));
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);;
         await workspacePage.waitUntilEqual(() => workspacePage.getLeavesWithDeferred(), [
             ['markdown', 'A.md', false], ['markdown', 'B.md', false],
@@ -125,7 +125,7 @@ describe('Test deduplicate for splits and more', function() {
         await workspacePage.setSettings({ deduplicateTabs: false });
         await obsidianPage.openFile("B.md");
         await obsidianPage.openFile("B.md");
-        await (await workspacePage.getLink("A")).click();
+        await workspacePage.openLink(await workspacePage.getLink("A"));
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
         expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "B.md"]])
         await workspacePage.setSettings({ deduplicateTabs: true });
@@ -145,7 +145,7 @@ describe('Test deduplicate for splits and more', function() {
         // Make sure outlinks don't get picked up as a file
         await obsidianPage.loadWorkspaceLayout("stacked");
         await workspacePage.setActiveFile("A.md");
-        await (await workspacePage.getLink("B")).click();
+        await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await browser.waitUntil(async () => 
             (await workspacePage.getAllLeaves()).length == 2 && (await workspacePage.getActiveLeaf())[1] == "B.md"

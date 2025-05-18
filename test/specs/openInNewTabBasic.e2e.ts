@@ -14,7 +14,7 @@ describe('Test basic open in new tab', function() {
     it('opens in new tab and focuses when focusNewTab is false', async function() {
         await workspacePage.setConfig('focusNewTab', false);
         await obsidianPage.openFile("A.md");
-        await (await workspacePage.getLink("B")).click()
+        await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"],
@@ -26,7 +26,7 @@ describe('Test basic open in new tab', function() {
         await workspacePage.setConfig('focusNewTab', true);
         // The new tab should focus regardless of focusNewTab setting.
         await obsidianPage.openFile("A.md");
-        await (await workspacePage.getLink("B")).click()
+        await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"],
@@ -59,9 +59,9 @@ describe('Test basic open in new tab', function() {
         const button = await browser
             .$$(".workspace-tab-header")
             .find(e => e.$("div.*=Outgoing links").isExisting()) as ChainablePromiseElement
-        await button.click()
+        await button.click();
         const item = browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
-        await item.click()
+        await item.click();
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"],
         ]);
@@ -70,16 +70,16 @@ describe('Test basic open in new tab', function() {
 
     it('opens images in new tab', async function() {
         await obsidianPage.openFile("A.md");
-        await workspacePage.openFileViaModal("image.png")
+        await workspacePage.openFileViaModal("image.png");
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["image", "image.png"], ["markdown", "A.md"],
-        ])
+        ]);
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["image", "image.png"]);
     })
 
     it('opens pdfs in new tab', async function() {
         await obsidianPage.openFile("A.md");
-        await workspacePage.openFileViaModal("pdf.pdf")
+        await workspacePage.openFileViaModal("pdf.pdf");
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["pdf", "pdf.pdf"],
         ]);
@@ -106,19 +106,19 @@ describe('Test basic open in new tab', function() {
 
     it('open file while on graph view opens in new tab', async function() {
         await browser.executeObsidianCommand("graph:open");
-        await workspacePage.openFileViaModal("A.md")
+        await workspacePage.openFileViaModal("A.md");
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["graph", ""], ["markdown", "A.md"],
-        ])
+        ]);
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
     })
 
     it('open daily note opens in new tab', async function() {
-        await obsidianPage.openFile("A.md")
+        await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("daily-notes");
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2)
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2);
         const leaves = await workspacePage.getAllLeaves();
-        expect(leaves[1]).toEqual(['markdown', "A.md"])
+        expect(leaves[1]).toEqual(['markdown', "A.md"]);
         const activeLeaf = await workspacePage.getActiveLeaf();
         expect(activeLeaf[1]).toMatch(/\d\d\d\d-\d\d-\d\d/);
     })
@@ -127,10 +127,10 @@ describe('Test basic open in new tab', function() {
         await obsidianPage.openFile("A.md");
         const button = await browser
             .$$(".workspace-tab-header")
-            .find(e => e.$("div.*=Bookmarks").isExisting()) as ChainablePromiseElement
-        await button.click()
+            .find(e => e.$("div.*=Bookmarks").isExisting()) as ChainablePromiseElement;
+        await button.click();
         const item = browser.$(".workspace-leaf-content[data-type='bookmarks'] [data-path=B]");
-        await item.click()
+        await item.click();
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "A.md"], ["markdown", "B.md"],
         ]);
@@ -140,7 +140,7 @@ describe('Test basic open in new tab', function() {
     it('open self link', async function() {
         await obsidianPage.openFile("Loop.md");
         const prevActiveLeaf = await workspacePage.getActiveLeafId();
-        await (await workspacePage.getLink("Loop.md")).click();
+        await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "Loop.md"], ["markdown", "Loop.md"],
         ])
@@ -174,7 +174,7 @@ describe('Test basic open in new tab', function() {
 
     it('open new file via link', async function() {
         await obsidianPage.openFile("B.md");
-        await (await workspacePage.getLink("C")).click();
+        await workspacePage.openLink(await workspacePage.getLink("C"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["markdown", "B.md"], ["markdown", "C.md"],
@@ -184,7 +184,7 @@ describe('Test basic open in new tab', function() {
 
     it('open canvas opens in new tab', async function() {
         await obsidianPage.openFile("A.md");
-        await (await workspacePage.getLink("Canvas.canvas")).click();
+        await workspacePage.openLink(await workspacePage.getLink("Canvas.canvas"));
 
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["canvas", "Canvas.canvas"], ["markdown", "A.md"],
@@ -198,11 +198,11 @@ describe('Test basic open in new tab', function() {
         const node = browser.$(".canvas-node-label=A").$("..");
         await node.click();
         // click a link in the node
-        await node.$("a=B").click()
+        await node.$("a=B").click();
 
         await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
             ["canvas", "Canvas.canvas"], ["markdown", "B.md"],
-        ])
+        ]);
         await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
     })
 })

@@ -5,10 +5,10 @@ import { equals } from "@jest/expect-utils";
 
 class WorkspacePage {
     async setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
-        await browser.executeObsidian(({app}, settings) => {
+        await browser.executeObsidian(async ({app}, settings) => {
             const plugin = app.plugins.plugins['open-tab-settings'] as OpenTabSettingsPlugin
             Object.assign(plugin.settings, settings);
-            plugin.saveSettings();
+            await plugin.saveSettings();
         }, settings)
     }
 
@@ -64,7 +64,7 @@ class WorkspacePage {
     }
 
     /** Seems like there should be a built-in WebdriverIO way to do this... */
-    async waitUntilEqual(func: () => any|Promise<any>, expected: any) {
+    async waitUntilEqual(func: () => any, expected: any) {
         let result: any
         try {
             await browser.waitUntil(async () => {
@@ -81,7 +81,7 @@ class WorkspacePage {
      */
     async setActiveFile(pathOrId: string) {
         const leafId = await this.getLeaf(pathOrId);
-        await browser.executeObsidian(({app, obsidian}, leafId) => {
+        await browser.executeObsidian(({app}, leafId) => {
             const leaf = app.workspace.getLeafById(leafId)!
             app.workspace.setActiveLeaf(leaf, {focus: true});
         }, leafId)
@@ -149,6 +149,22 @@ class WorkspacePage {
         return activeView.$(`a=${text}`)
     }
 
+    async openLink(link: ChainablePromiseElement) {
+        await link.click();
+        // Normally I'd just use .click(), but on emulate-mobile link click seems to get captured by the editor somehow.
+        // Using the context menu is more reliable.
+        // await workspacePage.setConfig('nativeMenus', false);
+        // await link.click({button: "right"});
+        // const menu = browser.$(".menu");
+        // await menu.$('//div[text()="Open link"] | //div[text()="Create this file"]').click();
+    }
+
+    async openLinkInNewTab(link: ChainablePromiseElement) {
+        await workspacePage.setConfig('nativeMenus', false);
+        await link.click({button: "right"});
+        await browser.$(".menu").$("div.*=Open in new tab").click()
+    }
+
     async openLinkToRight(link: ChainablePromiseElement) {
         await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
@@ -189,9 +205,9 @@ class WorkspacePage {
     }
 
     async removeFile(file: string) {
-        await browser.executeObsidian(async ({app, obsidian}, file) => {
+        await browser.executeObsidian(async ({app}, file) => {
             await app.vault.delete(app.vault.getAbstractFileByPath(file)!);
-        }, file!);
+        }, file);
     }
 }
 

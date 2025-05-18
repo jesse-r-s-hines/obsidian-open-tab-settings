@@ -92,7 +92,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 // just close the tab after switching to the existing tab.
                                 // TODO: Is there a cleaner way to do this?
                                 if (isEmpty) {
-                                    await this.detach();
+                                    this.detach();
                                 }
                                 return result;
                             }
@@ -112,8 +112,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         item.setSection("open");
                         item.setIcon("file-minus")
                         item.setTitle("Open in same tab");
-                        item.onClick(() => {
-                            this.app.workspace.getLeaf('same' as PaneType).openFile(file);
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf('same' as PaneType).openFile(file);
                         });
                     });
                 }
@@ -142,9 +142,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
             // Only match files in the main area or floating windows, not sidebars
             const isMainLeaf = (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
+            // file is the same
             const isFileMatch = leaf.getViewState()?.state?.file == file.path;
             // we only want to switch to another leaf if its a basic file, not if its outgoing-links etc.
-            const isTypeMatch = this.app.viewRegistry.getTypeByExtension(file.extension) == leaf.view.getViewType();
+            const viewType = leaf.view.getViewType();
+            const isTypeMatch = (
+                this.app.viewRegistry.getTypeByExtension(file.extension) == viewType ||
+                (file.extension == "md" && viewType == "excalidraw") // special case for excalidraw
+            );
 
             if (isMainLeaf && isFileMatch && isTypeMatch) {
                 matches.push(leaf);

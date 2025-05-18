@@ -142,9 +142,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
             // Only match files in the main area or floating windows, not sidebars
             const isMainLeaf = (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
+            // file is the same
             const isFileMatch = leaf.getViewState()?.state?.file == file.path;
             // we only want to switch to another leaf if its a basic file, not if its outgoing-links etc.
-            const isTypeMatch = this.app.viewRegistry.getTypeByExtension(file.extension) == leaf.view.getViewType();
+            const viewType = leaf.view.getViewType();
+            const isTypeMatch = (
+                this.app.viewRegistry.getTypeByExtension(file.extension) == viewType ||
+                (file.extension == "md" && viewType == "excalidraw") // special case for excalidraw
+            );
 
             if (isMainLeaf && isFileMatch && isTypeMatch) {
                 matches.push(leaf);

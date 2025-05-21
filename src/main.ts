@@ -23,7 +23,6 @@ type LeafPatch = WorkspaceLeaf & {
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = DEFAULT_SETTINGS;
-    private monkeyPatches: (() => void)[] = []
 
     async onload() {
         await this.loadSettings();
@@ -32,7 +31,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const plugin = this;
 
         // Patch getLeaf to always open in new tab
-        this.monkeyPatches.push(
+        this.register(
             monkeyAround.around(Workspace.prototype, {
                 getLeaf(oldMethod: any) {
                     return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
@@ -63,7 +62,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         );
 
         // Patch openFile to deduplicate tabs
-        this.monkeyPatches.push(
+        this.register(
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
                     return async function(this: LeafPatch, file, openState, ...args) {
@@ -119,12 +118,6 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 }
             })
         );
-    }
-
-    onunload() {
-        for (const uninstaller of this.monkeyPatches) {
-            uninstaller();
-        }
     }
 
     async loadSettings() {

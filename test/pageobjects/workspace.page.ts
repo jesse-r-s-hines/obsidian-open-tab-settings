@@ -5,10 +5,9 @@ import { equals } from "@jest/expect-utils";
 
 class WorkspacePage {
     async setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
-        await browser.executeObsidian(async ({app}, settings) => {
-            const plugin = app.plugins.plugins['open-tab-settings'] as OpenTabSettingsPlugin
-            Object.assign(plugin.settings, settings);
-            await plugin.saveSettings();
+        await browser.executeObsidian(async ({plugins}, settings) => {
+            Object.assign(plugins.openTabSettings.settings, settings);
+            await plugins.openTabSettings.saveSettings();
         }, settings)
     }
 

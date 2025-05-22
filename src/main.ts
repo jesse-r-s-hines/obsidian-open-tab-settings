@@ -121,7 +121,15 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const dataFile = await this.loadData() ?? {};
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, dataFile);
+
+        if (Object.keys(dataFile).length == 0) {
+            // when using this plugin, focusNewTab should default to false. Set it if this is the first time we've
+            // loaded the plugin.
+            this.app.vault.setConfig('focusNewTab', false);
+            await this.saveSettings();
+        }
     }
 
     async saveSettings() {
@@ -176,8 +184,8 @@ class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('Deduplicate tabs')
-            .setDesc('If a tab is already open, focus it instead of re-opening it.')
+            .setName('Prevent duplicate tabs')
+            .setDesc('If a tab is already open, switch to it instead of re-opening it.')
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.deduplicateTabs)
@@ -188,6 +196,19 @@ class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setDesc('See also: "Always focus in new tab" in Obsidian Editor options')
+            .setName('Focus explicit new tabs')
+            .setDesc(
+                'Immediately switch to new tabs opened via middle or ctrl click instead of opening them in the ' +
+                'background. New tabs created by regular click will always focus regardless.'
+            )
+            // this is just an alias for Obsidian Settings > Editor > Always focus new tabs
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.app.vault.getConfig("focusNewTab") as boolean)
+                    .onChange(async (value) => {
+                        this.app.vault.setConfig("focusNewTab", value)
+                        await this.plugin.saveSettings();
+                    })
+            );
     }
 }

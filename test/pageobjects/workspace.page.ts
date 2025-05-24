@@ -1,6 +1,6 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
 import { ConfigItem } from 'obsidian-typings'
-import type { default as OpenTabSettingsPlugin, OpenTabSettingsPluginSettings } from "src/main.js"
+import type { OpenTabSettingsPluginSettings } from "src/main.js"
 import { equals } from "@jest/expect-utils";
 
 class WorkspacePage {

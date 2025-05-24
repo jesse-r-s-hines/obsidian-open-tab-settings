@@ -31,24 +31,24 @@ export default class OpenTabSettingsPlugin extends Plugin {
             monkeyAround.around(Workspace.prototype, {
                 getLeaf(oldMethod: any) {
                     return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
-                        // newLeaf false or undefined means open in current tab. Here we replace those with 'tab' to
-                        // always open in new tab.
-                        let leaf: WorkspaceLeaf;
-                        if (plugin.settings.openInNewTab && !newLeaf) {
-                            newLeaf = "tab"
-                            leaf = oldMethod.call(this, newLeaf, ...args);
-                            // Force focusing the new tab even if focusNewTab is false.
-                            if (!plugin.app.vault.getConfig('focusNewTab')) {
-                                // Might be safer to do this after the layout-change event?
-                                plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
-                            }
+                        // the new tab was requested via a normal, unmodified click
+                        const isDefaultNewTab = plugin.settings.openInNewTab && !newLeaf;
+                        // resolve newLeaf to enum
+                        if (newLeaf == true) {
+                            newLeaf = 'tab';
+                        } else if (plugin.settings.openInNewTab) {
+                            newLeaf = newLeaf || 'tab';
                         } else {
-                            // use default behavior
-                            leaf = oldMethod.call(this, (newLeaf == 'same' ? false : newLeaf), ...args);
+                            newLeaf = newLeaf || 'same';
                         }
-                        if (typeof newLeaf == 'boolean' || newLeaf == undefined) {
-                            newLeaf = newLeaf ? 'tab' : 'same';
+
+                        const leaf = oldMethod.call(this, (newLeaf == 'same' ? false : newLeaf), ...args);
+                        // Force focusing new tab created by normal click even if focusNewTab is false.
+                        if (isDefaultNewTab && !plugin.app.vault.getConfig('focusNewTab')) {
+                            // Might be safer to do this after the layout-change event?
+                            plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
                         }
+
                         // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
                         leaf.openTabSettingsLastOpenType = newLeaf;
                         return leaf;

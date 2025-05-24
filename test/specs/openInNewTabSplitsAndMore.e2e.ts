@@ -2,7 +2,7 @@ import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
 import { sleep } from './helpers';
-import { WorkspaceLeaf } from 'obsidian';
+import { WorkspaceLeaf, WorkspaceParent } from 'obsidian';
 
 
 describe('Test open in new tab for splits and more', function() {
@@ -96,7 +96,7 @@ describe('Test open in new tab for splits and more', function() {
         await obsidianPage.loadWorkspaceLayout("linked-files");
         
         const fileLeafId = await browser.executeObsidian(({app}) => {
-            return (app.workspace.rootSplit as any).children[0].children[0].id
+            return (app.workspace.rootSplit.children[0] as WorkspaceParent).children[0].id
         });
         await browser.executeObsidian(({app}, leafId) => {
             const leaf = app.workspace.getLeafById(leafId)!

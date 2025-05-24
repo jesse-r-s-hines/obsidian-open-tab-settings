@@ -2,6 +2,7 @@ import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
 import { sleep } from './helpers';
+import { WorkspaceParent } from 'obsidian';
 
 
 describe('Test basic deduplicate', function() {
@@ -136,8 +137,8 @@ describe('Test basic deduplicate', function() {
         await workspacePage.setSettings({ deduplicateTabs: true });
 
         const [loop1, loop2] = await browser.executeObsidian(async ({app}) => {
-            const loop1: string = (app.workspace.rootSplit as any).children[0].children[1].id
-            const loop2: string = (app.workspace.rootSplit as any).children[0].children[2].id
+            const loop1: string = (app.workspace.rootSplit.children[0] as WorkspaceParent).children[1].id
+            const loop2: string = (app.workspace.rootSplit.children[0] as WorkspaceParent).children[2].id
             return [loop1, loop2]
         });
         // set the second Loop.md as active

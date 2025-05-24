@@ -2,7 +2,9 @@ import {
     App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
     View, TFile, PaneType,
 } from 'obsidian';
+import { PaneTypePatch } from './types';
 import * as monkeyAround from 'monkey-around';
+
 
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
@@ -12,12 +14,6 @@ export interface OpenTabSettingsPluginSettings {
 const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
-}
-
-/** We use this key to check if can safely close a recently created empty leaf during file deduplication. */
-type PaneTypePatch = PaneType|"same";
-type LeafPatch = WorkspaceLeaf & {
-    openTabSettingsLastOpenType?: PaneTypePatch,
 }
 
 
@@ -54,7 +50,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             newLeaf = newLeaf ? 'tab' : 'same';
                         }
                         // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
-                        (leaf as LeafPatch).openTabSettingsLastOpenType = newLeaf;
+                        leaf.openTabSettingsLastOpenType = newLeaf;
                         return leaf;
                     }
                 },
@@ -65,7 +61,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         this.register(
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
-                    return async function(this: LeafPatch, file, openState, ...args) {
+                    return async function(this: WorkspaceLeaf, file, openState, ...args) {
                         const isEmpty = this.view.getViewType() == "empty";
                         // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                         // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf

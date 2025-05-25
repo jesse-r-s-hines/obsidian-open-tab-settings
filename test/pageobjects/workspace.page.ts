@@ -31,9 +31,9 @@ class WorkspacePage {
         await browser.executeObsidian(async ({app, obsidian}, path) => {
             const file = app.vault.getAbstractFileByPath(path);
             if (file instanceof obsidian.TFile) {
-                const leaf = await app.workspace.createLeafInTabGroup()
+                const leaf = app.workspace.createLeafInTabGroup();
                 await leaf.openFile(file);
-                await app.workspace.setActiveLeaf(leaf, {focus: true});
+                app.workspace.setActiveLeaf(leaf, {focus: true});
             } else {
                 throw Error(`No file ${path} exists`);
             }

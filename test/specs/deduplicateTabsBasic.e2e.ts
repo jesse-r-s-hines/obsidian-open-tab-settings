@@ -18,10 +18,9 @@ describe('Test basic deduplicate', function() {
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('basic deduplicate 3 files', async function() {
@@ -32,26 +31,25 @@ describe('Test basic deduplicate', function() {
         await workspacePage.setActiveFile("B.md");
         await workspacePage.openLink(await workspacePage.getLink("A"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "D.md"],
-        ]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", active: true},
+            {type: "markdown", file: "D.md"},
+            {type: "markdown", file: "B.md"},
+        ]]);
     })
 
     it('re-open file', async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("A.md");
         await sleep(250);
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "A.md"]);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"]]);
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 
     it('re-open self link', async function() {
         await obsidianPage.openFile("Loop.md");
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
         await sleep(250);
-        expect(await workspacePage.getActiveLeaf()).toEqual(["markdown", "Loop.md"]);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]]);
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
     it("open self link in new tab focusNewTab true", async function() {
@@ -60,7 +58,7 @@ describe('Test basic deduplicate', function() {
         await obsidianPage.openFile("Loop.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
         await sleep(250);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]])
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
     it("open self link in new tab focusNewTab false", async function() {
@@ -69,7 +67,7 @@ describe('Test basic deduplicate', function() {
         await obsidianPage.openFile("Loop.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
         await sleep(250);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "Loop.md"]])
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
     it('deduplicate via file explorer', async function() {
@@ -78,10 +76,9 @@ describe('Test basic deduplicate', function() {
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md")
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('deduplicate via sidebar', async function() {
@@ -95,10 +92,9 @@ describe('Test basic deduplicate', function() {
         const item = browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
         await item.click()
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ])
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('deduplicate via file modal', async function() {
@@ -107,10 +103,9 @@ describe('Test basic deduplicate', function() {
         await workspacePage.setActiveFile("B.md");
         await workspacePage.openFileViaModal("A.md")
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", active: true}, {type: "markdown", file: "B.md"},
+        ]]);
     })
 
     it('deduplicate with multiple matches', async function() {
@@ -123,10 +118,10 @@ describe('Test basic deduplicate', function() {
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],
-        ]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+            {type: "markdown", file: "B.md"},
+        ]]);
     })
 
     it('deduplicate with multiple matches on current file', async function() {
@@ -148,49 +143,48 @@ describe('Test basic deduplicate', function() {
 
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "Loop.md"]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "Loop.md"], ["markdown", "Loop.md"],
-        ]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "Loop.md"},
+            {type: "markdown", file: "Loop.md", active: true},
+        ]]);
     })
 
     it('dedup images', async function() {
         await obsidianPage.openFile("image.png");
         await obsidianPage.openFile("A.md");
+        await workspacePage.setActiveFile("A.md");
         await workspacePage.openFileViaModal("image.png")
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["image", "image.png"])
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["image", "image.png"], ["markdown", "A.md"],
-        ]);
+        await workspacePage.matchWorkspace([[
+            {type: "image", file: "image.png", active: true}, {type: "markdown", file: "A.md"},
+        ]]);
     })
 
     it('dedup png', async function() {
         await obsidianPage.openFile("pdf.pdf");
         await obsidianPage.openFile("A.md");
+        await workspacePage.setActiveFile("A.md");
         await workspacePage.openFileViaModal("pdf.pdf")
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["pdf", "pdf.pdf"]);
-        await workspacePage.waitUntilEqual(() =>  workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["pdf", "pdf.pdf"],
-        ]);
+        await workspacePage.matchWorkspace([[
+            {type: "pdf", file: "pdf.pdf", active: true}, {type: "markdown", file: "A.md"}, 
+        ]]);
     })
 
     it('empty tab', async function() {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("A.md")
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"])
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [["markdown", "A.md"]])
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]])
     })
 
     it('explicit new tab', async function() {
         await workspacePage.setConfig('focusNewTab', true);
         await obsidianPage.openFile("B.md");
         await obsidianPage.openFile("A.md");
+        await workspacePage.setActiveFile("A.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
         // Should still deduplicate if opened in new tab explicitly
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"])
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md", active: true}, {type: "markdown", file: "A.md"},
+        ]]);
     })
 })

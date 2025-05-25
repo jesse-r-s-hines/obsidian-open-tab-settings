@@ -16,10 +16,9 @@ describe('Test basic open in new tab', function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('opens in new tab and focuses when focusNewTab is true', async function() {
@@ -28,30 +27,27 @@ describe('Test basic open in new tab', function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('opens in new tab from file explorer', async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md");
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-        ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('opens in new tab from file modal', async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md");
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('opens in new tab from sidebar outgoing links', async function() {
@@ -62,65 +58,59 @@ describe('Test basic open in new tab', function() {
         await button.click();
         const item = browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
         await item.click();
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('opens images in new tab', async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("image.png");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["image", "image.png"], ["markdown", "A.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["image", "image.png"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "image", file: "image.png", active: true},
+        ]]);
     })
 
     it('opens pdfs in new tab', async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openFileViaModal("pdf.pdf");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["pdf", "pdf.pdf"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["pdf", "pdf.pdf"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "pdf", file: "pdf.pdf", active: true},
+        ]]);
     })
 
     it('opens file from pdfs opens in new tab', async function() {
         await obsidianPage.openFile("pdf.pdf");
         await workspacePage.openFileViaModal("A.md");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["pdf", "pdf.pdf"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "pdf", file: "pdf.pdf"}, {type: "markdown", file: "A.md", active: true},
+        ]]);
     })
 
     it('graph view opens in new tab', async function() {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("graph:open");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["graph", ""], ["markdown", "A.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["graph", ""]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "graph", active: true},
+        ]]);
     })
 
     it('open file while on graph view opens in new tab', async function() {
         await browser.executeObsidianCommand("graph:open");
         await workspacePage.openFileViaModal("A.md");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["graph", ""], ["markdown", "A.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "graph"}, {type: "markdown", file: "A.md", active: true},
+        ]]);
     })
 
     it('open daily note opens in new tab', async function() {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("daily-notes");
-        await browser.waitUntil(async () => (await workspacePage.getAllLeaves()).length >= 2);
-        const leaves = await workspacePage.getAllLeaves();
-        expect(leaves[1]).toEqual(['markdown', "A.md"]);
+        await browser.waitUntil(async () => (await workspacePage.getAllLeaves())[0].length >= 2);
+        const leaves = (await workspacePage.getAllLeaves())[0];
+        expect(leaves[0].file).toEqual("A.md");
         const activeLeaf = await workspacePage.getActiveLeaf();
-        expect(activeLeaf[1]).toMatch(/\d\d\d\d-\d\d-\d\d/);
+        expect(activeLeaf.file).toMatch(/\d\d\d\d-\d\d-\d\d/);
     })
 
     it('opens in new tab from bookmarks', async function() {
@@ -131,65 +121,64 @@ describe('Test basic open in new tab', function() {
         await button.click();
         const item = browser.$(".workspace-leaf-content[data-type='bookmarks'] [data-path=B]");
         await item.click();
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it('open self link', async function() {
         await obsidianPage.openFile("Loop.md");
-        const prevActiveLeaf = await workspacePage.getActiveLeafId();
+        const prevActiveLeaf = (await workspacePage.getActiveLeaf()).id;
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "Loop.md"], ["markdown", "Loop.md"],
-        ])
-        expect(await workspacePage.getActiveLeafId()).not.toEqual(prevActiveLeaf);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"}, {type: "markdown", file: "Loop.md", active: true},
+        ]]);
+        expect((await workspacePage.getActiveLeaf()).id).not.toEqual(prevActiveLeaf);
     })
 
     it('re-open file', async function() {
         await obsidianPage.openFile("Loop.md");
-        const prevActiveLeaf = await workspacePage.getActiveLeafId();
+        const prevActiveLeaf = (await workspacePage.getActiveLeaf()).id;
         await workspacePage.openFileViaModal("Loop.md");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "Loop.md"], ["markdown", "Loop.md"],
-        ]);
-        expect(await workspacePage.getActiveLeafId()).not.toEqual(prevActiveLeaf);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"}, {type: "markdown", file: "Loop.md", active: true},
+        ]]);
+        expect((await workspacePage.getActiveLeaf()).id).not.toEqual(prevActiveLeaf);
     })
 
     it("open new file", async function() {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file");
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "Untitled.md"]]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "Untitled.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "Untitled.md", active: true}
+        ]]);
     })
     
     it("open new file in current tab", async function() {
         await obsidianPage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file-in-current-tab");
         // TODO: Should probably fix this behavior
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "A.md"], ["markdown", "Untitled.md"]])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "Untitled.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "Untitled.md", active: true}
+        ]]);
     })
 
     it('open new file via link', async function() {
         await obsidianPage.openFile("B.md");
         await workspacePage.openLink(await workspacePage.getLink("C"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "B.md"], ["markdown", "C.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "C.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md"}, {type: "markdown", file: "C.md", active: true},
+        ]]);
     })
 
     it('open canvas opens in new tab', async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("Canvas.canvas"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["canvas", "Canvas.canvas"], ["markdown", "A.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["canvas", "Canvas.canvas"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "canvas", file: "Canvas.canvas", active: true},
+        ]]);
     })
 
     it('open link in canvas', async function() {
@@ -200,9 +189,8 @@ describe('Test basic open in new tab', function() {
         // click a link in the node
         await node.$("a=B").click();
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["canvas", "Canvas.canvas"], ["markdown", "B.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "canvas", file: "Canvas.canvas"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 })

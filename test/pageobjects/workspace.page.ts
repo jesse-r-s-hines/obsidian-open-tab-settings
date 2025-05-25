@@ -2,47 +2,69 @@ import { Key, ChainablePromiseElement } from 'webdriverio'
 import { ConfigItem } from 'obsidian-typings'
 import type { OpenTabSettingsPluginSettings } from "src/main.js"
 import { equals } from "@jest/expect-utils";
+import { WorkspaceLeaf, WorkspaceParent } from 'obsidian';
+
+type LeafInfo = {
+    id: string,
+    parent: string, root: string, container: string,
+    type: string, file: string,
+    isDeferred: boolean,
+    active: boolean,
+}
 
 class WorkspacePage {
     async setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
         await browser.executeObsidian(async ({plugins}, settings) => {
             Object.assign(plugins.openTabSettings.settings, settings);
             await plugins.openTabSettings.saveSettings();
-        }, settings)
-    }
-
-    /** Get ids of all leaves in the rootSplit or floating windows, excluding sidebars. */
-    async getAllLeafIds(): Promise<string[]> {
-        return await browser.executeObsidian(({app, obsidian}) => {
-            const leaves: string[] = []
-            app.workspace.iterateAllLeaves(l => {
-                const root = l.getRoot()
-                // Don't include sidebars and such, but do include popout windows
-                if (root instanceof obsidian.WorkspaceRoot || root instanceof obsidian.WorkspaceFloating) {
-                    leaves.push(l.id)
-                }
-            })
-            return leaves.sort();
-        })
+        }, settings);
     }
 
     /**
-     * Returns leaf id for a path. Can also be passed the id directly in which case it returns the id if it exists.
+     * Get all leaves in the rootSplit or floating windows, excluding sidebars.
+     * Results are grouped by tab pane.
+     */
+    async getAllLeaves(): Promise<LeafInfo[][]> {
+        return await browser.executeObsidian(({app, obsidian}) => {
+            const tabGroups: WorkspaceParent[] = [];
+            
+            // I'm assuming iterateAllLeaves goes in the natural order, which it seems to
+            app.workspace.iterateAllLeaves(leaf => {
+                const root = leaf.getRoot();
+                // Don't include sidebars and such, but do include popout windows
+                if (root instanceof obsidian.WorkspaceRoot || root instanceof obsidian.WorkspaceFloating) {
+                    if (!tabGroups.includes(leaf.parent)) {
+                        tabGroups.push(leaf.parent);
+                    }
+                }
+            });
+
+            const activeLeaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
+
+            return [...tabGroups].map(leaf =>
+                (leaf.children as WorkspaceLeaf[]).map(leaf => {
+                    return {
+                        parent: leaf.parent.id,
+                        id: leaf.id,
+                        root: leaf.getRoot().id, container: leaf.getContainer().id,
+                        type: leaf.view.getViewType(),
+                        file: (leaf.getViewState()?.state?.file ?? "") as string,
+                        isDeferred: leaf.isDeferred,
+                        active: activeLeaf == leaf,
+                    };
+                })
+            );
+        });
+    }
+
+    /**
+     * Returns leaf for a path. Can also be passed the id directly in which case it returns the id if it exists.
      * @param pathOrId 
      */
 
-    async getLeaf(pathOrId: string): Promise<string> {
-        const allLeaves = await this.getAllLeafIds()
-        const matches =  await browser.executeObsidian(async ({app, obsidian}, allLeaves, pathOrId) => {
-            const matches = allLeaves
-                .map(id => app.workspace.getLeafById(id)!)
-                .filter(l => (
-                    l.id == pathOrId ||
-                    (l.view instanceof obsidian.FileView && l.view.file?.path == pathOrId)
-                ))
-                .map(l => l.id);
-            return matches;
-        }, allLeaves, pathOrId);
+    async getLeaf(pathOrId: string): Promise<LeafInfo> {
+        const allLeaves = (await this.getAllLeaves()).flatMap(l => l);
+        const matches = allLeaves.filter(l => l.id == pathOrId ||l.file == pathOrId);
         if (matches.length < 1) {
             throw new Error(`No leaf for ${pathOrId} found`)
         } else if (matches.length > 1) {
@@ -51,15 +73,9 @@ class WorkspacePage {
         return matches[0];
     }
 
-    async getActiveLeaf(): Promise<[string, string]> {
-        return await browser.executeObsidian(({app, obsidian}) => {
-            const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
-            let file = ""
-            if (leaf.view instanceof obsidian.FileView) {
-                file = leaf.view.file?.path ?? ''
-            }
-            return [leaf.view.getViewType(), file]
-        })
+    async getActiveLeaf(): Promise<LeafInfo> {
+        const allLeaves = (await this.getAllLeaves()).flatMap(l => l);
+        return allLeaves.find(l => l.active)!;
     }
 
     /** Seems like there should be a built-in WebdriverIO way to do this... */
@@ -72,90 +88,44 @@ class WorkspacePage {
             });
         } catch {}
         // Call expect again, this will give us nice error messages if value doesn't match.
-        expect(result).toEqual(expected)
+        expect(result).toEqual(expected);
+    }
+
+    /** Match against leaves */
+    async matchWorkspace(expected: Partial<LeafInfo>[][]) {
+        const matcher = expected.map(g => g.map(l => expect.objectContaining(l)));
+        let actual: LeafInfo[][] = [];
+        try {
+            await browser.waitUntil(async () => {
+                actual = await this.getAllLeaves();
+                return equals(actual, matcher);
+            });
+        } catch {}
+        // Call expect again, this will give us nice error messages if value doesn't match.
+        expect(actual).toEqual(matcher);
     }
 
     /**
      * Focuses tab containing file.
      */
     async setActiveFile(pathOrId: string) {
-        const leafId = await this.getLeaf(pathOrId);
-        await browser.executeObsidian(({app}, leafId) => {
-            const leaf = app.workspace.getLeafById(leafId)!
+        const leafInfo = await this.getLeaf(pathOrId);
+        await browser.executeObsidian(({app}, leafInfo) => {
+            const leaf = app.workspace.getLeafById(leafInfo.id)!
             app.workspace.setActiveLeaf(leaf, {focus: true});
-        }, leafId)
-    }
-
-    async getActiveLeafId(): Promise<string> {
-        return await browser.executeObsidian(({app, obsidian}) => {
-            const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
-            return leaf.id
-        })
-    }
-
-    /** Get id of leaf's parent by path or */
-    async getLeafParent(pathOrId: string): Promise<string> {
-        const leafId = await this.getLeaf(pathOrId);
-        return await browser.executeObsidian(({app}, leafId) => {
-            return app.workspace.getLeafById(leafId)!.parent.id
-        }, leafId)
-    }
-
-    /** Get id of leaf's root by path  */
-    async getLeafRoot(pathOrId: string): Promise<string> {
-        const leafId = await this.getLeaf(pathOrId);
-        return await browser.executeObsidian(({app}, leafId) => {
-            return app.workspace.getLeafById(leafId)!.getRoot().id
-        }, leafId)
-    }
-
-    async getLeafContainer(pathOrId: string): Promise<string> {
-        const leafId = await this.getLeaf(pathOrId);
-        return await browser.executeObsidian(({app}, leafId) => {
-            return app.workspace.getLeafById(leafId)!.getContainer().id
-        }, leafId)
-    }
-
-    async getAllLeaves(): Promise<[string, string][]> {
-        const leafIds = await this.getAllLeafIds()
-        return await browser.executeObsidian(({app, obsidian}, leafIds) => {
-            const leaves = leafIds.map(id => {
-                const leaf = app.workspace.getLeafById(id)!;
-                let file = ""
-                if (leaf.view instanceof obsidian.FileView) {
-                    file = leaf.view.file?.path ?? "";
-                }
-                return [leaf.view.getViewType(), file] as [string, string]
-            })
-            return leaves.sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
-        }, leafIds)
-    }
-
-    async getLeavesWithDeferred(): Promise<[string, string, boolean][]> {
-        const leafIds = await workspacePage.getAllLeafIds();
-        return await browser.executeObsidian(({ app }, leafIds) => {
-            return leafIds
-                .map(l => app.workspace.getLeafById(l)!)
-                .map(l => [l.view.getViewType(), l.getViewState()?.state?.file ?? "", l.isDeferred] as [string, string, boolean])
-                .sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]))
-        }, leafIds)
+        }, leafInfo);
+        await browser.waitUntil(async () => (await this.getActiveLeaf()).id == leafInfo.id);
     }
 
     async getLink(text: string) {
         const activeView = $(await browser.executeObsidian(({app, obsidian}) =>
             app.workspace.getActiveViewOfType(obsidian.View)!.containerEl
-        ))
-        return activeView.$(`a=${text}`)
+        ));
+        return activeView.$(`a=${text}`);
     }
 
     async openLink(link: ChainablePromiseElement) {
         await link.click();
-        // Normally I'd just use .click(), but on emulate-mobile link click seems to get captured by the editor somehow.
-        // Using the context menu is more reliable.
-        // await workspacePage.setConfig('nativeMenus', false);
-        // await link.click({button: "right"});
-        // const menu = browser.$(".menu");
-        // await menu.$('//div[text()="Open link"] | //div[text()="Create this file"]').click();
     }
 
     async openLinkInNewTab(link: ChainablePromiseElement) {

@@ -14,8 +14,7 @@ describe('Test disable options', function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"))
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md", active: true}]]);
     })
 
     it("Test disable deduplicateTabs", async function() {
@@ -26,10 +25,10 @@ describe('Test disable options', function() {
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"], ["markdown", "B.md"],
-        ])
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+            {type: "markdown", file: "B.md"},
+        ]]);
     })
 })
 
@@ -51,8 +50,7 @@ describe('Test disabling the plugin', function() {
     it("Test disabling the plugin new tabs", async function() {
         await obsidianPage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]]);
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md", active: true}]]);
     })
 
     it("Test disable deduplicateTabs", async function() {
@@ -61,8 +59,9 @@ describe('Test disabling the plugin', function() {
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"], ["markdown", "B.md"]])
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md", active: true}, {type: "markdown", file: "B.md"},
+        ]]);
     })
 })
 
@@ -76,9 +75,10 @@ describe('Test bypass new tab', function() {
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
 
         await obsidianPage.openFile("A.md");
-        await workspacePage.openLinkInSameTab(await workspacePage.getLink("B"))
+        await workspacePage.openLinkInSameTab(await workspacePage.getLink("B"));
 
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
-        expect(await workspacePage.getAllLeaves()).toEqual([["markdown", "B.md"]])
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 })

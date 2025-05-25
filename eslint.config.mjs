@@ -37,7 +37,7 @@ export default tseslint.config(
             "@typescript-eslint/no-floating-promises": ["error", {
                 checkThenables: true,
                 allowForKnownSafeCalls: [
-                    {from: 'package', package: "expect", name: ["expect", "toEqual", "toMatch"]},
+                    {from: 'package', package: "expect", name: ["expect", "toEqual", "toMatch", "toMatchObject"]},
                 ],
             }],
             "@typescript-eslint/no-unused-vars": ["error", {

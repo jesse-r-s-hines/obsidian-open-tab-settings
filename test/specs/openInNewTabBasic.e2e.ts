@@ -13,7 +13,7 @@ describe('Test basic open in new tab', function() {
 
     it('opens in new tab and focuses when focusNewTab is false', async function() {
         await workspacePage.setConfig('focusNewTab', false);
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.matchWorkspace([[
@@ -24,7 +24,7 @@ describe('Test basic open in new tab', function() {
     it('opens in new tab and focuses when focusNewTab is true', async function() {
         await workspacePage.setConfig('focusNewTab', true);
         // The new tab should focus regardless of focusNewTab setting.
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.matchWorkspace([[
@@ -33,7 +33,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens in new tab from file explorer', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md");
 
         await workspacePage.matchWorkspace([[
@@ -42,7 +42,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens in new tab from file modal', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openFileViaFileExplorer("B.md");
 
         await workspacePage.matchWorkspace([[
@@ -51,7 +51,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens in new tab from sidebar outgoing links', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         const button = await browser
             .$$(".workspace-tab-header")
             .find(e => e.$("div.*=Outgoing links").isExisting()) as ChainablePromiseElement
@@ -64,7 +64,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens images in new tab', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openFileViaModal("image.png");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md"}, {type: "image", file: "image.png", active: true},
@@ -72,7 +72,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens pdfs in new tab', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openFileViaModal("pdf.pdf");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md"}, {type: "pdf", file: "pdf.pdf", active: true},
@@ -80,7 +80,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens file from pdfs opens in new tab', async function() {
-        await obsidianPage.openFile("pdf.pdf");
+        await workspacePage.openFile("pdf.pdf");
         await workspacePage.openFileViaModal("A.md");
         await workspacePage.matchWorkspace([[
             {type: "pdf", file: "pdf.pdf"}, {type: "markdown", file: "A.md", active: true},
@@ -88,7 +88,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('graph view opens in new tab', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("graph:open");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md"}, {type: "graph", active: true},
@@ -104,7 +104,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('open daily note opens in new tab', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("daily-notes");
         await browser.waitUntil(async () => (await workspacePage.getAllLeaves())[0].length >= 2);
         const leaves = (await workspacePage.getAllLeaves())[0];
@@ -114,7 +114,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens in new tab from bookmarks', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         const button = await browser
             .$$(".workspace-tab-header")
             .find(e => e.$("div.*=Bookmarks").isExisting()) as ChainablePromiseElement;
@@ -127,7 +127,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('open self link', async function() {
-        await obsidianPage.openFile("Loop.md");
+        await workspacePage.openFile("Loop.md");
         const prevActiveLeaf = (await workspacePage.getActiveLeaf()).id;
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
         await workspacePage.matchWorkspace([[
@@ -137,7 +137,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('re-open file', async function() {
-        await obsidianPage.openFile("Loop.md");
+        await workspacePage.openFile("Loop.md");
         const prevActiveLeaf = (await workspacePage.getActiveLeaf()).id;
         await workspacePage.openFileViaModal("Loop.md");
         await workspacePage.matchWorkspace([[
@@ -147,7 +147,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it("open new file", async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md"}, {type: "markdown", file: "Untitled.md", active: true}
@@ -155,7 +155,7 @@ describe('Test basic open in new tab', function() {
     })
     
     it("open new file in current tab", async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file-in-current-tab");
         // TODO: Should probably fix this behavior
         await workspacePage.matchWorkspace([[
@@ -164,7 +164,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('open new file via link', async function() {
-        await obsidianPage.openFile("B.md");
+        await workspacePage.openFile("B.md");
         await workspacePage.openLink(await workspacePage.getLink("C"));
 
         await workspacePage.matchWorkspace([[
@@ -173,7 +173,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('open canvas opens in new tab', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("Canvas.canvas"));
 
         await workspacePage.matchWorkspace([[
@@ -182,7 +182,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('open link in canvas', async function() {
-        await obsidianPage.openFile("Canvas.canvas");
+        await workspacePage.openFile("Canvas.canvas");
         // Focus a node
         const node = browser.$(".canvas-node-label=A").$("..");
         await node.click();

@@ -12,8 +12,8 @@ describe('Test deduplicate for splits and more', function() {
     });
 
     it('open to the right', async function() {
-        await obsidianPage.openFile("A.md");
-        await obsidianPage.openFile("B.md");
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
 
@@ -25,8 +25,8 @@ describe('Test deduplicate for splits and more', function() {
     })
 
     it('open in popout window', async function() {
-        await obsidianPage.openFile("A.md");
-        await obsidianPage.openFile("B.md");
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
         const b1 = await workspacePage.getActiveLeaf();
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
@@ -59,10 +59,13 @@ describe('Test deduplicate for splits and more', function() {
     })
 
     it('dedup across windows', async function() {
-        await obsidianPage.openFile("A.md");
-        await obsidianPage.openFile("B.md");
-        await browser.executeObsidianCommand('workspace:move-to-new-window')
-        await sleep(250);
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
+        await browser.executeObsidianCommand('workspace:move-to-new-window');
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "markdown", file: "B.md", active: true}],
+        ]);
 
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
@@ -99,27 +102,27 @@ describe('Test deduplicate for splits and more', function() {
     })
 
     it('deferred views', async function() {
-        await obsidianPage.openFile("A.md");
-        await obsidianPage.openFile("B.md");
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
         await browser.reloadObsidian();
 
         await workspacePage.matchWorkspace([[
-            {type: "markdown", file: "A.md", isDeferred: false, active: true},
-            {type: "markdown", file: "B.md", isDeferred: true},
+            {type: "markdown", file: "A.md", deferred: false, active: true},
+            {type: "markdown", file: "B.md", deferred: true},
         ]]);
 
         await workspacePage.openLink(await workspacePage.getLink("B"));
         await workspacePage.matchWorkspace([[
-            {type: "markdown", file: "A.md", isDeferred: false},
-            {type: "markdown", file: "B.md", isDeferred: false, active: true},
+            {type: "markdown", file: "A.md", deferred: false},
+            {type: "markdown", file: "B.md", deferred: false, active: true},
         ]]);
     })
 
     it("back buttons", async function() {
         await workspacePage.setSettings({ deduplicateTabs: false });
-        await obsidianPage.openFile("B.md");
-        await obsidianPage.openFile("B.md");
+        await workspacePage.openFile("B.md");
+        await workspacePage.openFile("B.md");
         await workspacePage.openLink(await workspacePage.getLink("A"));
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "B.md"}, {type: "markdown", file: "A.md", active: true},

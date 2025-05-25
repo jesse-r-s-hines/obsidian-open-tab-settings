@@ -101,7 +101,7 @@ describe('Test open in new tab for splits and more', function() {
 
     it("test back buttons", async function() {
         await workspacePage.setSettings({ openInNewTab: false });
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
         await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md", active: true}]]);
         await workspacePage.setSettings({ openInNewTab: true });

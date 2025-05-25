@@ -8,7 +8,7 @@ type LeafInfo = {
     id: string,
     parent: string, root: string, container: string,
     type: string, file: string,
-    isDeferred: boolean,
+    deferred: boolean, pinned: boolean,
     active: boolean,
 }
 
@@ -18,6 +18,26 @@ class WorkspacePage {
             Object.assign(plugins.openTabSettings.settings, settings);
             await plugins.openTabSettings.saveSettings();
         }, settings);
+    }
+
+    /**
+     * Opens a file in a new tab.
+     * 
+     * Normally I'd just use `wdio-obsidian-service` `obsidianPage.openFile`, but that method uses `getLeaf`, which we
+     * are patching. So this plugin uses its own openFile that bypasses our patch so openFile behavior isn't affected
+     * by the settings.
+     */
+    async openFile(path: string) {
+        await browser.executeObsidian(async ({app, obsidian}, path) => {
+            const file = app.vault.getAbstractFileByPath(path);
+            if (file instanceof obsidian.TFile) {
+                const leaf = await app.workspace.createLeafInTabGroup()
+                await leaf.openFile(file);
+                await app.workspace.setActiveLeaf(leaf, {focus: true});
+            } else {
+                throw Error(`No file ${path} exists`);
+            }
+        }, path)
     }
 
     /**
@@ -49,7 +69,7 @@ class WorkspacePage {
                         root: leaf.getRoot().id, container: leaf.getContainer().id,
                         type: leaf.view.getViewType(),
                         file: (leaf.getViewState()?.state?.file ?? "") as string,
-                        isDeferred: leaf.isDeferred,
+                        deferred: leaf.isDeferred, pinned: leaf.pinned,
                         active: activeLeaf == leaf,
                     };
                 })
@@ -115,6 +135,14 @@ class WorkspacePage {
             app.workspace.setActiveLeaf(leaf, {focus: true});
         }, leafInfo);
         await browser.waitUntil(async () => (await this.getActiveLeaf()).id == leafInfo.id);
+    }
+
+    /**
+     * Pins the specified tab. Note it also focuses the tab.
+     */
+    async pinTab(pathOrId: string) {
+        await workspacePage.setActiveFile(pathOrId);
+        await browser.executeObsidianCommand("workspace:toggle-pin");
     }
 
     async getLink(text: string) {

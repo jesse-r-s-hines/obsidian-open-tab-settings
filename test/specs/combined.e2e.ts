@@ -11,8 +11,8 @@ describe('Test basic deduplicate', function() {
     });
 
     it('basic dedup', async function() {
-        await obsidianPage.openFile("A.md");
-        await obsidianPage.openFile("B.md");
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
@@ -22,7 +22,7 @@ describe('Test basic deduplicate', function() {
     })
 
     it('basic new tab', async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
         await workspacePage.matchWorkspace([[
@@ -31,7 +31,7 @@ describe('Test basic deduplicate', function() {
     })
 
     it('self link', async function() {
-        await obsidianPage.openFile("Loop.md");
+        await workspacePage.openFile("Loop.md");
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
         await sleep(250);
         await workspacePage.matchWorkspace([[

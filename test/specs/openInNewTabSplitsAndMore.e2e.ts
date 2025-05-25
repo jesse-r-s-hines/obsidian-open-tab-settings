@@ -69,7 +69,7 @@ describe('Test open in new tab for splits and more', function() {
     it("test sidebars", async function() {
         await obsidianPage.loadWorkspaceLayout("file-a-in-sidebar");
         const sidebar = $(await browser.executeObsidian(({app}) => app.workspace.rightSplit.containerEl))
-        await sidebar.$(`a=B`).click();
+        await sidebar.$(`.//a[contains(@class, 'internal-link') and text() = 'B']`).click();
         await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md"}]]);
         
         const [sidebarId, aMatches] = await browser.executeObsidian(({app, obsidian}) => {

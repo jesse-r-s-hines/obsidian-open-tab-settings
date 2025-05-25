@@ -192,7 +192,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -212,7 +212,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "Loop.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -368,7 +368,7 @@
         }
       },
       "active": "51fcb408d0e23749",
-      "mtime": "2025-02-25T19:42:35-05:00"
+      "mtime": "2025-05-25T14:45:04-04:00"
     },
     "popout-window": {
       "main": {
@@ -386,7 +386,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -568,7 +568,7 @@
                       "type": "markdown",
                       "state": {
                         "file": "D.md",
-                        "mode": "source",
+                        "mode": "preview",
                         "source": false
                       },
                       "icon": "lucide-file",
@@ -589,7 +589,7 @@
         ]
       },
       "active": "a4dd192d6ebd4e01",
-      "mtime": "2025-02-27T19:59:10-05:00"
+      "mtime": "2025-05-25T14:45:22-04:00"
     },
     "file-a-in-sidebar": {
       "main": {
@@ -685,7 +685,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -773,7 +773,7 @@
         }
       },
       "active": "d7745d116f03d1d0",
-      "mtime": "2025-02-28T19:41:47-05:00"
+      "mtime": "2025-05-25T14:45:37-04:00"
     },
     "linked-files": {
       "main": {
@@ -791,7 +791,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -978,7 +978,7 @@
         }
       },
       "active": "a4dd192d6ebd4e01",
-      "mtime": "2025-03-01T13:14:17-05:00"
+      "mtime": "2025-05-25T14:45:48-04:00"
     },
     "outgoing-links": {
       "main": {
@@ -996,7 +996,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -1037,7 +1037,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "B.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -1202,7 +1202,7 @@
         }
       },
       "active": "a4dd192d6ebd4e01",
-      "mtime": "2025-03-03T19:54:15-05:00"
+      "mtime": "2025-05-25T14:46:08-04:00"
     },
     "stacked": {
       "main": {
@@ -1220,7 +1220,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -1234,7 +1234,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "B.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -1391,7 +1391,7 @@
         }
       },
       "active": "bc2d290e218b312d",
-      "mtime": "2025-03-07T20:05:37-05:00"
+      "mtime": "2025-05-25T14:46:24-04:00"
     },
     "nested-split": {
       "main": {
@@ -1409,7 +1409,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -1433,7 +1433,7 @@
                       "type": "markdown",
                       "state": {
                         "file": "Loop.md",
-                        "mode": "source",
+                        "mode": "preview",
                         "source": false
                       },
                       "icon": "lucide-file",
@@ -1453,7 +1453,7 @@
                       "type": "markdown",
                       "state": {
                         "file": "D.md",
-                        "mode": "source",
+                        "mode": "preview",
                         "source": false
                       },
                       "icon": "lucide-file",
@@ -1612,7 +1612,7 @@
         }
       },
       "active": "8b74ba117f8c4527",
-      "mtime": "2025-05-25T14:15:43-04:00"
+      "mtime": "2025-05-25T14:46:40-04:00"
     },
     "split-popout-window": {
       "main": {
@@ -1630,7 +1630,7 @@
                   "type": "markdown",
                   "state": {
                     "file": "A.md",
-                    "mode": "source",
+                    "mode": "preview",
                     "source": false
                   },
                   "icon": "lucide-file",
@@ -1812,7 +1812,7 @@
                       "type": "markdown",
                       "state": {
                         "file": "D.md",
-                        "mode": "source",
+                        "mode": "preview",
                         "source": false
                       },
                       "icon": "lucide-file",
@@ -1832,7 +1832,7 @@
                       "type": "markdown",
                       "state": {
                         "file": "Loop.md",
-                        "mode": "source",
+                        "mode": "preview",
                         "source": false
                       },
                       "icon": "lucide-file",
@@ -1853,7 +1853,7 @@
         ]
       },
       "active": "a4dd192d6ebd4e01",
-      "mtime": "2025-05-25T14:27:24-04:00"
+      "mtime": "2025-05-25T14:46:56-04:00"
     }
   },
   "active": "empty"

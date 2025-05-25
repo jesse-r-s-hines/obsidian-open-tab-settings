@@ -1,6 +1,7 @@
 import {
     App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
     View, TFile, PaneType, WorkspaceTabs,
+    WorkspaceItem,
 } from 'obsidian';
 import { PaneTypePatch, TabGroup } from './types';
 import * as monkeyAround from 'monkey-around';
@@ -175,12 +176,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
     /**
      * Gets all tab groups, sorted by active time.
      */
-    private getAllTabGroups(): WorkspaceTabs[] {
+    private getAllTabGroups(root: WorkspaceItem): WorkspaceTabs[] {
         const tabGroups: Set<TabGroup> = new Set(); // sets are ordered
         this.app.workspace.iterateAllLeaves(leaf => {
-            const root = leaf.getRoot();
-            // Only match files in the main area or floating windows, not sidebars
-            if (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating) {
+            if (leaf.getRoot() == root) {
                 tabGroups.add(leaf.parent);
             }
         });
@@ -205,7 +204,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
         let dest: TabGroup|undefined;
         let index = 0;
         if (this.settings.openNewTabsInOtherTabGroup) {
-            const otherTabGroup = this.getAllTabGroups().filter(g => g !== activeTabGroup).at(-1);
+            // check if there is a split in the same window
+            const otherTabGroup = this.getAllTabGroups(activeLeaf.getRoot()).filter(g => g !== activeTabGroup).at(-1);
             if (otherTabGroup) {
                 dest = otherTabGroup;
                 index = otherTabGroup.children.length;

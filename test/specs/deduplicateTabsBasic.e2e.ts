@@ -7,7 +7,7 @@ import { WorkspaceParent } from 'obsidian';
 
 describe('Test basic deduplicate', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
         await workspacePage.setConfig('focusNewTab', false);
     });
@@ -82,6 +82,7 @@ describe('Test basic deduplicate', function() {
     })
 
     it('deduplicate via sidebar', async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");

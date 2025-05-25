@@ -4,7 +4,7 @@ import { obsidianPage } from 'wdio-obsidian-service';
 
 describe('Test disable options', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setConfig('focusNewTab', false);
     });
 
@@ -39,7 +39,7 @@ describe('Test disabling the plugin', function() {
     });
 
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
     });
 
 
@@ -67,7 +67,7 @@ describe('Test disabling the plugin', function() {
 
 describe('Test bypass new tab', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setConfig('focusNewTab', false);
     });
 

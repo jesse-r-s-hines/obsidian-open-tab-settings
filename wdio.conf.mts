@@ -38,15 +38,25 @@ export const config: WebdriverIO.Config = {
     // How many instances of Obsidian should be launched in parallel during testing.
     maxInstances: Number(process.env["WDIO_MAX_INSTANCES"] || 4),
 
-    capabilities: versions.map(([appVersion, installerVersion]) => ({
-        browserName: 'obsidian',
-        browserVersion: appVersion,
-        'wdio:obsidianOptions': {
-            installerVersion: installerVersion,
-            plugins: ["."],
-            vault: "./test/vault",
-        },
-    })),
+    capabilities: versions
+        .flatMap(v => {
+            return [
+                [...v, "desktop", undefined],
+                [...v, "emulate-mobile", "phone"],
+                [...v, "emulate-mobile", "tablet"],
+            ] as const;
+        })
+        .map(([appVersion, installerVersion, platform, windowSize]) => ({
+            browserName: 'obsidian',
+            browserVersion: appVersion,
+            'wdio:obsidianOptions': {
+                installerVersion: installerVersion,
+                platform: platform,
+                windowSize: windowSize,
+                plugins: ["."],
+                vault: "./test/vault",
+            },
+        })),
 
     framework: 'mocha',
     services: ["obsidian"],

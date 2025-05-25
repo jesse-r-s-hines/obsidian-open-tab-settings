@@ -8,7 +8,7 @@ import { obsidianPage } from "wdio-obsidian-service"
 const tests = () => {
     beforeEach(async function() {
         await obsidianPage.resetVault();
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setConfig('focusNewTab', true);
     });
 
@@ -70,6 +70,7 @@ const tests = () => {
     })
 
     it("Explicit open in new tab to the right still works", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
         await workspacePage.openFile("A.md");
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
         await workspacePage.matchWorkspace([
@@ -79,6 +80,7 @@ const tests = () => {
     })
 
     it("Explicit open in new window still works", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.openFile("A.md");
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
         await workspacePage.matchWorkspace([

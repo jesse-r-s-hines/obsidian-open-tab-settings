@@ -1,9 +1,9 @@
 import { browser } from '@wdio/globals'
-import { obsidianPage } from 'wdio-obsidian-service';
+import workspacePage from 'test/pageobjects/workspace.page';
 
 describe('Test Focus New Tab', function() {
     this.beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
     });
 
     it('should update focusNewTab on boot', async function() {

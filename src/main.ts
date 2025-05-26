@@ -1,7 +1,6 @@
 import {
     App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
-    View, TFile, PaneType, WorkspaceTabs,
-    WorkspaceItem,
+    View, TFile, PaneType, WorkspaceTabs, WorkspaceItem, Platform,
 } from 'obsidian';
 import { PaneTypePatch, TabGroup } from './types';
 import * as monkeyAround from 'monkey-around';
@@ -203,7 +202,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         let dest: TabGroup|undefined;
         let index = 0;
-        if (this.settings.openNewTabsInOtherTabGroup) {
+        if (this.settings.openNewTabsInOtherTabGroup && !Platform.isPhone) {
             // check if there is a split in the same window
             const otherTabGroup = this.getAllTabGroups(activeLeaf.getRoot()).filter(g => g !== activeTabGroup).at(-1);
             if (otherTabGroup) {

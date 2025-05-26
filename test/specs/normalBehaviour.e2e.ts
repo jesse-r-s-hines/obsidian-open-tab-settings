@@ -14,100 +14,91 @@ const tests = () => {
 
     it('Open first file via open modal works', async function() {
         await workspacePage.openFileViaModal("A.md");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [["markdown", "A.md"]]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 
     it("Open first file via file explorer works", async function() {
-        expect(await workspacePage.getAllLeaves()).toEqual([['empty', '']]); // Make sure loadWorkspaceLayout is working
-        
+        await workspacePage.matchWorkspace([[{type: "empty"}]]); // Make sure loadWorkspaceLayout is working
         await workspacePage.openFileViaModal("A.md");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [["markdown", "A.md"]]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
+        await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 
     it("new tab still works", async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
-        expect(await workspacePage.getAllLeaves()).toEqual([["empty", ""], ["markdown", "A.md"]])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["empty", ""]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "empty", active: true},
+        ]]);
     })
 
     it("empty tabs still get replaced", async function() {
-        await obsidianPage.openFile("A.md")
+        await workspacePage.openFile("A.md")
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.openFileViaModal("B.md");
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it("new file still works", async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file");
         // new file normally opens in new tab
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "Untitled.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "Untitled.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "Untitled.md", active: true},
+        ]]);
     })
 
     it("Explicit open in new tab still works when focusNewTab is false", async function() {
         await workspacePage.setConfig('focusNewTab', false);
 
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "A.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", active: true}, {type: "markdown", file: "B.md"},
+        ]]);
     })
 
     it("Explicit open in new tab still works when focusNewTab is true", async function() {
         await workspacePage.setConfig('focusNewTab', true);
 
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 
     it("Explicit open in new tab to the right still works", async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "markdown", file: "B.md"}],
         ]);
-        const aParent = await workspacePage.getLeafParent("A.md");
-        const bParent = await workspacePage.getLeafParent("B.md");
-        expect(aParent).not.toEqual(bParent);
     })
 
     it("Explicit open in new window still works", async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.openLinkInNewWindow(await workspacePage.getLink("B"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "markdown", file: "B.md"}],
         ]);
-        const aParent = await workspacePage.getLeafRoot("A.md");
-        const bParent = await workspacePage.getLeafRoot("B.md");
-        expect(!!(aParent && bParent)).toEqual(true)
-        expect(aParent).not.toEqual(bParent);
+        const aRoot = (await workspacePage.getLeaf("A.md")).root;
+        const bRoot = (await workspacePage.getLeaf("B.md")).root;
+        expect(aRoot).not.toEqual(bRoot);
     })
 
     it("pinned file", async function() {
-        await obsidianPage.openFile("A.md");
+        await workspacePage.openFile("A.md");
         await workspacePage.setActiveFile("A.md")
-        await browser.executeObsidianCommand("workspace:toggle-pin");
+        await workspacePage.pinTab("A.md");
 
         await workspacePage.openLink(await workspacePage.getLink("B"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "A.md"], ["markdown", "B.md"],
-        ])
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeaf(), ["markdown", "B.md"]);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
     })
 }
 
@@ -115,25 +106,25 @@ const noDedupTests = () => {
     it("open self link in new tab focusNewTab true", async function() {
         await workspacePage.setConfig('focusNewTab', true);
 
-        await obsidianPage.openFile("Loop.md");
-        const prevActiveLeaf = await workspacePage.getActiveLeafId();
+        await workspacePage.openFile("Loop.md");
+        const prevActiveLeaf = await workspacePage.getActiveLeaf();
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "Loop.md"], ["markdown", "Loop.md"],
-        ]);
-        expect(await workspacePage.getActiveLeafId()).not.toEqual(prevActiveLeaf);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"}, {type: "markdown", file: "Loop.md", active: true},
+        ]]);
+        expect((await workspacePage.getActiveLeaf()).id).not.toEqual(prevActiveLeaf.id);
     })
 
     it("open self link in new tab focusNewTab false", async function() {
         await workspacePage.setConfig('focusNewTab', false);
 
-        await obsidianPage.openFile("Loop.md");
-        const prevActiveLeaf = await workspacePage.getActiveLeafId();
+        await workspacePage.openFile("Loop.md");
+        const prevActiveLeaf = await workspacePage.getActiveLeaf();
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
-        await workspacePage.waitUntilEqual(() => workspacePage.getAllLeaves(), [
-            ["markdown", "Loop.md"], ["markdown", "Loop.md"],
-        ]);
-        await workspacePage.waitUntilEqual(() => workspacePage.getActiveLeafId(), prevActiveLeaf);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md", active: true}, {type: "markdown", file: "Loop.md"},
+        ]]);
+        expect((await workspacePage.getActiveLeaf()).id).toEqual(prevActiveLeaf.id);
     })
 }
 

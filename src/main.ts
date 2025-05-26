@@ -1,29 +1,34 @@
 import {
     App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
-    View, TFile, PaneType,
+    View, TFile, PaneType, WorkspaceTabs, WorkspaceItem, Platform,
 } from 'obsidian';
+import { PaneTypePatch, TabGroup } from './types';
 import * as monkeyAround from 'monkey-around';
+
+const NEW_TAB_PLACEMENTS = {
+    "after-active": "After active tab",
+    "after-pinned": "After pinned tabs",
+    "end": "At end",
+};
+
 
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
+    newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
+    openNewTabsInOtherTabGroup: boolean,
 }
 
 const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
-}
-
-/** We use this key to check if can safely close a recently created empty leaf during file deduplication. */
-type PaneTypePatch = PaneType|"same";
-type LeafPatch = WorkspaceLeaf & {
-    openTabSettingsLastOpenType?: PaneTypePatch,
+    newTabPlacement: "after-active",
+    openNewTabsInOtherTabGroup: false,
 }
 
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = DEFAULT_SETTINGS;
-    private monkeyPatches: (() => void)[] = []
 
     async onload() {
         await this.loadSettings();
@@ -32,30 +37,37 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const plugin = this;
 
         // Patch getLeaf to always open in new tab
-        this.monkeyPatches.push(
+        this.register(
             monkeyAround.around(Workspace.prototype, {
                 getLeaf(oldMethod: any) {
                     return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
-                        // newLeaf false or undefined means open in current tab. Here we replace those with 'tab' to
-                        // always open in new tab.
-                        let leaf: WorkspaceLeaf;
-                        if (plugin.settings.openInNewTab && !newLeaf) {
-                            newLeaf = "tab"
-                            leaf = oldMethod.call(this, newLeaf, ...args);
-                            // Force focusing the new tab even if focusNewTab is false.
-                            if (!plugin.app.vault.getConfig('focusNewTab')) {
-                                // Might be safer to do this after the layout-change event?
-                                plugin.app.workspace.setActiveLeaf(leaf, {focus: true});
-                            }
+                        // the new tab was requested via a normal, unmodified click
+                        const isDefaultNewTab = plugin.settings.openInNewTab && !newLeaf;
+                        // resolve newLeaf to enum
+                        if (newLeaf == true) {
+                            newLeaf = 'tab';
+                        } else if (plugin.settings.openInNewTab) {
+                            newLeaf = newLeaf || 'tab';
                         } else {
-                            // use default behavior
+                            newLeaf = newLeaf || 'same';
+                        }
+
+                        let leaf: WorkspaceLeaf;
+                        if (newLeaf == 'tab') {
+                            leaf = plugin.getNewLeaf();
+                        } else {
                             leaf = oldMethod.call(this, (newLeaf == 'same' ? false : newLeaf), ...args);
                         }
-                        if (typeof newLeaf == 'boolean' || newLeaf == undefined) {
-                            newLeaf = newLeaf ? 'tab' : 'same';
+
+                        // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
+                        // new tabs created by normal click regardless of focusNewTab
+                        if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
+                            plugin.app.workspace.setActiveLeaf(leaf);
                         }
+
                         // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
-                        (leaf as LeafPatch).openTabSettingsLastOpenType = newLeaf;
+                        leaf.openTabSettingsLastOpenType = newLeaf;
+
                         return leaf;
                     }
                 },
@@ -63,10 +75,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
         );
 
         // Patch openFile to deduplicate tabs
-        this.monkeyPatches.push(
+        this.register(
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
-                    return async function(this: LeafPatch, file, openState, ...args) {
+                    return async function(this: WorkspaceLeaf, file, openState, ...args) {
                         const isEmpty = this.view.getViewType() == "empty";
                         // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                         // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
@@ -121,14 +133,16 @@ export default class OpenTabSettingsPlugin extends Plugin {
         );
     }
 
-    onunload() {
-        for (const uninstaller of this.monkeyPatches) {
-            uninstaller();
-        }
-    }
-
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const dataFile = await this.loadData() ?? {};
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, dataFile);
+
+        if (Object.keys(dataFile).length == 0) {
+            // when using this plugin, focusNewTab should default to false. Set it if this is the first time we've
+            // loaded the plugin.
+            this.app.vault.setConfig('focusNewTab', false);
+            await this.saveSettings();
+        }
     }
 
     async saveSettings() {
@@ -157,7 +171,76 @@ export default class OpenTabSettingsPlugin extends Plugin {
         });
         return matches;
     }
+
+    /**
+     * Gets all tab groups, sorted by active time.
+     */
+    private getAllTabGroups(root: WorkspaceItem): WorkspaceTabs[] {
+        const tabGroups: Set<TabGroup> = new Set(); // sets are ordered
+        this.app.workspace.iterateAllLeaves(leaf => {
+            if (leaf.getRoot() == root) {
+                tabGroups.add(leaf.parent);
+            }
+        });
+        const getActiveTime = (g: TabGroup) => Math.max(...g.children.map(l => l.activeTime ?? 0));
+        return [...tabGroups].sort((a, b) => getActiveTime(a) - getActiveTime(b));
+    }
+
+    /**
+     * Custom variant of the internal workspace.createLeafInTabGroup function that follows our new tab placement logic.
+     */
+    private getNewLeaf() {
+        const activeLeaf = this.app.workspace.getMostRecentLeaf();
+        if (!activeLeaf) throw new Error("No tab group found.");
+        const activeTabGroup = activeLeaf.parent;
+        const activeIndex = activeTabGroup.children.indexOf(activeLeaf);
+
+        // This is default Obsidian behavior, if active leaf is empty new tab replaces it instead of making a new one.
+        if (activeLeaf.view.getViewType() == "empty") {
+            return activeLeaf;
+        }
+
+        let dest: TabGroup|undefined;
+        let index = 0;
+        if (this.settings.openNewTabsInOtherTabGroup && !Platform.isPhone) {
+            // check if there is a split in the same window
+            const otherTabGroup = this.getAllTabGroups(activeLeaf.getRoot()).filter(g => g !== activeTabGroup).at(-1);
+            if (otherTabGroup) {
+                dest = otherTabGroup;
+                index = otherTabGroup.children.length;
+            }
+        }
+        if (!dest && this.settings.newTabPlacement == "after-pinned") {
+            if (activeLeaf.pinned) {
+                dest = activeTabGroup;
+                const nextUnpinned = dest.children.findIndex((l, i) => !l.pinned && i > activeIndex);
+                index = nextUnpinned < 0 ? dest.children.length : nextUnpinned;
+            }
+        }
+        if (!dest && this.settings.newTabPlacement == "end") {
+            dest = activeTabGroup;
+            index = activeTabGroup.children.length;
+        }
+        if (!dest) {
+            dest = activeTabGroup;
+            index = activeIndex + 1;
+        }
+
+        let newLeaf: WorkspaceLeaf;
+        // we re-use empty tabs more aggressively than default Obsidian. If the tab at the new location is empty, re-use
+        // it instead of creating a new one.
+        const leafToDisplace = dest.children[Math.min(index, dest.children.length - 1)];
+        if (leafToDisplace.view.getViewType() == "empty") {
+            newLeaf = leafToDisplace;
+        } else {
+            newLeaf = new (WorkspaceLeaf as any)(this.app);
+            dest.insertChild(index, newLeaf);
+        }
+
+        return newLeaf;
+    }
 }
+
 
 class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
     plugin: OpenTabSettingsPlugin;
@@ -183,8 +266,8 @@ class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('Deduplicate tabs')
-            .setDesc('If a tab is already open, focus it instead of re-opening it.')
+            .setName('Prevent duplicate tabs')
+            .setDesc('If a tab is already open, switch to it instead of re-opening it.')
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.deduplicateTabs)
@@ -195,6 +278,44 @@ class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setDesc('See also: "Always focus in new tab" in Obsidian Editor options')
+            .setName('Focus explicit new tabs')
+            .setDesc(
+                'Immediately switch to new tabs opened via middle or ctrl click instead of opening them in the ' +
+                'background. New tabs created by regular click will always focus regardless.'
+            )
+            // this is just an alias for Obsidian Settings > Editor > Always focus new tabs
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.app.vault.getConfig("focusNewTab") as boolean)
+                    .onChange(async (value) => {
+                        this.app.vault.setConfig("focusNewTab", value)
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        new Setting(this.containerEl)
+            .setName('New tab placement')
+            .setDesc('Where to place new tabs.')
+            .addDropdown(dropdown => 
+                dropdown
+                    .addOptions(NEW_TAB_PLACEMENTS)
+                    .setValue(this.plugin.settings.newTabPlacement)
+                    .onChange(async value => {
+                        this.plugin.settings.newTabPlacement = value as keyof typeof NEW_TAB_PLACEMENTS;
+                        await this.plugin.saveSettings();
+                    })
+            )
+
+        new Setting(this.containerEl)
+            .setName('Prefer opening new tabs in other tab group')
+            .setDesc('When the workspace is split, open links in the opposite panel.')
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.openNewTabsInOtherTabGroup)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openNewTabsInOtherTabGroup = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
     }
 }

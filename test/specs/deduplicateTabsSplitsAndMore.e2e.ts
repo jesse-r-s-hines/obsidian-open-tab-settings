@@ -1,7 +1,6 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { sleep } from './helpers';
 
 
 describe('Test deduplicate for splits and more', function() {

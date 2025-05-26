@@ -1,6 +1,6 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
-import { sleep } from './helpers';
+import { sleep } from '../helpers';
 import { obsidianPage } from 'wdio-obsidian-service';
 
 

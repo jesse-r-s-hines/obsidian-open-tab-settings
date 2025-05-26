@@ -6,7 +6,13 @@ import { WorkspaceLeaf } from 'obsidian';
 
 
 describe('Test open in new tab for splits and more', function() {
+    let mainWindow: string|undefined
+    before(async function() {
+        mainWindow = await browser.getWindowHandle();
+    })
+
     beforeEach(async function() {
+        await browser.switchToWindow(mainWindow!);
         await obsidianPage.loadWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
@@ -42,7 +48,6 @@ describe('Test open in new tab for splits and more', function() {
         await sleep(250);
         await workspacePage.setActiveFile("A.md");
 
-        const mainWindow = await browser.getWindowHandle();
         const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
 
         await workspacePage.openLink(await workspacePage.getLink("B"));
@@ -59,8 +64,6 @@ describe('Test open in new tab for splits and more', function() {
             [{file: "A.md"}, {file: "B.md"}],
             [{file: "D.md"}, {file: "Loop.md", active: true}],
         ]);
-
-        await browser.switchToWindow(mainWindow);
     })
 
     it("test sidebars", async function() {

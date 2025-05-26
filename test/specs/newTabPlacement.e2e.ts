@@ -5,7 +5,13 @@ import { obsidianPage } from 'wdio-obsidian-service';
 
 
 describe('Test new tab placement', function() {
+    let mainWindow: string|undefined
+    before(async function() {
+        mainWindow = await browser.getWindowHandle();
+    })
+
     beforeEach(async function() {
+        await browser.switchToWindow(mainWindow!);
         await obsidianPage.loadWorkspaceLayout("empty");
         await workspacePage.setSettings({
             openInNewTab: false, deduplicateTabs: false,
@@ -300,7 +306,5 @@ describe('Test new tab placement', function() {
             [{file: "D.md", active: true}],
             [{file: "Loop.md"}, {file: "Loop.md"}],
         ]);
-
-        await browser.switchToWindow(mainWindow);
     })
 })

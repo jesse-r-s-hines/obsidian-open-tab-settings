@@ -1,19 +1,17 @@
 [![Test](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml)
 # Open Tab Settings
 
-This plugin adds more settings for how Obsidian opens tabs and navigates between files including options to:
-- Open in new tab by default
-- Switch to existing tab instead of opening a duplicate file
+This plugin adds more settings to customize how Obsidian opens tabs and navigates between files including options to:
+- open in new tab by default
+- switch to existing tab instead of opening a duplicate file
+- place new tabs at the end, or after pinned tabs
+- open new tabs in the opposite pane when using a split workspace
 
-Using these settings can enable a more familiar workflow for those used to working in editors like VSCode.
+Using these settings can enable a more familiar workflow for those used to working in editors like VSCode. With the "Always open in new tab" toggled, Obsidian will always open files in a new tab, whether they were opened via links, the quick switcher, file explorer, etc. Never accidentally lose your tabs again!
 
-There are several plugins already that attempt to solve this problem with different pros and cons. However, most other options either only work in specific menus or have to use a timer delay before applying the new behavior, resulting in the current note visibly navigating to the new file before switching to the new tab.
+There are several plugins already that attempt to solve this problem with different pros and cons. However, most other options either only work in specific menus or have to use a noticeable timer delay before opening new tabs. The [Opener](https://github.com/aidan-gibson/obsidian-opener) plugin is the most similar plugin to "Open Tab Settings", and heavily inspired this plugin. Opener patches some internal Obsidian methods to modify Obsidian's default behavior across the app without needing any timer delays. However, it is no longer actively maintained, and broken on the latest Obsidian version last I checked. Like "Opener", "Open Tab Settings" works by patching Obsidian's internal methods to achieve consistent new tab behavior throughout Obsidian. It also avoids a few small caveats "Opener" had by making actions like "Open Graph" also open in a new tab.
 
-[Opener](https://github.com/aidan-gibson/obsidian-opener) is the most similar plugin to "Open Tab Settings", and heavily inspired this plugin. It patches Obsidian methods to modify Obsidian's default behavior across the app. However, it is no longer actively maintained, and broken on the latest Obsidian version last I checked.
-
-Like "Opener", "Open Tab Settings" works by patching Obsidian's `openFile` method to achieve consistent new tab behavior throughout Obsidian, including the file explorer, links, quick switcher, etc. It avoids a few small caveats in "Opener" by patching Obsidian's `getLeaf` function so that actions like "Open Graph" also open in a new tab.
-
-## Local Development
+## Contributing
 You can build the plugin with:
 ```shell
 npm install

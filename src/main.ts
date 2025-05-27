@@ -97,7 +97,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
                                 const result = await oldMethod.call(matches[0], file, {
                                     ...openState,
-                                    active: activeLeaf == this,
+                                    active: !!openState?.active || activeLeaf == this,
                                 }, ...args);
                                 // If a file is opened in new tab, either from middle click or if openInNewTab is
                                 // enabled, then getLeaf('tab') will be called first and make a new empty tab. Here we

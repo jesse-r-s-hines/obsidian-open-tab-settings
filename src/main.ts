@@ -101,9 +101,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 }, ...args);
                                 // If a file is opened in new tab, either from middle click or if openInNewTab is
                                 // enabled, then getLeaf('tab') will be called first and make a new empty tab. Here we
-                                // just close the tab after switching to the existing tab.
-                                // TODO: Is there a cleaner way to do this?
-                                if (isEmpty) {
+                                // just close the empty tab after switching to the existing tab, as long as doing so
+                                // won't close the whole tab group
+                                if (isEmpty && this.parent.children.length > 1) {
                                     this.detach();
                                 }
                                 return result;

@@ -307,4 +307,26 @@ describe('Test new tab placement', function() {
             [{file: "Loop.md"}, {file: "Loop.md"}],
         ]);
     })
+
+    it("openNewTabsInOtherTabGroup deduplicate doesn't delete panel", async function() {
+        await workspacePage.setSettings({ deduplicateTabs: true });
+        // A is in left, Loop is in right
+        await obsidianPage.loadWorkspaceLayout("split")
+        await workspacePage.setActiveFile("Loop.md");
+        await browser.executeObsidianCommand("workspace:new-tab");
+        await workspacePage.setActiveFile("Loop.md");
+        await browser.executeObsidianCommand("workspace:close");
+
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "empty", active: true}],
+        ]);
+
+        await workspacePage.openFileViaFileExplorer("A.md");
+
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md", active: true}],
+            [{type: "empty"}],
+        ]);
+    })
 })

@@ -9,6 +9,20 @@ import {
 import { PaneTypePatch, TabGroup } from './types';
 
 
+function isEmptyLeaf(leaf: WorkspaceLeaf) {
+    // home-tab plugin replaces new tab with home tabs, which should be treated like empty.
+    return ["empty", "home-tab-view"].includes(leaf.view.getViewType())
+}
+
+/**
+ * Special view types added by plugins that should be deduplicated like normal files.
+ * This is only needed if the view is not registered as as the default view for an extension.
+ */
+const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
+    "md": ["excalidraw"],
+}
+
+
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
 
@@ -81,7 +95,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
                     return async function(this: WorkspaceLeaf, file, openState, ...args) {
-                        const isEmpty = this.view.getViewType() == "empty";
+                        const isEmpty = isEmptyLeaf(this);
                         // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                         // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
                         // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
@@ -164,7 +178,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             const viewType = leaf.view.getViewType();
             const isTypeMatch = (
                 this.app.viewRegistry.getTypeByExtension(file.extension) == viewType ||
-                (file.extension == "md" && viewType == "excalidraw") // special case for excalidraw
+                PLUGIN_VIEW_TYPES[file.extension]?.includes(viewType)
             );
 
             if (isMainLeaf && isFileMatch && isTypeMatch) {
@@ -198,7 +212,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const activeIndex = activeTabGroup.children.indexOf(activeLeaf);
 
         // This is default Obsidian behavior, if active leaf is empty new tab replaces it instead of making a new one.
-        if (activeLeaf.view.getViewType() == "empty") {
+        if (isEmptyLeaf(activeLeaf)) {
             return activeLeaf;
         }
 
@@ -232,7 +246,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         // we re-use empty tabs more aggressively than default Obsidian. If the tab at the new location is empty, re-use
         // it instead of creating a new one.
         const leafToDisplace = dest.children[Math.min(index, dest.children.length - 1)];
-        if (leafToDisplace.view.getViewType() == "empty") {
+        if (isEmptyLeaf(leafToDisplace)) {
             newLeaf = leafToDisplace;
         } else {
             newLeaf = new (WorkspaceLeaf as any)(this.app);

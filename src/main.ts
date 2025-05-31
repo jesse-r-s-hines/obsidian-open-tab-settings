@@ -37,15 +37,15 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         let leaf: WorkspaceLeaf;
                         if (newLeaf == 'tab') {
                             leaf = plugin.getNewLeaf();
+                            // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
+                            // new tabs created by normal click regardless of focusNewTab
+                            if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
+                                plugin.app.workspace.setActiveLeaf(leaf);
+                            }
                         } else {
                             leaf = oldMethod.call(this, (newLeaf == 'same' ? false : newLeaf), ...args);
                         }
 
-                        // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
-                        // new tabs created by normal click regardless of focusNewTab
-                        if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
-                            plugin.app.workspace.setActiveLeaf(leaf);
-                        }
 
                         // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
                         leaf.openTabSettingsLastOpenType = newLeaf;

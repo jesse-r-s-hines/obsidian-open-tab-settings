@@ -1,9 +1,11 @@
 import { browser } from '@wdio/globals'
 import { obsidianPage } from 'wdio-obsidian-service';
+import workspacePage from 'test/pageobjects/workspace.page';
 
-describe('Test Focus New Tab', function() {
-    this.beforeEach(async function() {
+describe('Misc', function() {
+    beforeEach(async function() {
         await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
     });
 
     it('should update focusNewTab on boot', async function() {
@@ -18,4 +20,28 @@ describe('Test Focus New Tab', function() {
     });
 
     // focusNewTab interaction is tested more in the other specs
+
+    it('getUnpinnedLeaf openInNewTab true', async function() {
+        await workspacePage.setSettings({ openInNewTab: true });
+        await workspacePage.openFile("A.md");
+        await browser.executeObsidian(async ({app}) => {
+            await app.workspace.getUnpinnedLeaf().openFile(app.vault.getFileByPath("B.md")!);
+        })
+
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true}],
+        ]);
+    });
+
+    it('getUnpinnedLeaf openInNewTab false', async function() {
+        await workspacePage.setSettings({ openInNewTab: false });
+        await workspacePage.openFile("A.md");
+        await browser.executeObsidian(async ({app}) => {
+            await app.workspace.getUnpinnedLeaf().openFile(app.vault.getFileByPath("B.md")!);
+        })
+
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "B.md", active: true}],
+        ]);
+    });
 })

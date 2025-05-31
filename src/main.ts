@@ -17,6 +17,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
         const plugin = this;
+        const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf;
 
         // Patch getLeaf to always open in new tab
         this.register(
@@ -42,8 +43,15 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
                                 plugin.app.workspace.setActiveLeaf(leaf);
                             }
+                        } else if (newLeaf == "same") {
+                             // avoid recursion in getLeaf. Add check for if getUnpinnedLeaf is removed
+                            if (plugin.settings.openInNewTab && oldGetUnpinnedLeaf) {
+                                leaf = oldGetUnpinnedLeaf.call(this);
+                            } else {
+                                leaf = oldMethod.call(this, false, ...args);
+                            }
                         } else {
-                            leaf = oldMethod.call(this, (newLeaf == 'same' ? false : newLeaf), ...args);
+                            leaf = oldMethod.call(this, newLeaf, ...args);
                         }
 
 
@@ -51,6 +59,18 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         leaf.openTabSettingsLastOpenType = newLeaf;
 
                         return leaf;
+                    }
+                },
+
+                // getUnpinnedLeaf is deprecated in favor of getLeaf(false). Obsidian doesn't use getUnpinnedLeaf
+                // anywhere except inside getLeaf, but some plugins still use it directly so we'll patch it as well.
+                getUnpinnedLeaf(oldMethod: any) {
+                    return function(this: Workspace, ...args) {
+                        if (plugin.settings.openInNewTab) {
+                            return plugin.app.workspace.getLeaf("tab");
+                        } else {
+                            return oldMethod.call(this, ...args);
+                        }
                     }
                 },
             })

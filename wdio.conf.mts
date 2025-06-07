@@ -43,7 +43,11 @@ export const config: WebdriverIO.Config = {
         browserVersion: appVersion,
         'wdio:obsidianOptions': {
             installerVersion: installerVersion,
-            plugins: ["."],
+            plugins: [
+                ".",
+                {id: "obsidian-excalidraw-plugin", enabled: false},
+                {id: "home-tab", enabled: false},
+            ],
             vault: "./test/vault",
         },
     })),

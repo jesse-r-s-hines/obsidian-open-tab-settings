@@ -1,40 +1,37 @@
 import {
-    App, Plugin, PluginSettingTab, Setting, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating,
-    View, TFile, PaneType, WorkspaceTabs, WorkspaceItem, Platform,
+    Plugin, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating, View, TFile, PaneType, WorkspaceTabs,
+    WorkspaceItem, Platform,
 } from 'obsidian';
-import { PaneTypePatch, TabGroup } from './types';
 import * as monkeyAround from 'monkey-around';
-
-const NEW_TAB_PLACEMENTS = {
-    "after-active": "After active tab",
-    "after-pinned": "After pinned tabs",
-    "end": "At end",
-};
+import {
+    OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS, NEW_TAB_PLACEMENTS,
+} from './settings';
+import { PaneTypePatch, TabGroup } from './types';
 
 
-export interface OpenTabSettingsPluginSettings {
-    openInNewTab: boolean,
-    deduplicateTabs: boolean,
-    newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
-    openNewTabsInOtherTabGroup: boolean,
+function isEmptyLeaf(leaf: WorkspaceLeaf) {
+    // home-tab plugin replaces new tab with home tabs, which should be treated like empty.
+    return ["empty", "home-tab-view"].includes(leaf.view.getViewType())
 }
 
-const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
-    openInNewTab: true,
-    deduplicateTabs: true,
-    newTabPlacement: "after-active",
-    openNewTabsInOtherTabGroup: false,
+/**
+ * Special view types added by plugins that should be deduplicated like normal files.
+ * This is only needed if the view is not registered as as the default view for an extension.
+ */
+const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
+    "md": ["excalidraw"],
 }
 
 
 export default class OpenTabSettingsPlugin extends Plugin {
-    settings: OpenTabSettingsPluginSettings = DEFAULT_SETTINGS;
+    settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
 
     async onload() {
         await this.loadSettings();
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
         const plugin = this;
+        const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf;
 
         // Patch getLeaf to always open in new tab
         this.register(
@@ -55,20 +52,39 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         let leaf: WorkspaceLeaf;
                         if (newLeaf == 'tab') {
                             leaf = plugin.getNewLeaf();
+                            // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
+                            // new tabs created by normal click regardless of focusNewTab
+                            if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
+                                plugin.app.workspace.setActiveLeaf(leaf);
+                            }
+                        } else if (newLeaf == "same") {
+                             // avoid recursion in getLeaf. Add check for if getUnpinnedLeaf is removed
+                            if (plugin.settings.openInNewTab && oldGetUnpinnedLeaf) {
+                                leaf = oldGetUnpinnedLeaf.call(this);
+                            } else {
+                                leaf = oldMethod.call(this, false, ...args);
+                            }
                         } else {
-                            leaf = oldMethod.call(this, (newLeaf == 'same' ? false : newLeaf), ...args);
+                            leaf = oldMethod.call(this, newLeaf, ...args);
                         }
 
-                        // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
-                        // new tabs created by normal click regardless of focusNewTab
-                        if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
-                            plugin.app.workspace.setActiveLeaf(leaf);
-                        }
 
                         // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
                         leaf.openTabSettingsLastOpenType = newLeaf;
 
                         return leaf;
+                    }
+                },
+
+                // getUnpinnedLeaf is deprecated in favor of getLeaf(false). Obsidian doesn't use getUnpinnedLeaf
+                // anywhere except inside getLeaf, but some plugins still use it directly so we'll patch it as well.
+                getUnpinnedLeaf(oldMethod: any) {
+                    return function(this: Workspace, ...args) {
+                        if (plugin.settings.openInNewTab) {
+                            return plugin.app.workspace.getLeaf("tab");
+                        } else {
+                            return oldMethod.call(this, ...args);
+                        }
                     }
                 },
             })
@@ -79,7 +95,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             monkeyAround.around(WorkspaceLeaf.prototype, {
                 openFile(oldMethod: any) {
                     return async function(this: WorkspaceLeaf, file, openState, ...args) {
-                        const isEmpty = this.view.getViewType() == "empty";
+                        const isEmpty = isEmptyLeaf(this);
                         // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                         // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
                         // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
@@ -101,9 +117,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 }, ...args);
                                 // If a file is opened in new tab, either from middle click or if openInNewTab is
                                 // enabled, then getLeaf('tab') will be called first and make a new empty tab. Here we
-                                // just close the tab after switching to the existing tab.
-                                // TODO: Is there a cleaner way to do this?
-                                if (isEmpty) {
+                                // just close the empty tab after switching to the existing tab, as long as doing so
+                                // won't close the whole tab group
+                                if (isEmpty && this.parent.children.length > 1) {
                                     this.detach();
                                 }
                                 return result;
@@ -162,7 +178,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             const viewType = leaf.view.getViewType();
             const isTypeMatch = (
                 this.app.viewRegistry.getTypeByExtension(file.extension) == viewType ||
-                (file.extension == "md" && viewType == "excalidraw") // special case for excalidraw
+                PLUGIN_VIEW_TYPES[file.extension]?.includes(viewType)
             );
 
             if (isMainLeaf && isFileMatch && isTypeMatch) {
@@ -196,7 +212,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const activeIndex = activeTabGroup.children.indexOf(activeLeaf);
 
         // This is default Obsidian behavior, if active leaf is empty new tab replaces it instead of making a new one.
-        if (activeLeaf.view.getViewType() == "empty") {
+        if (isEmptyLeaf(activeLeaf)) {
             return activeLeaf;
         }
 
@@ -230,7 +246,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         // we re-use empty tabs more aggressively than default Obsidian. If the tab at the new location is empty, re-use
         // it instead of creating a new one.
         const leafToDisplace = dest.children[Math.min(index, dest.children.length - 1)];
-        if (leafToDisplace.view.getViewType() == "empty") {
+        if (isEmptyLeaf(leafToDisplace)) {
             newLeaf = leafToDisplace;
         } else {
             newLeaf = new (WorkspaceLeaf as any)(this.app);
@@ -238,84 +254,5 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         return newLeaf;
-    }
-}
-
-
-class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
-    plugin: OpenTabSettingsPlugin;
-
-    constructor(app: App, plugin: OpenTabSettingsPlugin) {
-        super(app, plugin);
-        this.plugin = plugin;
-    }
-
-    display(): void {
-        this.containerEl.empty();
-
-        new Setting(this.containerEl)
-            .setName('Always open in new tab')
-            .setDesc('Open files in a new tab by default.')
-            .addToggle(toggle =>
-                toggle
-                    .setValue(this.plugin.settings.openInNewTab)
-                    .onChange(async (value) => {
-                        this.plugin.settings.openInNewTab = value;
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName('Prevent duplicate tabs')
-            .setDesc('If a tab is already open, switch to it instead of re-opening it.')
-            .addToggle(toggle =>
-                toggle
-                    .setValue(this.plugin.settings.deduplicateTabs)
-                    .onChange(async (value) => {
-                        this.plugin.settings.deduplicateTabs = value;
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName('Focus explicit new tabs')
-            .setDesc(
-                'Immediately switch to new tabs opened via middle or ctrl click instead of opening them in the ' +
-                'background. New tabs created by regular click will always focus regardless.'
-            )
-            // this is just an alias for Obsidian Settings > Editor > Always focus new tabs
-            .addToggle(toggle =>
-                toggle
-                    .setValue(this.app.vault.getConfig("focusNewTab") as boolean)
-                    .onChange(async (value) => {
-                        this.app.vault.setConfig("focusNewTab", value)
-                        await this.plugin.saveSettings();
-                    })
-            );
-
-        new Setting(this.containerEl)
-            .setName('New tab placement')
-            .setDesc('Where to place new tabs.')
-            .addDropdown(dropdown => 
-                dropdown
-                    .addOptions(NEW_TAB_PLACEMENTS)
-                    .setValue(this.plugin.settings.newTabPlacement)
-                    .onChange(async value => {
-                        this.plugin.settings.newTabPlacement = value as keyof typeof NEW_TAB_PLACEMENTS;
-                        await this.plugin.saveSettings();
-                    })
-            )
-
-        new Setting(this.containerEl)
-            .setName('Prefer opening new tabs in other tab group')
-            .setDesc('When the workspace is split, open links in the opposite panel.')
-            .addToggle(toggle =>
-                toggle
-                    .setValue(this.plugin.settings.openNewTabsInOtherTabGroup)
-                    .onChange(async (value) => {
-                        this.plugin.settings.openNewTabsInOtherTabGroup = value;
-                        await this.plugin.saveSettings();
-                    })
-            );
     }
 }

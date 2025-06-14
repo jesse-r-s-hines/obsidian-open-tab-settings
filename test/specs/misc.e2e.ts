@@ -44,4 +44,13 @@ describe('Misc', function() {
             [{type: "markdown", file: "B.md", active: true}],
         ]);
     });
+
+    it('commands', async function() {
+        await workspacePage.setSettings({ openInNewTab: false });
+        await browser.executeObsidianCommand("open-tab-settings:toggle-open-in-new-tab");
+        const value = await browser.executeObsidian(async ({plugins}) => {
+            return plugins.openTabSettings.settings.openInNewTab;
+        })
+        expect(value).toBe(true);
+    });
 })

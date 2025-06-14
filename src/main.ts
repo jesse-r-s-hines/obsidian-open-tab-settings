@@ -147,6 +147,35 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 }
             })
         );
+
+        const commands = [
+            ["openInNewTab", "always open in new tab"],
+            ["deduplicateTabs", "prevent duplicate tabs"],
+        ] as const;
+        for (const [setting, name] of commands) {
+            const id = setting.replace(/[A-Z]/g, l => `-${l.toLowerCase()}`)
+            this.addCommand({
+                id: `toggle-${id}`, name: `Toggle ${name}`,
+                callback: async () => {
+                    this.settings[setting] = !this.settings[setting];
+                    await this.saveSettings();
+                },
+            });
+            this.addCommand({
+                id: `enable-${id}`, name: `Enable ${name}`,
+                callback: async () => {
+                    this.settings[setting] = true;
+                    await this.saveSettings();
+                },
+            });
+            this.addCommand({
+                id: `disable-${id}`, name: `Disable ${name}`,
+                callback: async () => {
+                    this.settings[setting] = false;
+                    await this.saveSettings();
+                },
+            });
+        }
     }
 
     async loadSettings() {

@@ -9,10 +9,7 @@ describe('Plugin compatibility', function() {
     });
 
     describe("Excalidraw", function () {
-        before(async function() {
-            await obsidianPage.enablePlugin("obsidian-excalidraw-plugin");
-            await browser.$("button=Close").click().catch(() => {}); // close Excalidraw welcome popup
-        });
+        before(async function() { await obsidianPage.enablePlugin("obsidian-excalidraw-plugin") });
         after(async function() { await obsidianPage.disablePlugin("obsidian-excalidraw-plugin") });
 
         it('deduplicates drawings', async function() {

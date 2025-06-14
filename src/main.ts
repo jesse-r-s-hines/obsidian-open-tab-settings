@@ -30,108 +30,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
         await this.loadSettings();
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
-        const plugin = this;
-        const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf;
 
-        // Patch getLeaf to always open in new tab
-        this.register(
-            monkeyAround.around(Workspace.prototype, {
-                getLeaf(oldMethod: any) {
-                    return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
-                        // the new tab was requested via a normal, unmodified click
-                        const isDefaultNewTab = plugin.settings.openInNewTab && !newLeaf;
-                        // resolve newLeaf to enum
-                        if (newLeaf == true) {
-                            newLeaf = 'tab';
-                        } else if (plugin.settings.openInNewTab) {
-                            newLeaf = newLeaf || 'tab';
-                        } else {
-                            newLeaf = newLeaf || 'same';
-                        }
-
-                        let leaf: WorkspaceLeaf;
-                        if (newLeaf == 'tab') {
-                            leaf = plugin.getNewLeaf();
-                            // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
-                            // new tabs created by normal click regardless of focusNewTab
-                            if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
-                                plugin.app.workspace.setActiveLeaf(leaf);
-                            }
-                        } else if (newLeaf == "same") {
-                             // avoid recursion in getLeaf. Add check for if getUnpinnedLeaf is removed
-                            if (plugin.settings.openInNewTab && oldGetUnpinnedLeaf) {
-                                leaf = oldGetUnpinnedLeaf.call(this);
-                            } else {
-                                leaf = oldMethod.call(this, false, ...args);
-                            }
-                        } else {
-                            leaf = oldMethod.call(this, newLeaf, ...args);
-                        }
-
-
-                        // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
-                        leaf.openTabSettingsLastOpenType = newLeaf;
-
-                        return leaf;
-                    }
-                },
-
-                // getUnpinnedLeaf is deprecated in favor of getLeaf(false). Obsidian doesn't use getUnpinnedLeaf
-                // anywhere except inside getLeaf, but some plugins still use it directly so we'll patch it as well.
-                getUnpinnedLeaf(oldMethod: any) {
-                    return function(this: Workspace, ...args) {
-                        if (plugin.settings.openInNewTab) {
-                            return plugin.app.workspace.getLeaf("tab");
-                        } else {
-                            return oldMethod.call(this, ...args);
-                        }
-                    }
-                },
-            })
-        );
-
-        // Patch openFile to deduplicate tabs
-        this.register(
-            monkeyAround.around(WorkspaceLeaf.prototype, {
-                openFile(oldMethod: any) {
-                    return async function(this: WorkspaceLeaf, file, openState, ...args) {
-                        const isEmpty = isEmptyLeaf(this);
-                        // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
-                        // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
-                        // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
-                        // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the
-                        // leaf was created before the plugin was loaded or such.
-                        const isSpecialOpen = isEmpty && (
-                            !this.openTabSettingsLastOpenType ||
-                            !['same', 'tab'].includes(this.openTabSettingsLastOpenType)
-                        );
-                        if (plugin.settings.deduplicateTabs && !isSpecialOpen) {
-                            // Check if there are any duplicate tabs
-                            const matches = await plugin.findMatchingLeaves(file);
-                            if (!matches.includes(this) && matches.length > 0) {
-                                const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
-
-                                const result = await oldMethod.call(matches[0], file, {
-                                    ...openState,
-                                    active: !!openState?.active || activeLeaf == this,
-                                }, ...args);
-                                // If a file is opened in new tab, either from middle click or if openInNewTab is
-                                // enabled, then getLeaf('tab') will be called first and make a new empty tab. Here we
-                                // just close the empty tab after switching to the existing tab, as long as doing so
-                                // won't close the whole tab group
-                                if (isEmpty && this.parent.children.length > 1) {
-                                    this.detach();
-                                }
-                                return result;
-                            }
-                        }
-
-                        // use default behavior
-                        return oldMethod.call(this, file, openState, ...args)
-                    }
-                },
-            })
-        );
+        this.monkeyPatches();
 
         this.registerEvent(
             this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
@@ -176,6 +76,107 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 },
             });
         }
+    }
+
+    async monkeyPatches() {
+        const plugin = this;
+        const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf;
+
+        // Patch getLeaf to always open in new tab
+        this.register(monkeyAround.around(Workspace.prototype, {
+            getLeaf(oldMethod: any) {
+                return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
+                    // the new tab was requested via a normal, unmodified click
+                    const isDefaultNewTab = plugin.settings.openInNewTab && !newLeaf;
+                    // resolve newLeaf to enum
+                    if (newLeaf == true) {
+                        newLeaf = 'tab';
+                    } else if (plugin.settings.openInNewTab) {
+                        newLeaf = newLeaf || 'tab';
+                    } else {
+                        newLeaf = newLeaf || 'same';
+                    }
+
+                    let leaf: WorkspaceLeaf;
+                    if (newLeaf == 'tab') {
+                        leaf = plugin.getNewLeaf();
+                        // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
+                        // new tabs created by normal click regardless of focusNewTab
+                        if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
+                            plugin.app.workspace.setActiveLeaf(leaf);
+                        }
+                    } else if (newLeaf == "same") {
+                            // avoid recursion in getLeaf. Add check for if getUnpinnedLeaf is removed
+                        if (plugin.settings.openInNewTab && oldGetUnpinnedLeaf) {
+                            leaf = oldGetUnpinnedLeaf.call(this);
+                        } else {
+                            leaf = oldMethod.call(this, false, ...args);
+                        }
+                    } else {
+                        leaf = oldMethod.call(this, newLeaf, ...args);
+                    }
+
+
+                    // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
+                    leaf.openTabSettingsLastOpenType = newLeaf;
+
+                    return leaf;
+                }
+            },
+
+            // getUnpinnedLeaf is deprecated in favor of getLeaf(false). Obsidian doesn't use getUnpinnedLeaf anywhere
+            // except inside getLeaf, but some plugins still use it directly so we'll patch it as well.
+            getUnpinnedLeaf(oldMethod: any) {
+                return function(this: Workspace, ...args) {
+                    if (plugin.settings.openInNewTab) {
+                        return plugin.app.workspace.getLeaf("tab");
+                    } else {
+                        return oldMethod.call(this, ...args);
+                    }
+                }
+            },
+        }));
+
+        // Patch openFile to deduplicate tabs
+        this.register(monkeyAround.around(WorkspaceLeaf.prototype, {
+            openFile(oldMethod: any) {
+                return async function(this: WorkspaceLeaf, file, openState, ...args) {
+                    const isEmpty = isEmptyLeaf(this);
+                    // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
+                    // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
+                    // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
+                    // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the leaf
+                    // was created before the plugin was loaded or such.
+                    const isSpecialOpen = isEmpty && (
+                        !this.openTabSettingsLastOpenType ||
+                        !['same', 'tab'].includes(this.openTabSettingsLastOpenType)
+                    );
+                    if (plugin.settings.deduplicateTabs && !isSpecialOpen) {
+                        // Check if there are any duplicate tabs
+                        const matches = await plugin.findMatchingLeaves(file);
+                        if (!matches.includes(this) && matches.length > 0) {
+                            const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
+
+                            const result = await oldMethod.call(matches[0], file, {
+                                ...openState,
+                                active: !!openState?.active || activeLeaf == this,
+                            }, ...args);
+                            // If a file is opened in new tab, either from middle click or if openInNewTab is enabled,
+                            // then getLeaf('tab') will be called first and make a new empty tab. Here we just close the
+                            // empty tab after switching to the existing tab, as long as doing so won't close the whole
+                            // tab group
+                            if (isEmpty && this.parent.children.length > 1) {
+                                this.detach();
+                            }
+                            return result;
+                        }
+                    }
+
+                    // use default behavior
+                    return oldMethod.call(this, file, openState, ...args)
+                }
+            },
+        }));
     }
 
     async loadSettings() {

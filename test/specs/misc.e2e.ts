@@ -53,4 +53,24 @@ describe('Misc', function() {
         })
         expect(value).toBe(true);
     });
+
+    it('Test mod click', async function() {
+        await workspacePage.setSettings({ openInSameTabOnModClick: true });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md", active: true},
+        ]]);
+    });
+
+    it('Test mod new tab disabled', async function() {
+        await workspacePage.setSettings({ openInNewTab: false, openInSameTabOnModClick: true });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md"},
+        ]]);
+    });
 })

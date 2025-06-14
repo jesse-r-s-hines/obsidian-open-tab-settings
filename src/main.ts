@@ -1,11 +1,9 @@
 import {
     Plugin, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating, View, TFile, PaneType, WorkspaceTabs,
-    WorkspaceItem, Platform,
+    WorkspaceItem, Platform, Keymap,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
-import {
-    OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS, NEW_TAB_PLACEMENTS,
-} from './settings';
+import { OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS } from './settings';
 import { PaneTypePatch, TabGroup } from './types';
 
 
@@ -174,6 +172,21 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
                     // use default behavior
                     return oldMethod.call(this, file, openState, ...args)
+                }
+            },
+        }));
+
+        // Patch isModEvent to open in same tab
+        // We could actually just patch isModEvent instead of getLeaf for most cases, but there's quite a few places
+        // that call getLeaf without isModEvent, such as the graph view.
+        this.register(monkeyAround.around(Keymap, {
+            isModEvent(oldMethod: any) {
+                return function(this: any, ...args) {
+                    let result = oldMethod.call(this, ...args);
+                    if (plugin.settings.openInNewTab && plugin.settings.openInSameTabOnModClick && result == 'tab') {
+                        result = 'same';
+                    }
+                    return result;
                 }
             },
         }));

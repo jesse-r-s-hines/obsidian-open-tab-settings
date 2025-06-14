@@ -10,6 +10,7 @@ export const NEW_TAB_PLACEMENTS = {
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
+    openInSameTabOnModClick: boolean,
     newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
     openNewTabsInOtherTabGroup: boolean,
 }
@@ -17,6 +18,7 @@ export interface OpenTabSettingsPluginSettings {
 export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
+    openInSameTabOnModClick: false,
     newTabPlacement: "after-active",
     openNewTabsInOtherTabGroup: false,
 }
@@ -32,6 +34,13 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
     display(): void {
         this.containerEl.empty();
 
+        const update = () => {
+            openInSameTabOnModClickSetting.settingEl.setCssStyles({
+                opacity: this.plugin.settings.openInNewTab ? "" : "50%",
+            });
+            openInSameTabOnModClickSetting.setDisabled(!this.plugin.settings.openInNewTab);
+        }
+
         new Setting(this.containerEl)
             .setName('Always open in new tab')
             .setDesc('Open files in a new tab by default.')
@@ -41,6 +50,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .onChange(async (value) => {
                         this.plugin.settings.openInNewTab = value;
                         await this.plugin.saveSettings();
+                        update();
                     })
             );
 
@@ -52,6 +62,20 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.deduplicateTabs)
                     .onChange(async (value) => {
                         this.plugin.settings.deduplicateTabs = value;
+                        await this.plugin.saveSettings();
+                    })
+            );
+
+        const openInSameTabOnModClickSetting = new Setting(this.containerEl)
+            .setName('Open in same tab on ctrl/middle click')
+            .setDesc(
+                'When "Always open in new tab" is enabled, open in same tab when using Ctrl click or middle click.'
+            )
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.openInSameTabOnModClick)
+                    .onChange(async (value) => {
+                        this.plugin.settings.openInSameTabOnModClick = value;
                         await this.plugin.saveSettings();
                     })
             );
@@ -96,5 +120,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         await this.plugin.saveSettings();
                     })
             );
+
+        update();
     }
 }

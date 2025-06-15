@@ -29,7 +29,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
 
-        this.monkeyPatches();
+        this.registerMonkeyPatches();
 
         this.registerEvent(
             this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
@@ -73,7 +73,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
     }
 
-    async monkeyPatches() {
+    async registerMonkeyPatches() {
         const plugin = this;
         const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf;
 

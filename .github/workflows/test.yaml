@@ -56,17 +56,14 @@ jobs:
           path: .obsidian-cache
           key: obsidian-cache-${{ matrix.os }}-${{ hashFiles('obsidian-versions-lock.txt') }}
 
-      # Obsidian won't run headless. On linux runners we need to set up a virtual graphics stack.
-      # Here we use xvfb as a virtual display server and qtile as the window manager. (You can
-      # often get by without qtile but Obsidian popout windows will have issues without it.)
-      - if: ${{ matrix.os == 'ubuntu-latest' }}
-        name: "Cache qtile"
-        uses: actions/cache@v4
+      # On linux runners we need to set up a virtual graphics stack for Obsidian. Here we use xvfb
+      # as a virtual display server and herbstluftwm as the window manager. (You can often get by
+      # without a window manager but Obsidian popout windows will have issues without it.)
+      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
-          path: |
-            /opt/pipx/venvs/qtile
-            /opt/pipx_bin/qtile
-          key: ${{ runner.os }}-qtile
+          packages: herbstluftwm
+          version: 1.0
+          execute_install_scripts: true
       - if: ${{ matrix.os == 'ubuntu-latest' }}
         name: "Setup virtual graphics"
         run: |
@@ -74,12 +71,7 @@ jobs:
           echo "DISPLAY=$DISPLAY" >> "$GITHUB_ENV"
           Xvfb $DISPLAY -screen 0 1280x1024x24 +extension GLX -noreset &
           sleep 1
-          pipx install qtile
-          cat << EOF > /tmp/qtile_config.py
-          from libqtile import layout
-          layouts = [layout.Floating()]
-          EOF
-          qtile start -c /tmp/qtile_config.py &
+          herbstluftwm &
           sleep 1
 
       - name: Run e2e tests

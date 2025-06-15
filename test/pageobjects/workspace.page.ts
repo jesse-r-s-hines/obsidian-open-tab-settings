@@ -15,8 +15,7 @@ type LeafInfo = {
 class WorkspacePage {
     async setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
         await browser.executeObsidian(async ({plugins}, settings) => {
-            Object.assign(plugins.openTabSettings.settings, settings);
-            await plugins.openTabSettings.saveSettings();
+            await plugins.openTabSettings.updateSettings(settings);
         }, settings);
     }
 
@@ -145,11 +144,13 @@ class WorkspacePage {
         await browser.executeObsidianCommand("workspace:toggle-pin");
     }
 
-    async getLink(text: string) {
+    async getLink(text: string): Promise<ChainablePromiseElement> {
         const activeView = $(await browser.executeObsidian(({app, obsidian}) =>
             app.workspace.getActiveViewOfType(obsidian.View)!.containerEl
         ));
-        return activeView.$(`a=${text}`);
+        // In reading view there's some kind of hidden copy of the link that shows up as well, so we have to filter for
+        // the "internal-link" real one.
+        return activeView.$(`.//a[contains(@class, 'internal-link') and text() = '${text}']`)
     }
 
     async openLink(link: ChainablePromiseElement) {

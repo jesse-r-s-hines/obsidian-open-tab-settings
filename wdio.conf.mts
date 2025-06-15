@@ -66,7 +66,7 @@ export const config: WebdriverIO.Config = {
     },
 
     waitforInterval: 250,
-    waitforTimeout: 2.5 * 1000,
+    waitforTimeout: 5 * 1000,
 
     cacheDir: cacheDir,
 

@@ -16,6 +16,7 @@ describe('Test new tab placement', function() {
         await workspacePage.setSettings({
             openInNewTab: false, deduplicateTabs: false,
             newTabPlacement: "after-active", openNewTabsInOtherTabGroup: true,
+            openInSameTabOnModClick: true,
         });
         await workspacePage.setConfig('focusNewTab', false);
     })

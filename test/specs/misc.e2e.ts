@@ -5,7 +5,7 @@ import workspacePage from 'test/pageobjects/workspace.page';
 describe('Misc', function() {
     beforeEach(async function() {
         await obsidianPage.loadWorkspaceLayout("empty");
-        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, openInSameTabOnModClick: true });
     });
 
     it('should update focusNewTab on boot', async function() {
@@ -43,5 +43,56 @@ describe('Misc', function() {
         await workspacePage.matchWorkspace([
             [{type: "markdown", file: "B.md", active: true}],
         ]);
+    });
+
+    it('commands', async function() {
+        await workspacePage.setSettings({ openInNewTab: false });
+        await browser.executeObsidianCommand("open-tab-settings:toggle-open-in-new-tab");
+        const value = await browser.executeObsidian(async ({plugins}) => {
+            return plugins.openTabSettings.settings.openInNewTab;
+        })
+        expect(value).toBe(true);
+    });
+
+    it('Test mod click', async function() {
+        await workspacePage.setSettings({ openInSameTabOnModClick: true });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md", active: true},
+        ]]);
+    });
+
+    it('Test mod click off', async function() {
+        await workspacePage.setSettings({ openInSameTabOnModClick: false });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"},
+            {type: "markdown", file: "B.md", active: true},
+        ]]);
+    });
+
+    it('Test mod click no new tab', async function() {
+        await workspacePage.setSettings({ openInNewTab: false, openInSameTabOnModClick: true });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"},
+            {type: "markdown", file: "B.md", active: true},
+        ]]);
+    });
+
+    it('Test mod new tab disabled', async function() {
+        await workspacePage.setSettings({ openInNewTab: false, openInSameTabOnModClick: true });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md"},
+        ]]);
     });
 })

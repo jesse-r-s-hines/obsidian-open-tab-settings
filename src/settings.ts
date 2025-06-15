@@ -10,6 +10,7 @@ export const NEW_TAB_PLACEMENTS = {
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
+    openInSameTabOnModClick: boolean,
     newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
     openNewTabsInOtherTabGroup: boolean,
 }
@@ -17,6 +18,7 @@ export interface OpenTabSettingsPluginSettings {
 export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
+    openInSameTabOnModClick: false,
     newTabPlacement: "after-active",
     openNewTabsInOtherTabGroup: false,
 }
@@ -32,6 +34,13 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
     display(): void {
         this.containerEl.empty();
 
+        const update = () => {
+            openInSameTabOnModClickSetting.settingEl.setCssStyles({
+                opacity: this.plugin.settings.openInNewTab ? "" : "50%",
+            });
+            openInSameTabOnModClickSetting.setDisabled(!this.plugin.settings.openInNewTab);
+        }
+
         new Setting(this.containerEl)
             .setName('Always open in new tab')
             .setDesc('Open files in a new tab by default.')
@@ -39,8 +48,8 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.openInNewTab)
                     .onChange(async (value) => {
-                        this.plugin.settings.openInNewTab = value;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({openInNewTab: value});
+                        update();
                     })
             );
 
@@ -51,8 +60,20 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.deduplicateTabs)
                     .onChange(async (value) => {
-                        this.plugin.settings.deduplicateTabs = value;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({deduplicateTabs: value});
+                    })
+            );
+
+        const openInSameTabOnModClickSetting = new Setting(this.containerEl)
+            .setName('Open in same tab on ctrl/middle click')
+            .setDesc(
+                'When "Always open in new tab" is enabled, open in same tab when using Ctrl click or middle click.'
+            )
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.openInSameTabOnModClick)
+                    .onChange(async (value) => {
+                        await this.plugin.updateSettings({openInSameTabOnModClick: value});
                     })
             );
 
@@ -68,7 +89,6 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .setValue(this.app.vault.getConfig("focusNewTab") as boolean)
                     .onChange(async (value) => {
                         this.app.vault.setConfig("focusNewTab", value)
-                        await this.plugin.saveSettings();
                     })
             );
 
@@ -80,8 +100,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .addOptions(NEW_TAB_PLACEMENTS)
                     .setValue(this.plugin.settings.newTabPlacement)
                     .onChange(async value => {
-                        this.plugin.settings.newTabPlacement = value as keyof typeof NEW_TAB_PLACEMENTS;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({newTabPlacement: value as keyof typeof NEW_TAB_PLACEMENTS});
                     })
             )
 
@@ -92,9 +111,10 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.openNewTabsInOtherTabGroup)
                     .onChange(async (value) => {
-                        this.plugin.settings.openNewTabsInOtherTabGroup = value;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({openNewTabsInOtherTabGroup: value});
                     })
             );
+
+        update();
     }
 }

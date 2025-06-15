@@ -48,8 +48,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.openInNewTab)
                     .onChange(async (value) => {
-                        this.plugin.settings.openInNewTab = value;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({openInNewTab: value});
                         update();
                     })
             );
@@ -61,8 +60,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.deduplicateTabs)
                     .onChange(async (value) => {
-                        this.plugin.settings.deduplicateTabs = value;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({deduplicateTabs: value});
                     })
             );
 
@@ -75,8 +73,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.openInSameTabOnModClick)
                     .onChange(async (value) => {
-                        this.plugin.settings.openInSameTabOnModClick = value;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({openInSameTabOnModClick: value});
                     })
             );
 
@@ -92,7 +89,6 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .setValue(this.app.vault.getConfig("focusNewTab") as boolean)
                     .onChange(async (value) => {
                         this.app.vault.setConfig("focusNewTab", value)
-                        await this.plugin.saveSettings();
                     })
             );
 
@@ -104,8 +100,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .addOptions(NEW_TAB_PLACEMENTS)
                     .setValue(this.plugin.settings.newTabPlacement)
                     .onChange(async value => {
-                        this.plugin.settings.newTabPlacement = value as keyof typeof NEW_TAB_PLACEMENTS;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({newTabPlacement: value as keyof typeof NEW_TAB_PLACEMENTS});
                     })
             )
 
@@ -116,8 +111,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.openNewTabsInOtherTabGroup)
                     .onChange(async (value) => {
-                        this.plugin.settings.openNewTabsInOtherTabGroup = value;
-                        await this.plugin.saveSettings();
+                        await this.plugin.updateSettings({openNewTabsInOtherTabGroup: value});
                     })
             );
 

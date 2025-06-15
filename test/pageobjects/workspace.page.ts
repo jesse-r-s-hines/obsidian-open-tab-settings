@@ -15,8 +15,7 @@ type LeafInfo = {
 class WorkspacePage {
     async setSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
         await browser.executeObsidian(async ({plugins}, settings) => {
-            Object.assign(plugins.openTabSettings.settings, settings);
-            await plugins.openTabSettings.saveSettings();
+            await plugins.openTabSettings.updateSettings(settings);
         }, settings);
     }
 

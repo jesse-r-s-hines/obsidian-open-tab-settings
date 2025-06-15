@@ -55,22 +55,19 @@ export default class OpenTabSettingsPlugin extends Plugin {
             this.addCommand({
                 id: `toggle-${id}`, name: `Toggle ${name}`,
                 callback: async () => {
-                    this.settings[setting] = !this.settings[setting];
-                    await this.saveSettings();
+                    await this.updateSettings({[setting]: !this.settings[setting]});
                 },
             });
             this.addCommand({
                 id: `enable-${id}`, name: `Enable ${name}`,
                 callback: async () => {
-                    this.settings[setting] = true;
-                    await this.saveSettings();
+                    await this.updateSettings({[setting]: true});
                 },
             });
             this.addCommand({
                 id: `disable-${id}`, name: `Disable ${name}`,
                 callback: async () => {
-                    this.settings[setting] = false;
-                    await this.saveSettings();
+                    await this.updateSettings({[setting]: false});
                 },
             });
         }
@@ -200,11 +197,12 @@ export default class OpenTabSettingsPlugin extends Plugin {
             // when using this plugin, focusNewTab should default to false. Set it if this is the first time we've
             // loaded the plugin.
             this.app.vault.setConfig('focusNewTab', false);
-            await this.saveSettings();
+            await this.updateSettings({});
         }
     }
 
-    async saveSettings() {
+    async updateSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
+        Object.assign(this.settings, settings);
         await this.saveData(this.settings);
     }
 

@@ -17,7 +17,7 @@ function isEmptyLeaf(leaf: WorkspaceLeaf) {
  * This is only needed if the view is not registered as as the default view for an extension.
  */
 const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
-    "md": ["excalidraw"],
+    "md": ["excalidraw", "kanban"],
 }
 
 

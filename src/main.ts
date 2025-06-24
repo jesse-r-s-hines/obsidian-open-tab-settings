@@ -148,7 +148,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     );
                     if (plugin.settings.deduplicateTabs && !isSpecialOpen) {
                         // Check if there are any duplicate tabs
-                        const matches = await plugin.findMatchingLeaves(file);
+                        const matches = plugin.findMatchingLeaves(file);
                         if (!matches.includes(this) && matches.length > 0) {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
 
@@ -206,7 +206,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         await this.saveData(this.settings);
     }
 
-    private async findMatchingLeaves(file: TFile) {
+    private findMatchingLeaves(file: TFile) {
         const matches: WorkspaceLeaf[] = [];
         this.app.workspace.iterateAllLeaves(leaf => {
             const root = leaf.getRoot();

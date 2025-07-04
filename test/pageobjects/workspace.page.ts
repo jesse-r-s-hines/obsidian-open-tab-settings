@@ -181,9 +181,9 @@ class WorkspacePage {
         await browser.$(".menu").$("div.*=Open in same tab").click()
     }
 
-    async openFileViaModal(path: string): Promise<void> {
+    async openFileViaQuickSwitcher(path: string): Promise<void> {
         path = path.replace(/\.md$/, '')
-        await browser.keys([Key.Ctrl, 'o']);
+        await browser.executeObsidianCommand("switcher:open");
         await browser.keys(path);
         await browser.keys(Key.Enter);
     }

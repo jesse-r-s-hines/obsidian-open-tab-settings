@@ -145,7 +145,7 @@ describe('Test new tab placement', function() {
         ]]);
 
         await workspacePage.setSettings({openInNewTab: true});
-        await workspacePage.openFileViaModal("B.md");
+        await workspacePage.openFileViaQuickSwitcher("B.md");
 
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "B.md", active: true},

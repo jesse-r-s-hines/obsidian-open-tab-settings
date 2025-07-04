@@ -34,7 +34,7 @@ describe('Plugin compatibility', function() {
             await workspacePage.setSettings({newTabPlacement: "end"});
             await workspacePage.setActiveFile((await workspacePage.getAllLeaves())[0][0].id);
             await workspacePage.matchWorkspace([[ {type: "home-tab-view", active: true} ]]);
-            await workspacePage.openFileViaModal("B.md");
+            await workspacePage.openFileViaQuickSwitcher("B.md");
             await workspacePage.matchWorkspace([[
                 {type: "markdown", file: "B.md", active: true},
             ]]);

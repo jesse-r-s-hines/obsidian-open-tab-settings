@@ -40,7 +40,7 @@ describe('Test basic deduplicate', function() {
 
     it('re-open file', async function() {
         await workspacePage.openFile("A.md");
-        await workspacePage.openFileViaModal("A.md");
+        await workspacePage.openFileViaQuickSwitcher("A.md");
         await sleep(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
@@ -101,7 +101,7 @@ describe('Test basic deduplicate', function() {
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("B.md");
-        await workspacePage.openFileViaModal("A.md")
+        await workspacePage.openFileViaQuickSwitcher("A.md")
 
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md", active: true}, {type: "markdown", file: "B.md"},
@@ -153,7 +153,7 @@ describe('Test basic deduplicate', function() {
         await workspacePage.openFile("image.png");
         await workspacePage.openFile("A.md");
         await workspacePage.setActiveFile("A.md");
-        await workspacePage.openFileViaModal("image.png")
+        await workspacePage.openFileViaQuickSwitcher("image.png")
         await workspacePage.matchWorkspace([[
             {type: "image", file: "image.png", active: true}, {type: "markdown", file: "A.md"},
         ]]);
@@ -163,7 +163,7 @@ describe('Test basic deduplicate', function() {
         await workspacePage.openFile("pdf.pdf");
         await workspacePage.openFile("A.md");
         await workspacePage.setActiveFile("A.md");
-        await workspacePage.openFileViaModal("pdf.pdf")
+        await workspacePage.openFileViaQuickSwitcher("pdf.pdf")
         await workspacePage.matchWorkspace([[
             {type: "pdf", file: "pdf.pdf", active: true}, {type: "markdown", file: "A.md"}, 
         ]]);
@@ -172,7 +172,7 @@ describe('Test basic deduplicate', function() {
     it('empty tab', async function() {
         await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
-        await workspacePage.openFileViaModal("A.md")
+        await workspacePage.openFileViaQuickSwitcher("A.md")
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]])
     })
 

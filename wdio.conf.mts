@@ -47,6 +47,7 @@ export const config: WebdriverIO.Config = {
                 ".",
                 {id: "obsidian-excalidraw-plugin", enabled: false},
                 {id: "home-tab", enabled: false},
+                {id: "obsidian-kanban", enabled: false},
             ],
             vault: "./test/vault",
         },

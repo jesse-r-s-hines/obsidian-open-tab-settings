@@ -40,4 +40,32 @@ describe('Plugin compatibility', function() {
             ]]);
         })
     })
+
+    describe("Kanban", function () {
+        before(async function() { await obsidianPage.enablePlugin("obsidian-kanban") });
+        after(async function() { await obsidianPage.disablePlugin("obsidian-kanban") });
+
+        it('deduplicates kanban', async function() {
+            await workspacePage.openFile("Kanban.md");
+            await workspacePage.openFile("A.md");
+
+            await workspacePage.matchWorkspace([[
+                {type: "kanban", file: "Kanban.md"},
+                {type: "markdown", file: "A.md", active: true},
+            ]]);
+
+            // Test kanban deduplication and workaround for bug in kanban.
+            await workspacePage.openFileViaQuickSwitcher("Kanban.md");
+
+            await workspacePage.matchWorkspace([[
+                {type: "kanban", file: "Kanban.md", active: true},
+                {type: "markdown", file: "A.md"},
+            ]]);
+
+            const activeView = $(await browser.executeObsidian(({app, obsidian}) =>
+                app.workspace.getMostRecentLeaf()!.view.containerEl
+            ));
+            await expect(activeView).toHaveText("My Card", {containing: true});
+        })
+    })
 })

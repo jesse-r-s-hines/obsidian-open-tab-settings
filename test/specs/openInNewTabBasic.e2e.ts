@@ -65,7 +65,7 @@ describe('Test basic open in new tab', function() {
 
     it('opens images in new tab', async function() {
         await workspacePage.openFile("A.md");
-        await workspacePage.openFileViaModal("image.png");
+        await workspacePage.openFileViaQuickSwitcher("image.png");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md"}, {type: "image", file: "image.png", active: true},
         ]]);
@@ -73,7 +73,7 @@ describe('Test basic open in new tab', function() {
 
     it('opens pdfs in new tab', async function() {
         await workspacePage.openFile("A.md");
-        await workspacePage.openFileViaModal("pdf.pdf");
+        await workspacePage.openFileViaQuickSwitcher("pdf.pdf");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md"}, {type: "pdf", file: "pdf.pdf", active: true},
         ]]);
@@ -81,7 +81,7 @@ describe('Test basic open in new tab', function() {
 
     it('opens file from pdfs opens in new tab', async function() {
         await workspacePage.openFile("pdf.pdf");
-        await workspacePage.openFileViaModal("A.md");
+        await workspacePage.openFileViaQuickSwitcher("A.md");
         await workspacePage.matchWorkspace([[
             {type: "pdf", file: "pdf.pdf"}, {type: "markdown", file: "A.md", active: true},
         ]]);
@@ -97,7 +97,7 @@ describe('Test basic open in new tab', function() {
 
     it('open file while on graph view opens in new tab', async function() {
         await browser.executeObsidianCommand("graph:open");
-        await workspacePage.openFileViaModal("A.md");
+        await workspacePage.openFileViaQuickSwitcher("A.md");
         await workspacePage.matchWorkspace([[
             {type: "graph"}, {type: "markdown", file: "A.md", active: true},
         ]]);
@@ -139,7 +139,7 @@ describe('Test basic open in new tab', function() {
     it('re-open file', async function() {
         await workspacePage.openFile("Loop.md");
         const prevActiveLeaf = (await workspacePage.getActiveLeaf()).id;
-        await workspacePage.openFileViaModal("Loop.md");
+        await workspacePage.openFileViaQuickSwitcher("Loop.md");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "Loop.md"}, {type: "markdown", file: "Loop.md", active: true},
         ]]);

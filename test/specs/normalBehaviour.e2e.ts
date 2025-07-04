@@ -13,13 +13,13 @@ const tests = () => {
     });
 
     it('Open first file via open modal works', async function() {
-        await workspacePage.openFileViaModal("A.md");
+        await workspacePage.openFileViaQuickSwitcher("A.md");
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 
     it("Open first file via file explorer works", async function() {
         await workspacePage.matchWorkspace([[{type: "empty"}]]); // Make sure loadWorkspaceLayout is working
-        await workspacePage.openFileViaModal("A.md");
+        await workspacePage.openFileViaQuickSwitcher("A.md");
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 
@@ -34,7 +34,7 @@ const tests = () => {
     it("empty tabs still get replaced", async function() {
         await workspacePage.openFile("A.md")
         await browser.executeObsidianCommand("workspace:new-tab");
-        await workspacePage.openFileViaModal("B.md");
+        await workspacePage.openFileViaQuickSwitcher("B.md");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
         ]]);

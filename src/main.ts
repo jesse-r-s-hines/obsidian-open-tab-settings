@@ -152,10 +152,19 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         if (!matches.includes(this) && matches.length > 0) {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
 
-                            const result = await oldMethod.call(matches[0], file, {
-                                ...openState,
-                                active: !!openState?.active || activeLeaf == this,
-                            }, ...args);
+                            let result: any; // openFile doesn't return anything, but just in case that changes
+                            if (matches[0].view.getViewType() == "kanban" && openState?.active) {
+                                // workaround for a bug in kanban. See
+                                //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
+                                //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
+                                await this.app.workspace.setActiveLeaf(matches[0]);
+                            } else {
+                                result = await oldMethod.call(matches[0], file, {
+                                    ...openState,
+                                    active: !!openState?.active || activeLeaf == this,
+                                }, ...args);
+                            }
+
                             // If a file is opened in new tab, either from middle click or if openInNewTab is enabled,
                             // then getLeaf('tab') will be called first and make a new empty tab. Here we just close the
                             // empty tab after switching to the existing tab, as long as doing so won't close the whole

@@ -4,19 +4,12 @@ import { sleep } from '../helpers';
 import { obsidianPage } from 'wdio-obsidian-service';
 
 
-describe('Test new tab placement', function() {
-    let mainWindow: string|undefined
-    before(async function() {
-        mainWindow = await browser.getWindowHandle();
-    })
-
+describe('Test newTabPlacement', function() {
     beforeEach(async function() {
-        await browser.switchToWindow(mainWindow!);
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({
             openInNewTab: false, deduplicateTabs: false,
-            newTabPlacement: "after-active", openNewTabsInOtherTabGroup: true,
-            openInSameTabOnModClick: true,
+            newTabPlacement: "after-active", openNewTabsInOtherTabGroup: false,
         });
         await workspacePage.setConfig('focusNewTab', false);
     })
@@ -226,10 +219,34 @@ describe('Test new tab placement', function() {
             {type: "markdown", file: "B.md"},
         ]]);
     })
+})
+
+
+describe('Test openNewTabsInOtherTabGroup', function() {
+    let mainWindow: string|undefined
+
+    before(async function() {
+        mainWindow = await browser.getWindowHandle();
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+    })
+
+    after(async function() {
+        await browser.switchToWindow(mainWindow!);
+    })
+
+    beforeEach(async function() {
+        await browser.switchToWindow(mainWindow!);
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
+        await workspacePage.setSettings({
+            openInNewTab: false, deduplicateTabs: false,
+            newTabPlacement: "after-active", openNewTabsInOtherTabGroup: true,
+        });
+        await workspacePage.setConfig('focusNewTab', false);
+    })
 
     it("openNewTabsInOtherTabGroup basic", async function() {
         // A is in left, Loop is in right
-        await obsidianPage.loadWorkspaceLayout("split")
+        await workspacePage.loadPlatformWorkspaceLayout("split")
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
 
@@ -241,7 +258,7 @@ describe('Test new tab placement', function() {
 
     it("openNewTabsInOtherTabGroup replace empty", async function() {
         // A is in left, Loop is in right
-        await obsidianPage.loadWorkspaceLayout("split")
+        await workspacePage.loadPlatformWorkspaceLayout("split")
         await workspacePage.setActiveFile("Loop.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.setActiveFile("Loop.md");
@@ -264,7 +281,7 @@ describe('Test new tab placement', function() {
 
     it("openNewTabsInOtherTabGroup nested split", async function() {
         // A is in left, Loop in top right, D in bottom right
-        await obsidianPage.loadWorkspaceLayout("nested-split")
+        await workspacePage.loadPlatformWorkspaceLayout("nested-split")
         await workspacePage.setActiveFile("A.md");
 
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
@@ -277,8 +294,9 @@ describe('Test new tab placement', function() {
     })
 
      it("openNewTabsInOtherTabGroup doesn't open in separate windows", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         // A in main, D in a popout window
-        await obsidianPage.loadWorkspaceLayout("popout-window");
+        await workspacePage.loadPlatformWorkspaceLayout("popout-window");
         await sleep(250);
         await workspacePage.setActiveFile("A.md");
 
@@ -291,11 +309,11 @@ describe('Test new tab placement', function() {
     })
 
     it("openNewTabsInOtherTabGroup in secondary window", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         // A in main, D and Loop in a popout window
-        await obsidianPage.loadWorkspaceLayout("split-popout-window");
+        await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
         await sleep(250);
 
-        const mainWindow = await browser.getWindowHandle();
         const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
         await browser.switchToWindow(otherWindow);
 
@@ -312,7 +330,7 @@ describe('Test new tab placement', function() {
     it("openNewTabsInOtherTabGroup deduplicate doesn't delete panel", async function() {
         await workspacePage.setSettings({ deduplicateTabs: true });
         // A is in left, Loop is in right
-        await obsidianPage.loadWorkspaceLayout("split")
+        await workspacePage.loadPlatformWorkspaceLayout("split")
         await workspacePage.setActiveFile("Loop.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.setActiveFile("Loop.md");

@@ -1,11 +1,9 @@
 import workspacePage from 'test/pageobjects/workspace.page';
 import { sleep } from '../helpers';
-import { obsidianPage } from 'wdio-obsidian-service';
-
 
 describe('Test basic deduplicate', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
         await workspacePage.setConfig('focusNewTab', true);
     });

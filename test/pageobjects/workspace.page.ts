@@ -3,6 +3,8 @@ import { ConfigItem } from 'obsidian-typings'
 import type { OpenTabSettingsPluginSettings } from "src/settings.js"
 import { equals } from "@jest/expect-utils";
 import { WorkspaceLeaf, WorkspaceParent } from 'obsidian';
+import { obsidianPage } from 'wdio-obsidian-service';
+import { sleep } from '../helpers';
 
 type LeafInfo = {
     id: string,
@@ -17,6 +19,16 @@ class WorkspacePage {
         await browser.executeObsidian(async ({plugins}, settings) => {
             await plugins.openTabSettings.updateSettings(settings);
         }, settings);
+    }
+
+    async loadPlatformWorkspaceLayout(layout: string) {
+        const platform = await obsidianPage.getPlatform();
+        if (platform.isPhone) {
+            layout = layout + "-phone";
+        } else if (platform.isTablet) {
+            layout = layout + "-tablet";
+        }
+        await obsidianPage.loadWorkspaceLayout(layout);
     }
 
     /**
@@ -160,24 +172,30 @@ class WorkspacePage {
     async openLinkInNewTab(link: ChainablePromiseElement) {
         await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
+        // On the mobile drawer context menu thing, sometimes the click triggers Rename instead of open in new tab?
+        // It doesn't happen if I wait a bit first.
+        if ((await obsidianPage.getPlatform()).isPhone) await sleep(250);
         await browser.$(".menu").$("div.*=Open in new tab").click()
     }
 
     async openLinkToRight(link: ChainablePromiseElement) {
         await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
+        if ((await obsidianPage.getPlatform()).isPhone) await sleep(250);
         await browser.$(".menu").$("div.*=Open to the right").click()
     }
 
     async openLinkInNewWindow(link: ChainablePromiseElement) {
         await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
+        if ((await obsidianPage.getPlatform()).isPhone) await sleep(250);
         await browser.$(".menu").$("div.*=Open in new window").click()
     }
 
     async openLinkInSameTab(link: ChainablePromiseElement) {
         await workspacePage.setConfig('nativeMenus', false);
         await link.click({button: "right"});
+        if ((await obsidianPage.getPlatform()).isPhone) await sleep(250);
         await browser.$(".menu").$("div.*=Open in same tab").click()
     }
 
@@ -192,6 +210,13 @@ class WorkspacePage {
         const expandAllButton = $(".nav-action-button[aria-label='Expand all']");
         if (await expandAllButton.isExisting()) {
             await expandAllButton.click()
+        }
+        const platform = await obsidianPage.getPlatform();
+        if (platform.isTablet) {
+            await browser.$(".sidebar-toggle-button").click();
+        } else if (platform.isMobile) {
+            await browser.$(".mod-left-split-toggle").click();
+            await sleep(250);
         }
         await $(`.nav-files-container [data-path='${path}']`).click()
     }

@@ -1,10 +1,9 @@
 import { browser } from '@wdio/globals'
-import { obsidianPage } from 'wdio-obsidian-service';
 import workspacePage from 'test/pageobjects/workspace.page';
 
 describe('Misc', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, openInSameTabOnModClick: true });
     });
 

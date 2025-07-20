@@ -3,9 +3,13 @@ import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
 
 
-describe('Test deduplicate for splits and more', function() {
+describe('Test deduplicate for splits and windows', function() {
+    before(async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+    })
+
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
         await workspacePage.setConfig('focusNewTab', true);
     });
@@ -24,6 +28,7 @@ describe('Test deduplicate for splits and more', function() {
     })
 
     it('open in popout window', async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
         const b1 = await workspacePage.getActiveLeaf();
@@ -42,7 +47,7 @@ describe('Test deduplicate for splits and more', function() {
 
     it('dedup across panes', async function() {
         // A and Loop split left/right
-        await obsidianPage.loadWorkspaceLayout("split");
+        await workspacePage.loadPlatformWorkspaceLayout("split");
         await workspacePage.setActiveFile("Loop.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
@@ -58,6 +63,7 @@ describe('Test deduplicate for splits and more', function() {
     })
 
     it('dedup across windows', async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
         await browser.executeObsidianCommand('workspace:move-to-new-window');
@@ -77,7 +83,7 @@ describe('Test deduplicate for splits and more', function() {
 
     it('outlinks', async function() {
         // Make sure outlinks don't get picked up as a file
-        await obsidianPage.loadWorkspaceLayout("outgoing-links");
+        await workspacePage.loadPlatformWorkspaceLayout("outgoing-links");
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 
@@ -89,7 +95,7 @@ describe('Test deduplicate for splits and more', function() {
     })
 
     it('linked file', async function() {
-        await obsidianPage.loadWorkspaceLayout("outgoing-links");
+        await workspacePage.loadPlatformWorkspaceLayout("outgoing-links");
         await browser.$('.outgoing-link-pane').click()
         await browser.waitUntil(async () => (await workspacePage.getActiveLeaf()).type == "outgoing-link");
         await browser.$('.outgoing-link-pane').$("div=A").click();
@@ -99,6 +105,24 @@ describe('Test deduplicate for splits and more', function() {
             [{type: "markdown", file: "B.md"}],
         ]);
     })
+
+    it('stacked tabs', async function() {
+        await workspacePage.loadPlatformWorkspaceLayout("stacked");
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.openLink(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
+    })
+})
+
+describe('Test deduplicate for misc', function() {
+    beforeEach(async function() {
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
+        await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
+        await workspacePage.setConfig('focusNewTab', true);
+    });
 
     it('deferred views', async function() {
         await workspacePage.openFile("A.md");
@@ -138,16 +162,6 @@ describe('Test deduplicate for splits and more', function() {
         await browser.executeObsidianCommand("app:go-forward");
                 await workspacePage.matchWorkspace([[
             {type: "markdown", file: "B.md"}, {type: "markdown", file: "A.md", active: true},
-        ]]);
-    })
-
-    it('stacked tabs', async function() {
-        await obsidianPage.loadWorkspaceLayout("stacked");
-        await workspacePage.setActiveFile("A.md");
-        await workspacePage.openLink(await workspacePage.getLink("B"));
-
-        await workspacePage.matchWorkspace([[
-            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
         ]]);
     })
 })

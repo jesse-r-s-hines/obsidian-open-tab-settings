@@ -38,20 +38,38 @@ export const config: WebdriverIO.Config = {
     // How many instances of Obsidian should be launched in parallel during testing.
     maxInstances: Number(process.env["WDIO_MAX_INSTANCES"] || 4),
 
-    capabilities: versions.map(([appVersion, installerVersion]) => ({
-        browserName: 'obsidian',
-        browserVersion: appVersion,
-        'wdio:obsidianOptions': {
-            installerVersion: installerVersion,
-            plugins: [
-                ".",
-                {id: "obsidian-excalidraw-plugin", enabled: false},
-                {id: "home-tab", enabled: false},
-                {id: "obsidian-kanban", enabled: false},
-            ],
-            vault: "./test/vault",
-        },
-    })),
+    capabilities: versions.flatMap(([appVersion, installerVersion]) => {
+        const common: WebdriverIO.Capabilities = {
+            browserName: 'obsidian',
+            browserVersion: appVersion,
+            'wdio:obsidianOptions': {
+                installerVersion: installerVersion,
+                plugins: [
+                    ".",
+                    {id: "obsidian-excalidraw-plugin", enabled: false},
+                    {id: "home-tab", enabled: false},
+                    {id: "obsidian-kanban", enabled: false},
+                ],
+                vault: "./test/vault",
+            },
+        }
+        return [
+            {...common},
+            {
+                ...common,
+                'wdio:obsidianOptions': {
+                    ...common['wdio:obsidianOptions'],
+                    emulateMobile: true,
+                },
+                'goog:chromeOptions': {
+                    mobileEmulation: {
+                        // can also set deviceName: "iPad" etc. instead of hard-coding size
+                        deviceMetrics: {width: 390, height: 844, touch: false},
+                    },
+                },
+            },
+        ]
+    }),
 
     framework: 'mocha',
     services: ["obsidian"],

@@ -6,7 +6,7 @@ import { obsidianPage } from 'wdio-obsidian-service';
 describe('Test basic open in new tab', function() {
     beforeEach(async function() {
         await obsidianPage.resetVault();
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
@@ -51,6 +51,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens in new tab from sidebar outgoing links', async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.openFile("A.md");
         const button = await browser
             .$$(".workspace-tab-header")
@@ -114,6 +115,7 @@ describe('Test basic open in new tab', function() {
     })
 
     it('opens in new tab from bookmarks', async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.openFile("A.md");
         const button = await browser
             .$$(".workspace-tab-header")

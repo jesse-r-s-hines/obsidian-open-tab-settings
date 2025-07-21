@@ -1,6 +1,5 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
-import { sleep } from '../helpers';
 import { obsidianPage } from 'wdio-obsidian-service';
 
 
@@ -297,7 +296,7 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         // A in main, D in a popout window
         await workspacePage.loadPlatformWorkspaceLayout("popout-window");
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.setActiveFile("A.md");
 
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
@@ -312,7 +311,7 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         // A in main, D and Loop in a popout window
         await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
-        await sleep(250);
+        await browser.pause(250);
 
         const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
         await browser.switchToWindow(otherWindow);

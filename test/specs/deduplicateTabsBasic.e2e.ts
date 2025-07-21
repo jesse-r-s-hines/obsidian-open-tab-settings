@@ -1,7 +1,6 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { sleep } from '../helpers';
 import { WorkspaceParent } from 'obsidian';
 
 
@@ -41,14 +40,14 @@ describe('Test basic deduplicate', function() {
     it('re-open file', async function() {
         await workspacePage.openFile("A.md");
         await workspacePage.openFileViaQuickSwitcher("A.md");
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 
     it('re-open self link', async function() {
         await workspacePage.openFile("Loop.md");
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
@@ -57,7 +56,7 @@ describe('Test basic deduplicate', function() {
 
         await workspacePage.openFile("Loop.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
@@ -66,7 +65,7 @@ describe('Test basic deduplicate', function() {
 
         await workspacePage.openFile("Loop.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 

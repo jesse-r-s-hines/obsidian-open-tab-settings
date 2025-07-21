@@ -1,5 +1,4 @@
 import workspacePage from 'test/pageobjects/workspace.page';
-import { sleep } from '../helpers';
 
 describe('Test basic deduplicate', function() {
     beforeEach(async function() {
@@ -31,7 +30,7 @@ describe('Test basic deduplicate', function() {
     it('self link', async function() {
         await workspacePage.openFile("Loop.md");
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "Loop.md", active: true},
         ]]);

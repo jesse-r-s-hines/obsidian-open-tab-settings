@@ -1,7 +1,6 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { sleep } from '../helpers';
 import { WorkspaceLeaf } from 'obsidian';
 
 
@@ -51,7 +50,7 @@ describe('Test open in new tab for splits and windows', function() {
         await workspacePage.loadPlatformWorkspaceLayout("popout-window");
         // If I don't wait a bit here, there's a race condition and sometimes the popout window will end up
         // focused despite setting the active file below. TODO: Figure out what I need to waitUtil
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.setActiveFile("A.md");
 
         const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;

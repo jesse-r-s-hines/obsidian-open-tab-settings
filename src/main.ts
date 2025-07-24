@@ -20,6 +20,7 @@ const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
     "md": ["excalidraw", "kanban"],
 }
 
+const UNSET = Symbol("unset")
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
@@ -136,6 +137,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
         this.register(monkeyAround.around(WorkspaceLeaf.prototype, {
             openFile(oldMethod: any) {
                 return async function(this: WorkspaceLeaf, file, openState, ...args) {
+                    // openFile doesn't return anything, but just in case that changes.
+                    let result: any = UNSET;
+
                     const isEmpty = isEmptyLeaf(this);
                     // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                     // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
@@ -150,34 +154,32 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         // Check if there are any duplicate tabs
                         const matches = plugin.findMatchingLeaves(file);
                         if (!matches.includes(this) && matches.length > 0) {
-                            const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
-
-                            let result: any; // openFile doesn't return anything, but just in case that changes
                             if (matches[0].view.getViewType() == "kanban" && openState?.active) {
                                 // workaround for a bug in kanban. See
                                 //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                                 //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
                                 await this.app.workspace.setActiveLeaf(matches[0]);
+                                result = undefined;
                             } else {
+                                const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
                                 result = await oldMethod.call(matches[0], file, {
                                     ...openState,
                                     active: !!openState?.active || activeLeaf == this,
                                 }, ...args);
                             }
-
-                            // If a file is opened in new tab, either from middle click or if openInNewTab is enabled,
-                            // then getLeaf('tab') will be called first and make a new empty tab. Here we just close the
-                            // empty tab after switching to the existing tab, as long as doing so won't close the whole
-                            // tab group
-                            if (isEmpty && this.parent.children.length > 1) {
-                                this.detach();
-                            }
-                            return result;
                         }
                     }
 
-                    // use default behavior
-                    return oldMethod.call(this, file, openState, ...args)
+                    if (result == UNSET) { // use default behavior
+                        result = oldMethod.call(this, file, openState, ...args);
+                    }
+
+                    // If the leaf is still empty, close it. This can happen if the file was de-duplicated while
+                    // "openInNewTab" is enabled, or if you open a file "in default app" in a new tab.
+                    if (isEmptyLeaf(this) && this.parent.children.length > 1) {
+                        this.detach();
+                    }
+                    return result;
                 }
             },
         }));

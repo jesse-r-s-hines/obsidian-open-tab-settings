@@ -7,20 +7,28 @@ import { OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT
 import { PaneTypePatch, TabGroup } from './types';
 
 
-function isEmptyLeaf(leaf: WorkspaceLeaf) {
-    // home-tab plugin replaces new tab with home tabs, which should be treated like empty.
-    return ["empty", "home-tab-view"].includes(leaf.view.getViewType())
-}
-
 /**
  * Special view types added by plugins that should be deduplicated like normal files.
- * This is only needed if the view is not registered as as the default view for an extension.
+ * This is only needed if the view is not registered as the default view for a file extension.
  */
 const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
     "md": ["excalidraw", "kanban"],
 }
 
 const UNSET = Symbol("unset")
+
+
+function isEmptyLeaf(leaf: WorkspaceLeaf) {
+    // home-tab plugin replaces new tab with home tabs, which should be treated like empty.
+    return ["empty", "home-tab-view"].includes(leaf.view.getViewType())
+}
+
+/** Check if leaf is in the main area (e.g. not in sidebar etc) */
+function isMainLeaf(leaf: WorkspaceLeaf) {
+    const root = leaf.getRoot();
+    return (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
+}
+
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
@@ -140,17 +148,16 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // openFile doesn't return anything, but just in case that changes.
                     let result: any = UNSET;
 
-                    const isEmpty = isEmptyLeaf(this);
                     // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                     // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
                     // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
                     // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the leaf
                     // was created before the plugin was loaded or such.
-                    const isSpecialOpen = isEmpty && (
+                    const isSpecialOpen = isEmptyLeaf(this) && (
                         !this.openTabSettingsLastOpenType ||
                         !['same', 'tab'].includes(this.openTabSettingsLastOpenType)
                     );
-                    if (plugin.settings.deduplicateTabs && !isSpecialOpen) {
+                    if (plugin.settings.deduplicateTabs && isMainLeaf(this) && !isSpecialOpen) {
                         // Check if there are any duplicate tabs
                         const matches = plugin.findMatchingLeaves(file);
                         if (!matches.includes(this) && matches.length > 0) {
@@ -220,10 +227,6 @@ export default class OpenTabSettingsPlugin extends Plugin {
     private findMatchingLeaves(file: TFile) {
         const matches: WorkspaceLeaf[] = [];
         this.app.workspace.iterateAllLeaves(leaf => {
-            const root = leaf.getRoot();
-
-            // Only match files in the main area or floating windows, not sidebars
-            const isMainLeaf = (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
             // file is the same
             const isFileMatch = leaf.getViewState()?.state?.file == file.path;
             // we only want to switch to another leaf if its a basic file, not if its outgoing-links etc.
@@ -233,7 +236,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 PLUGIN_VIEW_TYPES[file.extension]?.includes(viewType)
             );
 
-            if (isMainLeaf && isFileMatch && isTypeMatch) {
+            if (isMainLeaf(leaf) && isFileMatch && isTypeMatch) {
                 matches.push(leaf);
             }
         });

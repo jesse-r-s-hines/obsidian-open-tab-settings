@@ -1,5 +1,6 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
+import { obsidianPage } from 'wdio-obsidian-service';
 
 describe('Misc', function() {
     beforeEach(async function() {
@@ -51,6 +52,16 @@ describe('Misc', function() {
             return plugins.openTabSettings.settings.openInNewTab;
         })
         expect(value).toEqual(true);
+    });
+})
+
+describe("Mod click", function() {
+    before(async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+    })
+    beforeEach(async function() {
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, openInSameTabOnModClick: true });
     });
 
     it('Test mod click', async function() {

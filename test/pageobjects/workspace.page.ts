@@ -151,7 +151,7 @@ class WorkspacePage {
      * Pins the specified tab. Note it also focuses the tab.
      */
     async pinTab(pathOrId: string) {
-        await workspacePage.setActiveFile(pathOrId);
+        await this.setActiveFile(pathOrId);
         await browser.executeObsidianCommand("workspace:toggle-pin");
     }
 
@@ -168,34 +168,52 @@ class WorkspacePage {
         await link.click();
     }
 
+    async openContextMenu(elem: ChainablePromiseElement) {
+        await this.setConfig('nativeMenus', false);
+        const platform = await obsidianPage.getPlatform();
+        if (platform.isDesktopApp) {
+            await elem.click({button: "right"});
+        } else {
+            // on android, the context menu event is a glitchy and I can't get the longPress to work properly from wdio.
+            // Instead manually trigger it in js:
+            await browser.execute((elem) => {
+                let {bottom, left, right, top} = elem.getBoundingClientRect()
+                const x = (right - left)/2 + left; // get middle
+                const y = (bottom - top)/2 + top;
+                elem.dispatchEvent(new MouseEvent("contextmenu", {
+                    button: 0, buttons: 0,
+                    screenX: x, screenY: y,
+                    bubbles: true, cancelable: true,
+                    clientX: x, clientY: y,
+                }))
+            }, elem);
+        }
+        // Clicking in the mobile drawer context menu thing somehow triggers Rename instead of open in new tab
+        // if I don't wait a bit
+        if (platform.isMobile) {
+            await browser.pause(250);
+        }
+        return browser.$(".menu");
+    }
+
     async openLinkInNewTab(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        // On the mobile drawer context menu thing, sometimes the click triggers Rename instead of open in new tab?
-        // It doesn't happen if I wait a bit first.
-        if ((await obsidianPage.getPlatform()).isMobile) await browser.pause(250);
-        await browser.$(".menu").$("div.*=Open in new tab").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open in new tab").click()
     }
 
     async openLinkToRight(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        if ((await obsidianPage.getPlatform()).isMobile) await browser.pause(250);
-        await browser.$(".menu").$("div.*=Open to the right").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open to the right").click()
     }
 
     async openLinkInNewWindow(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        if ((await obsidianPage.getPlatform()).isMobile) await browser.pause(250);
-        await browser.$(".menu").$("div.*=Open in new window").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open in new window").click()
     }
 
     async openLinkInSameTab(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        if ((await obsidianPage.getPlatform()).isMobile) await browser.pause(250);
-        await browser.$(".menu").$("div.*=Open in same tab").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open in same tab").click()
     }
 
     async openFileViaQuickSwitcher(path: string): Promise<void> {

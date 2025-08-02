@@ -74,9 +74,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
     }
 
-    async registerMonkeyPatches() {
+    registerMonkeyPatches() {
         const plugin = this;
-        const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf;
+        const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf; // eslint-disable-line @typescript-eslint/unbound-method
 
         // Patch getLeaf to always open in new tab
         this.register(monkeyAround.around(Workspace.prototype, {
@@ -158,7 +158,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 // workaround for a bug in kanban. See
                                 //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                                 //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
-                                await this.app.workspace.setActiveLeaf(matches[0]);
+                                this.app.workspace.setActiveLeaf(matches[0]);
                                 result = undefined;
                             } else {
                                 const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
@@ -171,7 +171,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     }
 
                     if (result == UNSET) { // use default behavior
-                        result = oldMethod.call(this, file, openState, ...args);
+                        result = await oldMethod.call(this, file, openState, ...args);
                     }
 
                     // If the leaf is still empty, close it. This can happen if the file was de-duplicated while

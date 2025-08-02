@@ -51,7 +51,7 @@ describe('Misc', function() {
         const value = await browser.executeObsidian(async ({plugins}) => {
             return plugins.openTabSettings.settings.openInNewTab;
         })
-        expect(value).toBe(true);
+        expect(value).toEqual(true);
     });
 
     it('Test mod click', async function() {

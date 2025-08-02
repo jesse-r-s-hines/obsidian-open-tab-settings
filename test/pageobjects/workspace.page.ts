@@ -177,7 +177,7 @@ class WorkspacePage {
             // on android, the context menu event is a glitchy and I can't get the longPress to work properly from wdio.
             // Instead manually trigger it in js:
             await browser.execute((elem) => {
-                let {bottom, left, right, top} = elem.getBoundingClientRect()
+                const {bottom, left, right, top} = elem.getBoundingClientRect()
                 const x = (right - left)/2 + left; // get middle
                 const y = (bottom - top)/2 + top;
                 elem.dispatchEvent(new MouseEvent("contextmenu", {

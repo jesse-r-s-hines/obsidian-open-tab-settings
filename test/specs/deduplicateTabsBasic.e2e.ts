@@ -85,9 +85,9 @@ describe('Test basic deduplicate', function() {
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
-        const button = await browser
+        const button: ChainablePromiseElement = await browser
             .$$(".workspace-tab-header")
-            .find(e => e.$("div.*=Outgoing links").isExisting()) as ChainablePromiseElement;
+            .find(e => e.$("div.*=Outgoing links").isExisting());
         await button.click()
         const item = browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
         await item.click()

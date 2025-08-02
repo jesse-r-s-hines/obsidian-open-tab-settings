@@ -171,7 +171,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     }
 
                     if (result == UNSET) { // use default behavior
-                        result = oldMethod.call(this, file, openState, ...args);
+                        result = await oldMethod.call(this, file, openState, ...args);
                     }
 
                     // If the leaf is still empty, close it. This can happen if the file was de-duplicated while

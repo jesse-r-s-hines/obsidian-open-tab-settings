@@ -1,30 +1,40 @@
 import * as path from "path"
+import { parseObsidianVersions } from "wdio-obsidian-service";
+import { env } from "process";
 
-let versionsToTest: string[]
-if (process.env.OBSIDIAN_VERSIONS) {
-    versionsToTest = process.env.OBSIDIAN_VERSIONS.split(/[ ,]+/)
-} else {
-    versionsToTest = ["earliest", "latest"];
+const cacheDir = path.resolve(".obsidian-cache");
+
+// choose Obsidian versions to test
+// note: beta versions aren't available for the Android app
+let defaultVersions = "earliest/earliest latest/latest";
+const versions = await parseObsidianVersions(
+    env.OBSIDIAN_MOBILE_VERSIONS ?? env.OBSIDIAN_VERSIONS ?? defaultVersions,
+    {cacheDir},
+);
+if (env.CI) {
+    console.log("obsidian-cache-key:", JSON.stringify(versions));
 }
 
 export const config: WebdriverIO.Config = {
     runner: 'local',
     framework: 'mocha',
-    maxInstances: 1, // can't do android tests in parallel :(
+
     specs: ['./test/specs/**/*.e2e.ts'],
 
-    hostname: 'localhost',
-    port: parseInt(process.env.APPIUM_PORT || "4723"),
+    maxInstances: 1, // Parallel tests don't work under appium
+    hostname: env.APPIUM_HOST || 'localhost',
+    port: parseInt(env.APPIUM_PORT || "4723"),
 
-    capabilities: versionsToTest.map((version) => ({
+    // (installerVersion isn't relevant for the mobile app)
+    capabilities: versions.map<WebdriverIO.Capabilities>(([appVersion]) => ({
         browserName: "obsidian",
-        browserVersion: version,
         platformName: 'Android',
         'appium:automationName': 'UiAutomator2',
         'appium:avd': "obsidian_test",
         'appium:enforceAppInstall': true,
         'appium:adbExecTimeout': 60 * 1000,
         'wdio:obsidianOptions': {
+            appVersion: appVersion,
             plugins: [
                 ".",
                 {id: "obsidian-excalidraw-plugin", enabled: false},
@@ -43,15 +53,16 @@ export const config: WebdriverIO.Config = {
     ],
     reporters: ["obsidian"],
 
-    cacheDir: path.resolve(".obsidian-cache"),
     bail: 2,
     mochaOpts: {
         ui: 'bdd',
-        timeout: 60000,
+        timeout: 60 * 1000,
         retries: 4,
         bail: true,
     },
     waitforInterval: 250,
     waitforTimeout: 5 * 1000,
     logLevel: "warn",
+
+    cacheDir: cacheDir,
 }

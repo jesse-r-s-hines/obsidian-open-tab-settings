@@ -11,8 +11,8 @@
         "lint": "eslint src test",
         "test": "run-s test:*",
         "test:unit": "tsc --noEmit && mocha",
-        "test:e2e": "npm run build && npx wdio run ./wdio.conf.mts",
-        "test-extra:android": "npm run build && npx wdio run ./wdio.mobile.conf.mts"
+        "test:e2e": "npx wdio run ./wdio.conf.mts",
+        "test-extra:android": "npx wdio run ./wdio.mobile.conf.mts"
     },
     "keywords": [],
     "author": "",
@@ -33,6 +33,7 @@
         "chai": "^5.2.1",
         "esbuild": "^0.25.8",
         "eslint": "^9.32.0",
+        "lodash.merge": "^4.6.2",
         "mocha": "^11.7.1",
         "npm-run-all": "^4.1.5",
         "obsidian": "latest",

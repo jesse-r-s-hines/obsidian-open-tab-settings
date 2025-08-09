@@ -1,4 +1,5 @@
 import * as path from "path"
+import * as os from "os"
 import { parseObsidianVersions, obsidianBetaAvailable } from "wdio-obsidian-service";
 import merge from "lodash.merge";
 import { env } from "process";
@@ -38,6 +39,8 @@ const common: WebdriverIO.Capabilities = {
     },
 }
 
+console.log(os.cpus())
+
 export const config: WebdriverIO.Config = {
     runner: 'local',
     framework: 'mocha',
@@ -45,7 +48,7 @@ export const config: WebdriverIO.Config = {
     specs: ['./test/specs/**/*.e2e.ts'],
 
     // How many instances of Obsidian should be launched in parallel during testing.
-    maxInstances: Number(env.WDIO_MAX_INSTANCES || 4),
+    maxInstances: Number(env.WDIO_MAX_INSTANCES || os.cpus().length),
 
     // "matrix" to test your plugin on multiple Obsidian versions and with emulateMobile
     capabilities: [

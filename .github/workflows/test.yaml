@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-desktop:
     strategy:
       fail-fast: false
       matrix:
@@ -19,6 +19,10 @@ jobs:
           # - windows-latest
           # - macos-latest
     runs-on: ${{ matrix.os }}
+    name: Test ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -28,38 +32,39 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-
+      - run: npm run build
+      
       - name: Run unit tests
         run: npm run test:unit
 
-      # Get key to use for the .obsidian-cache GitHub cache.
-      # Run wdio.conf.mts directly, which will logs the Obsidian versions to test (see the
-      # `if (process.env.CI)` bit in wdio.conf.mts). We'll use that output as the cache key.
-      - id: get-cache-key
-        name: "Get Obsidian cache key"
-        shell: bash
+      # Get key to use for the .obsidian-cache GitHub cache. Run wdio.conf.mts directly,
+      # which will logs the Obsidian versions to test (see the `if (process.env.CI)` bit
+      # in wdio.conf.mts). We'll use that output as the cache key.
+      - name: "Get Obsidian cache key"
         run: |
-          npx tsx wdio.conf.mts > obsidian-versions-lock.txt
+          npx tsx wdio.conf.mts | grep 'obsidian-cache-key:' > obsidian-versions-lock.txt
           # Delete the cache created by wdio.conf.mts so it doesn't conflict with restore
           rm -rf .obsidian-cache
         env:
-          # Beta versions require authentication to download, so if you want to test beta versions,
-          # you'll need to have an Obsidian account with Catalyst. Just add your credentials to
-          # GitHub secrets as OBSIDIAN_USERNAME and OBSIDIAN_PASSWORD. 2FA needs to be disabled.
+          # Beta versions require an Obsidian Insiders account to download. If you want to
+          # test beta versions, you'll need add your credentials to GitHub secrets as
+          # OBSIDIAN_EMAIL and OBSIDIAN_PASSWORD. 2FA needs to be disabled.
           # Note that workflows triggered by fork PRs won't have access to GitHub secrets.
-          OBSIDIAN_USERNAME: ${{ secrets.OBSIDIAN_USERNAME }}
+          OBSIDIAN_EMAIL: ${{ secrets.OBSIDIAN_EMAIL }}
           OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}
 
-      - name: Cache .obsidian-cache
+      - name: Cache Obsidian
         uses: actions/cache@v4
         with:
           path: .obsidian-cache
           key: obsidian-cache-${{ matrix.os }}-${{ hashFiles('obsidian-versions-lock.txt') }}
 
-      # On linux runners we need to set up a virtual graphics stack for Obsidian. Here we use xvfb
-      # as a virtual display server and herbstluftwm as the window manager. (You can often get by
-      # without a window manager but Obsidian popout windows will have issues without it.)
-      - uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+      # On linux runners we need to set up a virtual graphics stack for Obsidian. Here we
+      # use xvfb as a virtual display server and herbstluftwm as the window manager. (You
+      # can sometimes get by without the window manager, but some Obsidian features won't
+      # work properly wihtout it.)
+      - if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: herbstluftwm
           version: 1.0
@@ -78,5 +83,97 @@ jobs:
         run: npm run test:e2e
         env:
           WDIO_MAX_INSTANCES: 2
-          OBSIDIAN_USERNAME: ${{ secrets.OBSIDIAN_USERNAME }}
+          OBSIDIAN_EMAIL: ${{ secrets.OBSIDIAN_EMAIL }}
           OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}
+
+  # If you want to test on the real Obsidian Android app, enable this job. You'll need to
+  # set up a `"test:android": "wdio run ./wdio.mobile.conf.mts"` script, and install the
+  # appium dependencies. See https://jesse-r-s-hines.github.io/wdio-obsidian-service/wdio-obsidian-service/README#android
+  # test-android:
+  #   env:
+  #     AVD_ARGS: "-no-metrics -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none"
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - obsidian-version: latest
+  #           android-api-level: 36
+  #           android-profile: pixel
+  #         - obsidian-version: earliest
+  #           android-api-level: 36
+  #           android-profile: pixel
+  #   runs-on: ubuntu-latest
+  #   name: test (android, api ${{ matrix.android-api-level }}, profile ${{ matrix.android-profile }}, obsidian ${{ matrix.obsidian-version }})
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Use Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22.x
+  #         cache: 'npm'
+
+  #     - run: npm ci
+  #     - run: npm run build
+
+  #     - name: "Get Obsidian cache key"
+  #       shell: bash
+  #       run: |
+  #         npx tsx wdio.mobile.conf.mts | grep 'obsidian-cache-key:' > obsidian-versions-lock.txt
+  #         rm -rf .obsidian-cache
+  #       env:
+  #         OBSIDIAN_EMAIL: ${{ secrets.OBSIDIAN_EMAIL }}
+  #         OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}
+
+  #     - name: Cache .obsidian-cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: .obsidian-cache
+  #         key: obsidian-cache-android-${{ hashFiles('obsidian-versions-lock.txt') }}
+
+  #     - name: Enable KVM
+  #       run: |
+  #         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+  #         sudo udevadm control --reload-rules
+  #         sudo udevadm trigger --name-match=kvm
+  
+  #     - name: AVD cache
+  #       id: avd-cache
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: |
+  #           ~/.android/avd/*
+  #           ~/.android/adb*
+  #         key: avd-${{ matrix.android-api-level }}-${{ matrix.android-profile }}
+
+  #     - name: run android tests
+  #       uses: reactivecircus/android-emulator-runner@v2
+  #       with:
+  #         force-avd-creation: false
+  #         avd-name: obsidian_test
+  #         emulator-options: -no-snapshot ${{ env.AVD_ARGS }}
+  #         api-level: ${{ matrix.android-api-level }}
+  #         arch: "x86_64"
+  #         target: google_apis
+  #         profile: ${{ matrix.android-profile }}
+  #         disk-size: 4096M
+  #         heap-size: 512M
+  #         script: npm run test:android
+  #       env:
+  #         OBSIDIAN_VERSIONS: ${{ matrix.obsidian-version }}
+  #         OBSIDIAN_EMAIL: ${{ secrets.OBSIDIAN_EMAIL }}
+  #         OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}
+
+  # This makes it easier to require all tests to pass on PRs without having to manually 
+  # add every matrix option in the GitHub repo settings.
+  check:
+    if: always()
+    needs: [test-desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all tests passed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}

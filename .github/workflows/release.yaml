@@ -2,10 +2,10 @@
 name: Release
 # Create a release when a new version tag is created
 # You can trigger this like so:
-#     npm version 1.0.0
+#     npm version patch
 #     # push the created commit and tag
 #     git push
-#     git push origin tag 1.0.0
+#     git push origin tag <tag>
 # See also: https://docs.obsidian.md/Plugins/Releasing/Release+your+plugin+with+GitHub+Actions
 on:
   push:

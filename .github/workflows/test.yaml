@@ -66,7 +66,7 @@ jobs:
       - if: ${{ matrix.os == 'ubuntu-latest' }}
         uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
-          packages: herbstluftwm
+          packages: herbstluftwm dzen2
           version: 1.0
           execute_install_scripts: true
       - if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -82,7 +82,6 @@ jobs:
       - name: Run e2e tests
         run: npm run test:e2e
         env:
-          WDIO_MAX_INSTANCES: 2
           OBSIDIAN_EMAIL: ${{ secrets.OBSIDIAN_EMAIL }}
           OBSIDIAN_PASSWORD: ${{ secrets.OBSIDIAN_PASSWORD }}
 

@@ -1,25 +1,29 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { sleep } from '../helpers';
 import { WorkspaceLeaf } from 'obsidian';
 
 
-describe('Test open in new tab for splits and more', function() {
+describe('Test open in new tab for splits and windows', function() {
     let mainWindow: string|undefined
     before(async function() {
         mainWindow = await browser.getWindowHandle();
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+    })
+
+    after(async function() {
+        await browser.switchToWindow(mainWindow!);
     })
 
     beforeEach(async function() {
         await browser.switchToWindow(mainWindow!);
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
 
     it('test split view left', async function() {
-        await obsidianPage.loadWorkspaceLayout("split");
+        await workspacePage.loadPlatformWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
@@ -30,7 +34,7 @@ describe('Test open in new tab for splits and more', function() {
     });
 
     it('test split view right', async function() {
-        await obsidianPage.loadWorkspaceLayout("split");
+        await workspacePage.loadPlatformWorkspaceLayout("split");
         // A is in left, Loop is in right
         await workspacePage.setActiveFile("Loop.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
@@ -41,11 +45,12 @@ describe('Test open in new tab for splits and more', function() {
     })
 
     it("test new tabs in new windows", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         // A in main, D in a popout window
-        await obsidianPage.loadWorkspaceLayout("popout-window");
+        await workspacePage.loadPlatformWorkspaceLayout("popout-window");
         // If I don't wait a bit here, there's a race condition and sometimes the popout window will end up
         // focused despite setting the active file below. TODO: Figure out what I need to waitUtil
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.setActiveFile("A.md");
 
         const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
@@ -67,7 +72,8 @@ describe('Test open in new tab for splits and more', function() {
     })
 
     it("test sidebars", async function() {
-        await obsidianPage.loadWorkspaceLayout("file-a-in-sidebar");
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+        await workspacePage.loadPlatformWorkspaceLayout("file-a-in-sidebar");
         const sidebar = $(await browser.executeObsidian(({app}) => app.workspace.rightSplit.containerEl))
         await sidebar.$(`.//a[contains(@class, 'internal-link') and text() = 'B']`).click();
         await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md"}]]);
@@ -88,7 +94,7 @@ describe('Test open in new tab for splits and more', function() {
 
     it("test linked files", async function() {
         // A.md and outgoing links in left/right split
-        await obsidianPage.loadWorkspaceLayout("linked-files");
+        await workspacePage.loadPlatformWorkspaceLayout("linked-files");
 
         const fileLeaf = (await workspacePage.getAllLeaves())[0][0];
         expect(fileLeaf.type).toEqual("markdown");
@@ -101,6 +107,27 @@ describe('Test open in new tab for splits and more', function() {
             [{type: "outgoing-link", file: "A.md"}],
         ]);
     })
+
+    it('stacked tabs', async function() {
+        await workspacePage.loadPlatformWorkspaceLayout("stacked");
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.openLink(await workspacePage.getLink("B"))
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"},
+            {type: "markdown", file: "B.md", active: true},
+            {type: "markdown", file: "B.md"},
+        ]]);
+    })
+})
+
+
+describe('Test open in new tab for misc', function() {
+    beforeEach(async function() {
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
+        await workspacePage.setConfig('focusNewTab', false);
+    });
 
     it("test back buttons", async function() {
         await workspacePage.setSettings({ openInNewTab: false });
@@ -115,17 +142,5 @@ describe('Test open in new tab for splits and more', function() {
 
         await browser.executeObsidianCommand("app:go-forward");
         await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md", active: true}]]);
-    })
-
-    it('stacked tabs', async function() {
-        await obsidianPage.loadWorkspaceLayout("stacked");
-        await workspacePage.setActiveFile("A.md");
-        await workspacePage.openLink(await workspacePage.getLink("B"))
-
-        await workspacePage.matchWorkspace([[
-            {type: "markdown", file: "A.md"},
-            {type: "markdown", file: "B.md", active: true},
-            {type: "markdown", file: "B.md"},
-        ]]);
     })
 })

@@ -4,7 +4,7 @@ import workspacePage from 'test/pageobjects/workspace.page';
 
 describe('Plugin compatibility', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
     });
 
@@ -27,7 +27,10 @@ describe('Plugin compatibility', function() {
     })
 
     describe("Home tab", function () {
-        before(async function() { await obsidianPage.enablePlugin("home-tab"); });
+        before(async function() {
+            if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+            await obsidianPage.enablePlugin("home-tab");
+        });
         after(async function() { await obsidianPage.disablePlugin("home-tab") });
 
         it('treats as empty', async function() {

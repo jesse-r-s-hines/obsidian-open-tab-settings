@@ -1,75 +1,86 @@
 import * as path from "path"
-import { obsidianBetaAvailable, resolveObsidianVersions } from "wdio-obsidian-service";
+import { parseObsidianVersions, obsidianBetaAvailable } from "wdio-obsidian-service";
+import merge from "lodash.merge";
+import { env } from "process";
 
+// wdio-obsidian-service will download Obsidian versions into this directory
 const cacheDir = path.resolve(".obsidian-cache");
 
-let versions: [string, string][]; // [appVersion, installerVersion][]
-if (process.env.OBSIDIAN_VERSIONS) {
-    // Space separated list of appVersion/installerVersion, e.g. "1.7.7/latest latest/earliest"
-    versions = process.env.OBSIDIAN_VERSIONS.split(/[ ,]+/).map(v => {
-        const [app, installer = "earliest"] = v.split("/"); // default to earliest installer
-        return [app, installer];
-    })
-} else if (process.env.CI) {
-    // Running in GitHub CI. You can use RUNNER_OS to select different versions on different
-    // platforms in the workflow matrix if you want
-    versions = [["earliest", "earliest"], ["latest", "latest"]];
-    if (await obsidianBetaAvailable(cacheDir)) {
-        versions.push(["latest-beta", "latest"]);
-    }
-
+// choose Obsidian versions to test
+let defaultVersions = "earliest/earliest latest/latest";
+if (await obsidianBetaAvailable({cacheDir})) {
+    defaultVersions += " latest-beta/latest"
+}
+const desktopVersions = await parseObsidianVersions(
+    env.OBSIDIAN_VERSIONS ?? defaultVersions,
+    {cacheDir},
+);
+const mobileVersions = await parseObsidianVersions(
+    env.OBSIDIAN_MOBILE_VERSIONS ?? env.OBSIDIAN_VERSIONS ?? defaultVersions,
+    {cacheDir},
+);
+if (env.CI) {
     // Print the resolved Obsidian versions to use as the workflow cache key
     // (see .github/workflows/test.yaml)
-    for (let [app, installer] of versions) {
-        [app, installer] = await resolveObsidianVersions(app, installer, cacheDir);
-        console.log(`${app}/${installer}`);
-    }
-} else {
-    versions = [["earliest", "earliest"], ["latest", "latest"]];
+    console.log("obsidian-cache-key:", JSON.stringify([desktopVersions, mobileVersions]));
+}
+
+const common: WebdriverIO.Capabilities = {
+    browserName: 'obsidian',
+    'wdio:obsidianOptions': {
+        plugins: [
+            ".",
+            {id: "obsidian-excalidraw-plugin", enabled: false},
+            {id: "home-tab", enabled: false},
+            {id: "obsidian-kanban", enabled: false},
+        ],
+        vault: "./test/vault",
+    },
 }
 
 export const config: WebdriverIO.Config = {
     runner: 'local',
+    framework: 'mocha',
 
-    specs: [
-        './test/specs/**/*.e2e.ts'
-    ],
+    specs: ['./test/specs/**/*.e2e.ts'],
 
     // How many instances of Obsidian should be launched in parallel during testing.
-    maxInstances: Number(process.env["WDIO_MAX_INSTANCES"] || 4),
+    maxInstances: Number(env.WDIO_MAX_INSTANCES || 4),
 
-    capabilities: versions.map(([appVersion, installerVersion]) => ({
-        browserName: 'obsidian',
-        browserVersion: appVersion,
-        'wdio:obsidianOptions': {
-            installerVersion: installerVersion,
-            plugins: [
-                ".",
-                {id: "obsidian-excalidraw-plugin", enabled: false},
-                {id: "home-tab", enabled: false},
-                {id: "obsidian-kanban", enabled: false},
-            ],
-            vault: "./test/vault",
-        },
-    })),
+    // "matrix" to test your plugin on multiple Obsidian versions and with emulateMobile
+    capabilities: [
+        ...desktopVersions.map(([appVersion, installerVersion]) => merge({}, common, {
+            'wdio:obsidianOptions': {
+                appVersion, installerVersion,
+            },
+        })),
+        // Test the plugin on the emulated mobile UI.
+        ...mobileVersions.map(([appVersion, installerVersion]) => merge({}, common, {
+            'wdio:obsidianOptions': {
+                appVersion, installerVersion,
+                emulateMobile: true,
+            },
+            'goog:chromeOptions': {
+                mobileEmulation: {
+                    deviceMetrics: {width: 390, height: 844, touch: false},
+                },
+            },
+        })),
+    ],
 
-    framework: 'mocha',
     services: ["obsidian"],
     reporters: ['obsidian'],
 
+    bail: 2,
     mochaOpts: {
         ui: 'bdd',
-        timeout: 60000,
-        // Retry flaky tests
-        // TODO: Fix the timing issues
+        timeout: 60 * 1000,
         retries: 4,
         bail: true,
     },
-
     waitforInterval: 250,
     waitforTimeout: 5 * 1000,
+    logLevel: "warn",
 
     cacheDir: cacheDir,
-
-    logLevel: "warn",
 }

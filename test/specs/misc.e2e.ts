@@ -1,10 +1,10 @@
 import { browser } from '@wdio/globals'
-import { obsidianPage } from 'wdio-obsidian-service';
 import workspacePage from 'test/pageobjects/workspace.page';
+import { obsidianPage } from 'wdio-obsidian-service';
 
 describe('Misc', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, openInSameTabOnModClick: true });
     });
 
@@ -50,8 +50,18 @@ describe('Misc', function() {
         await browser.executeObsidianCommand("open-tab-settings:toggle-open-in-new-tab");
         const value = await browser.executeObsidian(async ({plugins}) => {
             return plugins.openTabSettings.settings.openInNewTab;
-        })
+        });
         expect(value).toEqual(true);
+    });
+})
+
+describe("Mod click", function() {
+    before(async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+    })
+    beforeEach(async function() {
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, openInSameTabOnModClick: true });
     });
 
     it('Test mod click', async function() {

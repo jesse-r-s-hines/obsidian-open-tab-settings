@@ -1,13 +1,12 @@
 import { browser } from '@wdio/globals'
 import workspacePage from 'test/pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { sleep } from '../helpers';
 import { WorkspaceParent } from 'obsidian';
 
 
 describe('Test basic deduplicate', function() {
     beforeEach(async function() {
-        await obsidianPage.loadWorkspaceLayout("empty");
+        await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
         await workspacePage.setConfig('focusNewTab', false);
     });
@@ -41,14 +40,14 @@ describe('Test basic deduplicate', function() {
     it('re-open file', async function() {
         await workspacePage.openFile("A.md");
         await workspacePage.openFileViaQuickSwitcher("A.md");
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 
     it('re-open self link', async function() {
         await workspacePage.openFile("Loop.md");
         await workspacePage.openLink(await workspacePage.getLink("Loop.md"));
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
@@ -57,7 +56,7 @@ describe('Test basic deduplicate', function() {
 
         await workspacePage.openFile("Loop.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
@@ -66,7 +65,7 @@ describe('Test basic deduplicate', function() {
 
         await workspacePage.openFile("Loop.md");
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md"));
-        await sleep(250);
+        await browser.pause(250);
         await workspacePage.matchWorkspace([[{type: "markdown", file: "Loop.md", active: true}]]);
     })
 
@@ -82,12 +81,13 @@ describe('Test basic deduplicate', function() {
     })
 
     it('deduplicate via sidebar', async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
-        const button = await browser
+        const button: ChainablePromiseElement = await browser
             .$$(".workspace-tab-header")
-            .find(e => e.$("div.*=Outgoing links").isExisting()) as ChainablePromiseElement;
+            .find(e => e.$("div.*=Outgoing links").isExisting());
         await button.click()
         const item = browser.$(".workspace-leaf-content[data-type='outgoing-link']").$("div=B");
         await item.click()

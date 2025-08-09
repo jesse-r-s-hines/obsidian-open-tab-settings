@@ -3,6 +3,7 @@ import { ConfigItem } from 'obsidian-typings'
 import type { OpenTabSettingsPluginSettings } from "src/settings.js"
 import { equals } from "@jest/expect-utils";
 import { WorkspaceLeaf, WorkspaceParent } from 'obsidian';
+import { obsidianPage } from 'wdio-obsidian-service';
 
 type LeafInfo = {
     id: string,
@@ -17,6 +18,16 @@ class WorkspacePage {
         await browser.executeObsidian(async ({plugins}, settings) => {
             await plugins.openTabSettings.updateSettings(settings);
         }, settings);
+    }
+
+    async loadPlatformWorkspaceLayout(layout: string) {
+        const platform = await obsidianPage.getPlatform();
+        if (platform.isPhone) {
+            layout = layout + "-phone";
+        } else if (platform.isTablet) {
+            layout = layout + "-tablet";
+        }
+        await obsidianPage.loadWorkspaceLayout(layout);
     }
 
     /**
@@ -140,7 +151,7 @@ class WorkspacePage {
      * Pins the specified tab. Note it also focuses the tab.
      */
     async pinTab(pathOrId: string) {
-        await workspacePage.setActiveFile(pathOrId);
+        await this.setActiveFile(pathOrId);
         await browser.executeObsidianCommand("workspace:toggle-pin");
     }
 
@@ -157,28 +168,52 @@ class WorkspacePage {
         await link.click();
     }
 
+    async openContextMenu(elem: ChainablePromiseElement) {
+        await this.setConfig('nativeMenus', false);
+        const platform = await obsidianPage.getPlatform();
+        if (platform.isDesktopApp) {
+            await elem.click({button: "right"});
+        } else {
+            // on android, the context menu event is a glitchy and I can't get the longPress to work properly from wdio.
+            // Instead manually trigger it in js:
+            await browser.execute((elem) => {
+                const {bottom, left, right, top} = elem.getBoundingClientRect()
+                const x = (right - left)/2 + left; // get middle
+                const y = (bottom - top)/2 + top;
+                elem.dispatchEvent(new MouseEvent("contextmenu", {
+                    button: 0, buttons: 0,
+                    screenX: x, screenY: y,
+                    bubbles: true, cancelable: true,
+                    clientX: x, clientY: y,
+                }))
+            }, elem);
+        }
+        // Clicking in the mobile drawer context menu thing somehow triggers Rename instead of open in new tab
+        // if I don't wait a bit
+        if (platform.isMobile) {
+            await browser.pause(250);
+        }
+        return browser.$(".menu");
+    }
+
     async openLinkInNewTab(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        await browser.$(".menu").$("div.*=Open in new tab").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open in new tab").click()
     }
 
     async openLinkToRight(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        await browser.$(".menu").$("div.*=Open to the right").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open to the right").click()
     }
 
     async openLinkInNewWindow(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        await browser.$(".menu").$("div.*=Open in new window").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open in new window").click()
     }
 
     async openLinkInSameTab(link: ChainablePromiseElement) {
-        await workspacePage.setConfig('nativeMenus', false);
-        await link.click({button: "right"});
-        await browser.$(".menu").$("div.*=Open in same tab").click()
+        const menu = await this.openContextMenu(link);
+        await menu.$("div.*=Open in same tab").click()
     }
 
     async openFileViaQuickSwitcher(path: string): Promise<void> {
@@ -192,6 +227,13 @@ class WorkspacePage {
         const expandAllButton = $(".nav-action-button[aria-label='Expand all']");
         if (await expandAllButton.isExisting()) {
             await expandAllButton.click()
+        }
+        const platform = await obsidianPage.getPlatform();
+        if (platform.isTablet) {
+            await browser.$(".sidebar-toggle-button").click();
+        } else if (platform.isMobile) {
+            await browser.$(".mod-left-split-toggle").click();
+            await browser.pause(250);
         }
         await $(`.nav-files-container [data-path='${path}']`).click()
     }

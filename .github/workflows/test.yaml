@@ -64,20 +64,22 @@ jobs:
       # can sometimes get by without the window manager, but some Obsidian features won't
       # work properly wihtout it.)
       - if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
-        with:
-          packages: herbstluftwm
-          version: 1.0
-          execute_install_scripts: true
-      - if: ${{ matrix.os == 'ubuntu-latest' }}
         name: "Setup virtual graphics"
         run: |
-          export DISPLAY=:99
-          echo "DISPLAY=$DISPLAY" >> "$GITHUB_ENV"
-          Xvfb $DISPLAY -screen 0 1280x1024x24 +extension GLX -noreset &
-          sleep 1
-          herbstluftwm &
-          sleep 1
+            # Some hacks to speed up apt install
+            sudo rm -rf /etc/apt/sources.list.d/*.list
+            echo "set man-db/auto-update false" | sudo debconf-communicate
+            sudo dpkg-reconfigure man-db
+
+            sudo apt-get update -q
+            sudo apt-get install -q herbstluftwm dzen2 x11-xserver-utils
+
+            export DISPLAY=:99
+            echo "DISPLAY=$DISPLAY" >> "$GITHUB_ENV"
+            Xvfb $DISPLAY -screen 0 1280x1024x24 +extension GLX -noreset &
+            sleep 1
+            herbstluftwm &
+            sleep 1
 
       - name: Run e2e tests
         run: npm run test:e2e

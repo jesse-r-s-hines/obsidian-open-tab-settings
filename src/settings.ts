@@ -7,12 +7,19 @@ export const NEW_TAB_PLACEMENTS = {
     "end": "At end",
 };
 
+export const NEW_TAB_TAB_GROUP_PLACEMENTS = {
+    "same": "In same tab group",
+    "opposite": "In opposite tab group",
+    "first": "In first tab group",
+    "last": "In last tab group",
+};
+
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
     openInSameTabOnModClick: boolean,
     newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
-    openNewTabsInOtherTabGroup: boolean,
+    newTabTabGroupPlacement: "same"|"opposite"|"first"|"last",
 }
 
 export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
@@ -20,7 +27,7 @@ export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     deduplicateTabs: true,
     openInSameTabOnModClick: false,
     newTabPlacement: "after-active",
-    openNewTabsInOtherTabGroup: false,
+    newTabTabGroupPlacement: "same",
 }
 
 export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
@@ -94,24 +101,29 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
 
         new Setting(this.containerEl)
             .setName('New tab placement')
-            .setDesc('Where to place new tabs.')
+            .setDesc('Place new tabs...')
             .addDropdown(dropdown => 
                 dropdown
                     .addOptions(NEW_TAB_PLACEMENTS)
                     .setValue(this.plugin.settings.newTabPlacement)
                     .onChange(async value => {
-                        await this.plugin.updateSettings({newTabPlacement: value as keyof typeof NEW_TAB_PLACEMENTS});
+                        await this.plugin.updateSettings({
+                            newTabPlacement: value as keyof typeof NEW_TAB_PLACEMENTS,
+                        });
                     })
             )
 
         new Setting(this.containerEl)
-            .setName('Prefer opening new tabs in other tab group')
-            .setDesc('When the workspace is split, open links in the opposite panel.')
-            .addToggle(toggle =>
+            .setName('New tab tab group placement')
+            .setDesc('When the workspace is split, prefer to open new tabs...')
+            .addDropdown(toggle =>
                 toggle
-                    .setValue(this.plugin.settings.openNewTabsInOtherTabGroup)
+                    .addOptions(NEW_TAB_TAB_GROUP_PLACEMENTS)
+                    .setValue(this.plugin.settings.newTabTabGroupPlacement)
                     .onChange(async (value) => {
-                        await this.plugin.updateSettings({openNewTabsInOtherTabGroup: value});
+                        await this.plugin.updateSettings({
+                            newTabTabGroupPlacement: value as keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS,
+                        });
                     })
             );
 

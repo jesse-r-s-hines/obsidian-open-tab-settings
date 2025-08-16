@@ -209,6 +209,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
     async loadSettings() {
         const dataFile = await this.loadData() ?? {};
+        // backwards compat for setting
+        if (dataFile.openNewTabsInOtherTabGroup !== undefined) {
+            dataFile.newTabTabGroupPlacement = dataFile.openNewTabsInOtherTabGroup ? 'last' : 'same';
+            delete dataFile.openNewTabsInOtherTabGroup;
+        }
         this.settings = Object.assign({}, DEFAULT_SETTINGS, dataFile);
 
         if (Object.keys(dataFile).length == 0) {
@@ -253,8 +258,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 tabGroups.add(leaf.parent);
             }
         });
-        const getActiveTime = (g: TabGroup) => Math.max(...g.children.map(l => l.activeTime ?? 0));
-        return [...tabGroups].sort((a, b) => getActiveTime(a) - getActiveTime(b));
+        return [...tabGroups];
     }
 
     /**
@@ -273,12 +277,18 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         let dest: TabGroup|undefined;
         let index = 0;
-        if (this.settings.openNewTabsInOtherTabGroup && !Platform.isPhone) {
-            // check if there is a split in the same window
-            const otherTabGroup = this.getAllTabGroups(activeLeaf.getRoot()).filter(g => g !== activeTabGroup).at(-1);
-            if (otherTabGroup) {
+        if (this.settings.newTabTabGroupPlacement != "same" && !Platform.isPhone) {
+            const tabGroups = this.getAllTabGroups(activeLeaf.getRoot());
+            const otherTabGroup = tabGroups.filter(g => g !== activeTabGroup).at(-1);
+            if (this.settings.newTabTabGroupPlacement == "opposite" && otherTabGroup) {
                 dest = otherTabGroup;
                 index = otherTabGroup.children.length;
+            } else if (this.settings.newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
+                dest = tabGroups[0];
+                index = tabGroups[0].children.length; // TODO Should make this respect newTabPlacement
+            } else if (this.settings.newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
+                dest = tabGroups.at(-1);
+                index = tabGroups.at(-1)!.children.length;
             }
         }
         if (!dest && this.settings.newTabPlacement == "after-pinned") {

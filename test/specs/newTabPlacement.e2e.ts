@@ -8,7 +8,7 @@ describe('Test newTabPlacement', function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({
             openInNewTab: false, deduplicateTabs: false,
-            newTabPlacement: "after-active", openNewTabsInOtherTabGroup: false,
+            newTabPlacement: "after-active", newTabTabGroupPlacement: "same",
         });
         await workspacePage.setConfig('focusNewTab', false);
     })
@@ -221,7 +221,7 @@ describe('Test newTabPlacement', function() {
 })
 
 
-describe('Test openNewTabsInOtherTabGroup', function() {
+describe('Test newTabTabGroupPlacement', function() {
     let mainWindow: string|undefined
 
     before(async function() {
@@ -238,12 +238,12 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({
             openInNewTab: false, deduplicateTabs: false,
-            newTabPlacement: "after-active", openNewTabsInOtherTabGroup: true,
+            newTabPlacement: "after-active", newTabTabGroupPlacement: "opposite",
         });
         await workspacePage.setConfig('focusNewTab', false);
     })
 
-    it("openNewTabsInOtherTabGroup basic", async function() {
+    it("newTabTabGroupPlacement basic", async function() {
         // A is in left, Loop is in right
         await workspacePage.loadPlatformWorkspaceLayout("split")
         await workspacePage.setActiveFile("A.md");
@@ -255,7 +255,7 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         ]);
     })
 
-    it("openNewTabsInOtherTabGroup replace empty", async function() {
+    it("newTabTabGroupPlacement replace empty", async function() {
         // A is in left, Loop is in right
         await workspacePage.loadPlatformWorkspaceLayout("split")
         await workspacePage.setActiveFile("Loop.md");
@@ -278,7 +278,7 @@ describe('Test openNewTabsInOtherTabGroup', function() {
     })
 
 
-    it("openNewTabsInOtherTabGroup nested split", async function() {
+    it("newTabTabGroupPlacement nested split", async function() {
         // A is in left, Loop in top right, D in bottom right
         await workspacePage.loadPlatformWorkspaceLayout("nested-split")
         await workspacePage.setActiveFile("A.md");
@@ -292,7 +292,7 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         ]);
     })
 
-     it("openNewTabsInOtherTabGroup doesn't open in separate windows", async function() {
+     it("newTabTabGroupPlacement doesn't open in separate windows", async function() {
         if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         // A in main, D in a popout window
         await workspacePage.loadPlatformWorkspaceLayout("popout-window");
@@ -307,7 +307,7 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         ]);
     })
 
-    it("openNewTabsInOtherTabGroup in secondary window", async function() {
+    it("newTabTabGroupPlacement in secondary window", async function() {
         if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         // A in main, D and Loop in a popout window
         await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
@@ -326,7 +326,7 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         ]);
     })
 
-    it("openNewTabsInOtherTabGroup deduplicate doesn't delete panel", async function() {
+    it("newTabTabGroupPlacement deduplicate doesn't delete panel", async function() {
         await workspacePage.setSettings({ deduplicateTabs: true });
         // A is in left, Loop is in right
         await workspacePage.loadPlatformWorkspaceLayout("split")
@@ -345,6 +345,62 @@ describe('Test openNewTabsInOtherTabGroup', function() {
         await workspacePage.matchWorkspace([
             [{type: "markdown", file: "A.md", active: true}],
             [{type: "empty"}],
+        ]);
+    })
+
+    it("newTabTabGroupPlacement first from first", async function() {
+        await workspacePage.setSettings({ newTabTabGroupPlacement: "first" });
+        // A is in left, Loop is in right
+        await workspacePage.loadPlatformWorkspaceLayout("nested-split")
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}, {file: "B.md"}],
+            [{file: "Loop.md"}],
+            [{file: "D.md"}],
+        ]);
+    })
+
+    it("newTabTabGroupPlacement first from last", async function() {
+        await workspacePage.setSettings({ newTabTabGroupPlacement: "first" });
+        // A is in left, Loop is in right
+        await workspacePage.loadPlatformWorkspaceLayout("nested-split")
+        await workspacePage.setActiveFile("D.md");
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop"));
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}, {file: "Loop.md"}],
+            [{file: "Loop.md"}],
+            [{file: "D.md"}],
+        ]);
+    })
+
+    it("newTabTabGroupPlacement last from last", async function() {
+        await workspacePage.setSettings({ newTabTabGroupPlacement: "last" });
+        // A is in left, Loop is in right
+        await workspacePage.loadPlatformWorkspaceLayout("nested-split")
+        await workspacePage.setActiveFile("D.md");
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop"));
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}],
+            [{file: "Loop.md"}],
+            [{file: "D.md"}, {file: "Loop.md"}],
+        ]);
+    })
+
+    it("newTabTabGroupPlacement last from first", async function() {
+        await workspacePage.setSettings({ newTabTabGroupPlacement: "last" });
+        // A is in left, Loop is in right
+        await workspacePage.loadPlatformWorkspaceLayout("nested-split")
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}],
+            [{file: "Loop.md"}],
+            [{file: "D.md"}, {file: "B.md"}],
         ]);
     })
 })

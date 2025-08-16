@@ -1,7 +1,7 @@
 {
 	"id": "open-tab-settings",
 	"name": "Open Tab Settings",
-	"version": "1.2.5",
+	"version": "1.3.0",
 	"minAppVersion": "1.8.3",
 	"description": "Adds options to customize how tabs are opened, including open in new tab by default, preventing duplicate tabs, and more.",
 	"author": "jesse-r-s-hines",

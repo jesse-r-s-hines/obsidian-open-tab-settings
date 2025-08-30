@@ -4,6 +4,7 @@ import OpenTabSettingsPlugin from "./main"
 export const NEW_TAB_PLACEMENTS = {
     "after-active": "After active tab",
     "after-pinned": "After pinned tabs",
+    "beginning": "At beginning",
     "end": "At end",
 };
 

@@ -42,9 +42,9 @@
         "tslib": "^2.8.1",
         "tsx": "^4.20.5",
         "typescript": "^5.9.2",
-        "typescript-eslint": "^8.40.0",
-        "wdio-obsidian-reporter": "^2.1.1",
-        "wdio-obsidian-service": "^2.1.1"
+        "typescript-eslint": "^8.41.0",
+        "wdio-obsidian-reporter": "^2.1.2",
+        "wdio-obsidian-service": "^2.1.2"
     },
     "dependencies": {
         "monkey-around": "^3.0.0"

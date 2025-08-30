@@ -275,47 +275,52 @@ export default class OpenTabSettingsPlugin extends Plugin {
             return activeLeaf;
         }
 
-        let dest: TabGroup|undefined;
-        let index = 0;
+        let group: TabGroup|undefined;
+        let index: number|undefined;
+
         if (this.settings.newTabTabGroupPlacement != "same" && !Platform.isPhone) {
             const tabGroups = this.getAllTabGroups(activeLeaf.getRoot());
             const otherTabGroup = tabGroups.filter(g => g !== activeTabGroup).at(-1);
             if (this.settings.newTabTabGroupPlacement == "opposite" && otherTabGroup) {
-                dest = otherTabGroup;
-                index = otherTabGroup.children.length;
+                group = otherTabGroup;
             } else if (this.settings.newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
-                dest = tabGroups[0];
-                index = tabGroups[0].children.length; // TODO Should make this respect newTabPlacement
+                group = tabGroups[0];
             } else if (this.settings.newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
-                dest = tabGroups.at(-1);
-                index = tabGroups.at(-1)!.children.length;
+                group = tabGroups.at(-1)!;
             }
         }
-        if (!dest && this.settings.newTabPlacement == "after-pinned") {
-            if (activeLeaf.pinned) {
-                dest = activeTabGroup;
-                const nextUnpinned = dest.children.findIndex((l, i) => !l.pinned && i > activeIndex);
-                index = nextUnpinned < 0 ? dest.children.length : nextUnpinned;
+        if (!group) {
+            group = activeTabGroup;
+        }
+
+        if (group == activeTabGroup) {
+            if (this.settings.newTabPlacement == "after-pinned" && activeLeaf.pinned) {
+                const nextUnpinned = group.children.findIndex((l, i) => !l.pinned && i > activeIndex);
+                index = nextUnpinned < 0 ? group.children.length : nextUnpinned;
+            } else if (this.settings.newTabPlacement == "beginning") {
+                index = 0;
+            } else if (this.settings.newTabPlacement == "end") {
+                index = activeTabGroup.children.length;
+            } else {
+                index = activeIndex + 1;
             }
-        }
-        if (!dest && this.settings.newTabPlacement == "end") {
-            dest = activeTabGroup;
-            index = activeTabGroup.children.length;
-        }
-        if (!dest) {
-            dest = activeTabGroup;
-            index = activeIndex + 1;
+        } else {
+            if (this.settings.newTabPlacement == "beginning") {
+                index = 0
+            } else {
+                index = activeTabGroup.children.length;
+            }
         }
 
         let newLeaf: WorkspaceLeaf;
         // we re-use empty tabs more aggressively than default Obsidian. If the tab at the new location is empty, re-use
         // it instead of creating a new one.
-        const leafToDisplace = dest.children[Math.min(index, dest.children.length - 1)];
+        const leafToDisplace = group.children[Math.min(index, group.children.length - 1)];
         if (isEmptyLeaf(leafToDisplace)) {
             newLeaf = leafToDisplace;
         } else {
             newLeaf = new (WorkspaceLeaf as any)(this.app);
-            dest.insertChild(index, newLeaf);
+            group.insertChild(index, newLeaf);
         }
 
         return newLeaf;

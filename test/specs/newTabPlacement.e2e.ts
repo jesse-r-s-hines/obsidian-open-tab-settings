@@ -40,6 +40,21 @@ describe('Test newTabPlacement', function() {
         ]]);
     })
 
+    it('basic newTabPlacement beginning', async function() {
+        await workspacePage.setSettings({newTabPlacement: "beginning"});
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("D.md");
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md"},
+            {type: "markdown", file: "A.md", active: true},
+            {type: "markdown", file: "D.md"},
+        ]]);
+    })
+
     it('basic newTabPlacement after-pinned [unpinned]-unpinned', async function() {
         await workspacePage.setSettings({newTabPlacement: "after-pinned"});
 

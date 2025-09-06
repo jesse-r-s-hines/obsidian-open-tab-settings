@@ -161,7 +161,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         // Check if there are any duplicate tabs
                         const matches = plugin.findMatchingLeaves(file);
                         if (!matches.includes(this) && matches.length > 0) {
-                            if (matches[0].view.getViewType() == "kanban" && openState?.active) {
+                            if (matches[0].view.getViewType() == "kanban") {
                                 // workaround for a bug in kanban. See
                                 //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                                 //     https://github.com/mgmeyers/obsidian-kanban/issues/1102

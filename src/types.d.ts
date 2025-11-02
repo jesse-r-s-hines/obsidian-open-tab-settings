@@ -4,7 +4,8 @@ import { PaneType, WorkspaceTabs, WorkspaceMobileDrawer } from 'obsidian';
 export type PaneTypePatch = PaneType|"same";
 declare module "obsidian" {
     interface WorkspaceLeaf {
-        openTabSettingsLastOpenType?: PaneTypePatch,
+        openTabSettingsLastOpenType?: PaneTypePatch|"default",
+        openTabSettingsOpenedFrom?: string,
         pinned: boolean,
     }
 

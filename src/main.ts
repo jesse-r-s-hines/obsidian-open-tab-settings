@@ -15,8 +15,6 @@ const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
     "md": ["excalidraw", "kanban"],
 }
 
-const UNSET = Symbol("unset")
-
 
 function isEmptyLeaf(leaf: WorkspaceLeaf) {
     // home-tab plugin replaces new tab with home tabs, which should be treated like empty.

@@ -102,6 +102,17 @@ const tests = () => {
             {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
         ]]);
     })
+
+    it("internal link", async function() {
+        await workspacePage.openFile("Loop.md");
+        await workspacePage.setActiveFile("Loop.md")
+
+        await workspacePage.openLink(await workspacePage.getLink("Loop.md#Subheading"));
+        await $(".is-flashing").waitForExist(); // check we get the internal link highlight
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"},
+        ]]);
+    })
 }
 
 const noDedupTests = () => {
@@ -127,6 +138,21 @@ const noDedupTests = () => {
             {type: "markdown", file: "Loop.md", active: true}, {type: "markdown", file: "Loop.md"},
         ]]);
         expect((await workspacePage.getActiveLeaf()).id).toEqual(prevActiveLeaf.id);
+    })
+
+    it("internal link in new tab", async function() {
+        // if dedup isn't on, internal links should still open in same tab
+        await workspacePage.setConfig('focusNewTab', true);
+        await workspacePage.openFile("Loop.md");
+        await workspacePage.setActiveFile("Loop.md")
+        const prevActiveLeaf = await workspacePage.getActiveLeaf();
+
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md#Subheading"));
+        await $(".is-flashing").waitForExist(); // check we get the internal link highlight
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"}, {type: "markdown", file: "Loop.md"},
+        ]]);
+        expect((await workspacePage.getActiveLeaf()).id).not.toEqual(prevActiveLeaf.id);
     })
 }
 

@@ -159,6 +159,7 @@ class WorkspacePage {
         const activeView = $(await browser.executeObsidian(({app, obsidian}) =>
             app.workspace.getActiveViewOfType(obsidian.View)!.containerEl
         ));
+        text = text.replace("#", " > "); // reading mode shows subpaths as " > "
         // In reading view there's some kind of hidden copy of the link that shows up as well, so we have to filter for
         // the "internal-link" real one.
         return activeView.$(`.//a[contains(@class, 'internal-link') and text() = '${text}']`)

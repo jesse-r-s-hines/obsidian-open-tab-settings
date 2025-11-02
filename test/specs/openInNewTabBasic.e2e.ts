@@ -148,6 +148,17 @@ describe('Test basic open in new tab', function() {
         expect((await workspacePage.getActiveLeaf()).id).not.toEqual(prevActiveLeaf);
     })
 
+    it("internal link", async function() {
+        await workspacePage.openFile("Loop.md");
+        await workspacePage.setActiveFile("Loop.md")
+
+        await workspacePage.openLink(await workspacePage.getLink("Loop.md#Subheading"));
+        await $(".is-flashing").waitForExist(); // check we get the internal link highlight
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"},
+        ]]);
+    })
+
     it("open new file", async function() {
         await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("file-explorer:new-file");

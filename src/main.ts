@@ -15,8 +15,6 @@ const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
     "md": ["excalidraw", "kanban"],
 }
 
-const UNSET = Symbol("unset")
-
 
 function isEmptyLeaf(leaf: WorkspaceLeaf) {
     // home-tab plugin replaces new tab with home tabs, which should be treated like empty.
@@ -90,14 +88,20 @@ export default class OpenTabSettingsPlugin extends Plugin {
         this.register(monkeyAround.around(Workspace.prototype, {
             getLeaf(oldMethod: any) {
                 return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
+                    const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
+
                     // the new tab was requested via a normal, unmodified click
                     const isDefaultNewTab = plugin.settings.openInNewTab && !newLeaf;
+                    let lastOpenType: PaneTypePatch|"default"
                     // resolve newLeaf to enum
                     if (newLeaf == true) {
+                        lastOpenType = 'tab';
                         newLeaf = 'tab';
                     } else if (plugin.settings.openInNewTab) {
+                        lastOpenType = newLeaf || 'default';
                         newLeaf = newLeaf || 'tab';
                     } else {
+                        lastOpenType = newLeaf || 'default';
                         newLeaf = newLeaf || 'same';
                     }
 
@@ -120,9 +124,13 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         leaf = oldMethod.call(this, newLeaf, ...args);
                     }
 
-
-                    // We set this so we can avoid deduplicating if the pane was opened via explicit new tab
-                    leaf.openTabSettingsLastOpenType = newLeaf;
+                    // We set this so we can avoid deduplicating if the pane was opened via explicit to-the-right etc.
+                    leaf.openTabSettingsLastOpenType = lastOpenType;
+                    // this will be used so we can trigger deduplicate when opening an internal link
+                    // NOTE: There's some caveats with this, e.g. opening via the quick switch will still show the open
+                    // file as "openedFrom". We work around this by only deduplicating if the link has a hash portion in
+                    // openFile.
+                    leaf.openTabSettingsOpenedFrom = activeLeaf?.id;
 
                     return leaf;
                 }
@@ -146,38 +154,50 @@ export default class OpenTabSettingsPlugin extends Plugin {
             openFile(oldMethod: any) {
                 return async function(this: WorkspaceLeaf, file, openState, ...args) {
                     // openFile doesn't return anything, but just in case that changes.
-                    let result: any = UNSET;
+                    let result: any;
+                    let match: WorkspaceLeaf|undefined;
 
+                    const matches = plugin.findMatchingLeaves(file);
+                    const lastOpenType = this.openTabSettingsLastOpenType;
+                    const lastOpenedFrom = this.openTabSettingsOpenedFrom;
                     // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                     // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
                     // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
                     // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the leaf
                     // was created before the plugin was loaded or such.
-                    const isSpecialOpen = isEmptyLeaf(this) && (
-                        !this.openTabSettingsLastOpenType ||
-                        !['same', 'tab'].includes(this.openTabSettingsLastOpenType)
+                    const isSpecialOpen = (!isMainLeaf(this) || (
+                        isEmptyLeaf(this) && !['same', 'tab', 'default'].includes(lastOpenType ?? 'unknown')
+                    ));
+                    // To avoid issues when explicitly re-opening a file via the quick-switcher, also check that we are
+                    // opening a sub-heading.
+                    const isInternalLink = (
+                        isEmptyLeaf(this) &&
+                        !!openState?.eState?.subpath &&
+                        matches.some(l => l.id == lastOpenedFrom)
                     );
-                    if (plugin.settings.deduplicateTabs && isMainLeaf(this) && !isSpecialOpen) {
-                        // Check if there are any duplicate tabs
-                        const matches = plugin.findMatchingLeaves(file);
-                        if (!matches.includes(this) && matches.length > 0) {
-                            if (matches[0].view.getViewType() == "kanban") {
-                                // workaround for a bug in kanban. See
-                                //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
-                                //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
-                                this.app.workspace.setActiveLeaf(matches[0]);
-                                result = undefined;
-                            } else {
-                                const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
-                                result = await oldMethod.call(matches[0], file, {
-                                    ...openState,
-                                    active: !!openState?.active || activeLeaf == this,
-                                }, ...args);
-                            }
-                        }
+
+                    if (plugin.settings.openInNewTab && isInternalLink && !isSpecialOpen && lastOpenType == 'default') {
+                        // if the link opened was an internal link, always deduplicate to undo open in new tab.
+                        match = matches.find(l => l.id == lastOpenedFrom)!;
+                    } else if (plugin.settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !matches.includes(this)) {
+                        match = matches[0];
                     }
 
-                    if (result == UNSET) { // use default behavior
+                    if (match) {
+                        if (match.view.getViewType() == "kanban") {
+                            // workaround for a bug in kanban. See
+                            //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
+                            //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
+                            this.app.workspace.setActiveLeaf(matches[0]);
+                            result = undefined;
+                        } else {
+                            const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
+                            result = await oldMethod.call(matches[0], file, {
+                                ...openState,
+                                active: !!openState?.active || activeLeaf == this,
+                            }, ...args);
+                        }
+                    } else { // use default behavior
                         result = await oldMethod.call(this, file, openState, ...args);
                     }
 

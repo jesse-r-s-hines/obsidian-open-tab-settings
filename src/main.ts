@@ -314,9 +314,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         if (group == activeTabGroup) {
-            if (this.settings.newTabPlacement == "after-pinned" && activeLeaf.pinned) {
-                const nextUnpinned = group.children.findIndex((l, i) => !l.pinned && i > activeIndex);
-                index = nextUnpinned < 0 ? group.children.length : nextUnpinned;
+            if (this.settings.newTabPlacement == "after-pinned") {
+                const lastPinnedIndex = group.children.findLastIndex(l => l.pinned);
+                index = lastPinnedIndex >= 0 ? lastPinnedIndex + 1 : activeIndex + 1;
             } else if (this.settings.newTabPlacement == "beginning") {
                 index = 0;
             } else if (this.settings.newTabPlacement == "end") {

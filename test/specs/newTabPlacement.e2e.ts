@@ -81,8 +81,8 @@ describe('Test newTabPlacement', function() {
 
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "A.md", active: true, pinned: false},
-            {type: "markdown", file: "B.md", pinned: false},
             {type: "markdown", file: "D.md", pinned: true},
+            {type: "markdown", file: "B.md", pinned: false},
         ]]);
     })
 

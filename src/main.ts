@@ -315,15 +315,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         if (group == activeTabGroup) {
             if (this.settings.newTabPlacement == "after-pinned") {
-                // Find the index of the last pinned tab in the group
-                let lastPinnedIndex = -1;
-                for (let i = group.children.length - 1; i >= 0; i--) {
-                    if (group.children[i].pinned) {
-                        lastPinnedIndex = i;
-                        break;
-                    }
-                }
-                // Place new tab after the last pinned tab, or after active if no pinned tabs
+                const lastPinnedIndex = group.children.findLastIndex(l => l.pinned);
                 index = lastPinnedIndex >= 0 ? lastPinnedIndex + 1 : activeIndex + 1;
             } else if (this.settings.newTabPlacement == "beginning") {
                 index = 0;

@@ -92,16 +92,16 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
                     // the new tab was requested via a normal, unmodified click
                     const isDefaultNewTab = plugin.settings.openInNewTab && !newLeaf;
-                    let lastOpenType: PaneTypePatch|"default"
+                    let lastOpenType: PaneTypePatch|"implicit"
                     // resolve newLeaf to enum
                     if (newLeaf == true) {
                         lastOpenType = 'tab';
                         newLeaf = 'tab';
                     } else if (plugin.settings.openInNewTab) {
-                        lastOpenType = newLeaf || 'default';
+                        lastOpenType = newLeaf || 'implicit';
                         newLeaf = newLeaf || 'tab';
                     } else {
-                        lastOpenType = newLeaf || 'default';
+                        lastOpenType = newLeaf || 'implicit';
                         newLeaf = newLeaf || 'same';
                     }
 
@@ -125,6 +125,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     }
 
                     // We set this so we can avoid deduplicating if the pane was opened via explicit to-the-right etc.
+                    // we set it "implicit" for regular clicks so that we can treat them differently for internal link
+                    // handling.
                     leaf.openTabSettingsLastOpenType = lastOpenType;
                     // this will be used so we can trigger deduplicate when opening an internal link
                     // NOTE: There's some caveats with this, e.g. opening via the quick switch will still show the open
@@ -166,7 +168,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the leaf
                     // was created before the plugin was loaded or such.
                     const isSpecialOpen = (!isMainLeaf(this) || (
-                        isEmptyLeaf(this) && !['same', 'tab', 'default'].includes(lastOpenType ?? 'unknown')
+                        isEmptyLeaf(this) && !['same', 'tab', 'implicit'].includes(lastOpenType ?? 'unknown')
                     ));
                     // To avoid issues when explicitly re-opening a file via the quick-switcher, also check that we are
                     // opening a sub-heading.
@@ -176,7 +178,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         matches.some(l => l.id == lastOpenedFrom)
                     );
 
-                    if (plugin.settings.openInNewTab && isInternalLink && !isSpecialOpen && lastOpenType == 'default') {
+                    if (plugin.settings.openInNewTab && isInternalLink && !isSpecialOpen && lastOpenType == 'implicit') {
                         // if the link opened was an internal link, always deduplicate to undo open in new tab.
                         match = matches.find(l => l.id == lastOpenedFrom)!;
                     } else if (plugin.settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !matches.includes(this)) {

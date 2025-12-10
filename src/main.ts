@@ -90,19 +90,16 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
                     const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
 
-                    // the new tab was requested via a normal, unmodified click
-                    const isDefaultNewTab = plugin.settings.openInNewTab && !newLeaf;
                     let lastOpenType: PaneTypePatch|"implicit"
                     // resolve newLeaf to enum
                     if (newLeaf == true) {
                         lastOpenType = 'tab';
                         newLeaf = 'tab';
-                    } else if (plugin.settings.openInNewTab) {
-                        lastOpenType = newLeaf || 'implicit';
-                        newLeaf = newLeaf || 'tab';
+                    } else if (!newLeaf) {
+                        lastOpenType = 'implicit';
+                        newLeaf = plugin.settings.openInNewTab ? 'tab' : 'same';
                     } else {
-                        lastOpenType = newLeaf || 'implicit';
-                        newLeaf = newLeaf || 'same';
+                        lastOpenType = newLeaf;
                     }
 
                     let leaf: WorkspaceLeaf;
@@ -110,11 +107,12 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         leaf = plugin.getNewLeaf();
                         // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
                         // new tabs created by normal click regardless of focusNewTab
-                        if (plugin.app.vault.getConfig('focusNewTab') || isDefaultNewTab) {
+                        if (plugin.app.vault.getConfig('focusNewTab') || lastOpenType == 'implicit') {
                             plugin.app.workspace.setActiveLeaf(leaf);
                         }
                     } else if (newLeaf == "same") {
-                            // avoid recursion in getLeaf. Add check for if getUnpinnedLeaf is removed
+                        // call oldGetUnpinnedLeaf directly as oldGetLeaf(false) calls our monkey-patched
+                        // getUnpinnedLeaf. Since getUnpinnedLeaf is deprecated, add fallback if its removed.
                         if (plugin.settings.openInNewTab && oldGetUnpinnedLeaf) {
                             leaf = oldGetUnpinnedLeaf.call(this);
                         } else {
@@ -129,7 +127,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // handling.
                     leaf.openTabSettingsLastOpenType = lastOpenType;
                     // this will be used so we can trigger deduplicate when opening an internal link
-                    // NOTE: There's some caveats with this, e.g. opening via the quick switch will still show the open
+                    // NOTE: There's some caveats with this, e.g. opening via the quick switcher will still show the open
                     // file as "openedFrom". We work around this by only deduplicating if the link has a hash portion in
                     // openFile.
                     leaf.openTabSettingsOpenedFrom = activeLeaf?.id;

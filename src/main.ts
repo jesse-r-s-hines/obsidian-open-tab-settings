@@ -82,13 +82,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
     registerMonkeyPatches() {
         const plugin = this;
-        const oldGetUnpinnedLeaf = this.app.workspace.getUnpinnedLeaf; // eslint-disable-line @typescript-eslint/unbound-method
 
-        // Patch getLeaf to always open in new tab
         this.register(monkeyAround.around(Workspace.prototype, {
+            /**
+             * Patch getLeaf to open leaves in new tab by default, based on settings.
+             */
             getLeaf(oldMethod: any) {
                 return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
-                    const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
+                    const activeLeaf = this.getActiveViewOfType(View)?.leaf;
 
                     let lastOpenType: PaneTypePatch|"implicit"
                     // resolve newLeaf to enum
@@ -104,20 +105,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
                     let leaf: WorkspaceLeaf;
                     if (newLeaf == 'tab') {
-                        leaf = plugin.getNewLeaf();
-                        // if focusNewTab is set, set to active like default Obsidian behavior. We also always focus
-                        // new tabs created by normal click regardless of focusNewTab
-                        if (plugin.app.vault.getConfig('focusNewTab') || lastOpenType == 'implicit') {
-                            plugin.app.workspace.setActiveLeaf(leaf);
-                        }
+                        // Tabs opened via normal click are always focused regardless of focusNewTab setting.
+                        leaf = plugin.createNewLeaf((lastOpenType == "implicit") ? true : undefined);
                     } else if (newLeaf == "same") {
-                        // call oldGetUnpinnedLeaf directly as oldGetLeaf(false) calls our monkey-patched
-                        // getUnpinnedLeaf. Since getUnpinnedLeaf is deprecated, add fallback if its removed.
-                        if (plugin.settings.openInNewTab && oldGetUnpinnedLeaf) {
-                            leaf = oldGetUnpinnedLeaf.call(this);
-                        } else {
-                            leaf = oldMethod.call(this, false, ...args);
-                        }
+                        leaf = plugin.getUnpinnedLeaf();
                     } else {
                         leaf = oldMethod.call(this, newLeaf, ...args);
                     }
@@ -127,23 +118,28 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // handling.
                     leaf.openTabSettingsLastOpenType = lastOpenType;
                     // this will be used so we can trigger deduplicate when opening an internal link
-                    // NOTE: There's some caveats with this, e.g. opening via the quick switcher will still show the open
-                    // file as "openedFrom". We work around this by only deduplicating if the link has a hash portion in
-                    // openFile.
+                    // NOTE: There's some caveats with this, e.g. opening via the quick switcher will still show the
+                    // open file as "openedFrom". We work around this by only deduplicating if the link has a hash
+                    // portion in openFile.
                     leaf.openTabSettingsOpenedFrom = activeLeaf?.id;
 
                     return leaf;
                 }
             },
 
-            // getUnpinnedLeaf is deprecated in favor of getLeaf(false). Obsidian doesn't use getUnpinnedLeaf anywhere
-            // except inside getLeaf, but some plugins still use it directly so we'll patch it as well.
+            /**
+             * getUnpinnedLeaf is deprecated in favor of getLeaf(false). However, it is used in a couple places in
+             * Obsidian and many plugins still use it directly. So we'll patch it as well to enforce new tab behavior.
+             *
+             * Note that as of 1.9.10, getUnpinnedLeaf takes an undocumented "focus" boolean. Obsidian uses this param
+             * when using ctrl and arrow keys in the file explorer to open files.
+             */
             getUnpinnedLeaf(oldMethod: any) {
-                return function(this: Workspace, ...args) {
+                return function(this: Workspace, focus?: boolean, ...args) {
                     if (plugin.settings.openInNewTab) {
-                        return plugin.app.workspace.getLeaf("tab");
+                        return this.getLeaf("tab");
                     } else {
-                        return oldMethod.call(this, ...args);
+                        return plugin.getUnpinnedLeaf(focus, ...args);
                     }
                 }
             },
@@ -188,7 +184,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             // workaround for a bug in kanban. See
                             //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                             //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
-                            this.app.workspace.setActiveLeaf(matches[0]);
+                            plugin.app.workspace.setActiveLeaf(matches[0]);
                             result = undefined;
                         } else {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
@@ -283,9 +279,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
     /**
      * Custom variant of the internal workspace.createLeafInTabGroup function that follows our new tab placement logic.
+     * @param focus Whether to focus the new tab. If undefined focus based on focusNewTab config
      */
-    private getNewLeaf() {
-        const activeLeaf = this.app.workspace.getMostRecentLeaf();
+    private createNewLeaf(focus?: boolean) {
+        const plugin = this;
+        const workspace = plugin.app.workspace;
+        focus = focus ?? plugin.app.vault.getConfig('focusNewTab') as boolean;
+
+        const activeLeaf = workspace.getMostRecentLeaf();
         if (!activeLeaf) throw new Error("No tab group found.");
         const activeTabGroup = activeLeaf.parent;
         const activeIndex = activeTabGroup.children.indexOf(activeLeaf);
@@ -298,14 +299,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
         let group: TabGroup|undefined;
         let index: number|undefined;
 
-        if (this.settings.newTabTabGroupPlacement != "same" && !Platform.isPhone) {
-            const tabGroups = this.getAllTabGroups(activeLeaf.getRoot());
+        if (plugin.settings.newTabTabGroupPlacement != "same" && !Platform.isPhone) {
+            const tabGroups = plugin.getAllTabGroups(activeLeaf.getRoot());
             const otherTabGroup = tabGroups.filter(g => g !== activeTabGroup).at(-1);
-            if (this.settings.newTabTabGroupPlacement == "opposite" && otherTabGroup) {
+            if (plugin.settings.newTabTabGroupPlacement == "opposite" && otherTabGroup) {
                 group = otherTabGroup;
-            } else if (this.settings.newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
+            } else if (plugin.settings.newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
                 group = tabGroups[0];
-            } else if (this.settings.newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
+            } else if (plugin.settings.newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
                 group = tabGroups.at(-1)!;
             }
         }
@@ -314,18 +315,18 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         if (group == activeTabGroup) {
-            if (this.settings.newTabPlacement == "after-pinned") {
+            if (plugin.settings.newTabPlacement == "after-pinned") {
                 const lastPinnedIndex = group.children.findLastIndex(l => l.pinned);
                 index = lastPinnedIndex >= 0 ? lastPinnedIndex + 1 : activeIndex + 1;
-            } else if (this.settings.newTabPlacement == "beginning") {
+            } else if (plugin.settings.newTabPlacement == "beginning") {
                 index = 0;
-            } else if (this.settings.newTabPlacement == "end") {
+            } else if (plugin.settings.newTabPlacement == "end") {
                 index = activeTabGroup.children.length;
             } else {
                 index = activeIndex + 1;
             }
         } else {
-            if (this.settings.newTabPlacement == "beginning") {
+            if (plugin.settings.newTabPlacement == "beginning") {
                 index = 0
             } else {
                 index = activeTabGroup.children.length;
@@ -343,6 +344,48 @@ export default class OpenTabSettingsPlugin extends Plugin {
             group.insertChild(index, newLeaf);
         }
 
+        if (focus) {
+            workspace.setActiveLeaf(newLeaf);
+        }
+
         return newLeaf;
+    }
+
+    /**
+     * Custom implementation of getUnpinnedLeaf that implements our new tab placement behavior when making new tabs,
+     * e.g. when the active tab is pinned.
+     */
+    private getUnpinnedLeaf(focus = true) {
+        const plugin = this;
+        const workspace = plugin.app.workspace;
+
+        const activeLeaf = workspace.activeLeaf;
+        if (activeLeaf?.canNavigate()) {
+            return activeLeaf;
+        }
+
+        const container = activeLeaf?.getContainer() ?? workspace.rootSplit;
+
+        let leaf: WorkspaceLeaf|null = null;
+        workspace.iterateLeaves(container, (l) => {
+          if (l.canNavigate()) {
+            const group = l.parent;
+            if (
+                group &&
+                (group.children[group.currentTab] === l || (group instanceof WorkspaceTabs && group.isStacked)) &&
+                (!leaf || leaf.activeTime < l.activeTime)
+            ) {
+              leaf = l;
+            }
+          }
+        });
+
+        if (!leaf) {
+            leaf = plugin.createNewLeaf(focus);
+        } else if (focus) {
+            workspace.setActiveLeaf(leaf);
+        }
+
+        return leaf;
     }
 }

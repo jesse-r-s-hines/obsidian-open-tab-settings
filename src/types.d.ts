@@ -14,6 +14,8 @@ declare module "obsidian" {
         insertChild(index: number, leaf: WorkspaceLeaf): void,
         selectTabIndex(index: number): void,
         children: WorkspaceItem[],
+        currentTab: number,
+        isStacked: boolean,
     }
 
     interface WorkspaceTabs {
@@ -22,6 +24,8 @@ declare module "obsidian" {
 
     interface WorkspaceMobileDrawer {
         children: WorkspaceLeaf[],
+        currentTab: number,
+        isStacked: boolean,
     }
 }
 

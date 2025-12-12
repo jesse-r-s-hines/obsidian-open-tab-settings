@@ -233,6 +233,18 @@ describe('Test newTabPlacement', function() {
             {type: "markdown", file: "B.md"},
         ]]);
     })
+
+    it("newTabTabGroupPlacement pinned tabs", async function() {
+        await workspacePage.setSettings({ newTabPlacement: "beginning" });
+        await workspacePage.openFile("A.md");
+        await workspacePage.pinTab("A.md");
+        await workspacePage.openLink(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([[
+            {file: "B.md", pinned: false, active: true},
+            {file: "A.md", pinned: true},
+        ]]);
+    })
 })
 
 

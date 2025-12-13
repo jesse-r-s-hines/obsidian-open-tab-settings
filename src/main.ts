@@ -1,6 +1,6 @@
 import {
     Plugin, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating, View, TFile, PaneType, WorkspaceTabs,
-    WorkspaceItem, Platform, Keymap,
+    WorkspaceItem, Platform, Keymap, Notice,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 import { OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS } from './settings';
@@ -25,6 +25,10 @@ function isEmptyLeaf(leaf: WorkspaceLeaf) {
 function isMainLeaf(leaf: WorkspaceLeaf) {
     const root = leaf.getRoot();
     return (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
+}
+
+function capitalize(s: string) {
+    return s[0].toUpperCase() + s.slice(1);
 }
 
 
@@ -58,23 +62,27 @@ export default class OpenTabSettingsPlugin extends Plugin {
             ["deduplicateTabs", "prevent duplicate tabs"],
         ] as const;
         for (const [setting, name] of commands) {
-            const id = setting.replace(/[A-Z]/g, l => `-${l.toLowerCase()}`)
+            const id = setting.replace(/[A-Z]/g, l => `-${l.toLowerCase()}`);
+
             this.addCommand({
                 id: `toggle-${id}`, name: `Toggle ${name}`,
                 callback: async () => {
                     await this.updateSettings({[setting]: !this.settings[setting]});
+                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
                 },
             });
             this.addCommand({
                 id: `enable-${id}`, name: `Enable ${name}`,
                 callback: async () => {
                     await this.updateSettings({[setting]: true});
+                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
                 },
             });
             this.addCommand({
                 id: `disable-${id}`, name: `Disable ${name}`,
                 callback: async () => {
                     await this.updateSettings({[setting]: false});
+                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
                 },
             });
         }

@@ -349,7 +349,13 @@ export default class OpenTabSettingsPlugin extends Plugin {
             newLeaf = leafToDisplace;
         } else {
             newLeaf = new (WorkspaceLeaf as any)(this.app);
+            const currentTab = group.currentTab;
+            // If new tab is inserted before the currently tab in a group, and we aren't setting the new tab active, we
+            // need to update the selected tab so that group.currentTab index still points to the original active tab
             group.insertChild(index, newLeaf);
+            if (index <= currentTab && (group != activeTabGroup || !focus)) {
+                group.selectTabIndex(currentTab + 1);
+            }
         }
 
         if (focus) {

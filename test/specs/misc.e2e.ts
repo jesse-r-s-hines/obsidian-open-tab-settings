@@ -53,6 +53,22 @@ describe('Misc', function() {
         });
         expect(value).toEqual(true);
     });
+
+    it("opposite menu item", async function() {
+        await workspacePage.setSettings({
+            openInNewTab: true, deduplicateTabs: false, newTabTabGroupPlacement: "same",
+        });
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.setActiveFile("A.md");
+
+        await workspacePage.openLinkMenuOption(await workspacePage.getLink("B"), "Open in opposite tab group");
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "markdown", file: "B.md"}, {type: "markdown", file: "B.md"}]
+        ]);
+    })
 })
 
 describe("Mod click", function() {
@@ -97,4 +113,20 @@ describe("Mod click", function() {
             {type: "markdown", file: "B.md", active: true},
         ]]);
     });
+
+    it("mode click opposite", async function() {
+        await workspacePage.setSettings({
+            openInNewTab: true, deduplicateTabs: false, newTabTabGroupPlacement: "opposite",
+        });
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.setActiveFile("A.md");
+
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "markdown", file: "B.md"}, {type: "markdown", file: "B.md"}]
+        ]);
+    })
 })

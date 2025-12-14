@@ -19,6 +19,7 @@ export const MOD_CLICK_BEHAVIOR = {
     "tab": "In new tab",
     "same": "In same tab",
     "allow-duplicate": "In duplicate tab",
+    "opposite": "In opposite tab group",
 }
 
 export interface OpenTabSettingsPluginSettings {
@@ -90,6 +91,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 if (this.plugin.settings.deduplicateTabs) {
                     dropdown.addOption("allow-duplicate", MOD_CLICK_BEHAVIOR['allow-duplicate'])
                 }
+                dropdown.addOption("opposite", MOD_CLICK_BEHAVIOR['opposite'])
                 dropdown
                     .setValue(this.plugin.settings.modClickBehavior)
                     .onChange(async value => {

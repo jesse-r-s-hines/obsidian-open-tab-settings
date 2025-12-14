@@ -67,6 +67,17 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             });
                         });
                     }
+                    const activeLeaf = this.app.workspace.getMostRecentLeaf();
+                    if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
+                        menu.addItem((item) => {
+                            item.setSection("open");
+                            item.setIcon("lucide-split-square-horizontal")
+                            item.setTitle("Open in opposite tab group");
+                            item.onClick(async () => {
+                                await this.app.workspace.getLeaf('opposite' as PaneType).openFile(file);
+                            });
+                        });
+                    }
                 }
             })
         );
@@ -123,19 +134,23 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
                     const activeLeaf = this.getActiveViewOfType(View)?.leaf;
 
-                    let implicitOpen = !newLeaf || newLeaf == "allow-duplicate";
-                    const allowDuplicate = newLeaf == "allow-duplicate";
+                    let origNewLeaf = newLeaf;
                     // resolve newLeaf to enum
                     if (newLeaf == true) {
                         newLeaf = 'tab';
                     } else if (!newLeaf || newLeaf == "allow-duplicate") {
                         newLeaf = plugin.settings.openInNewTab ? 'tab' : 'same';
+                    } else if (newLeaf == "opposite") {
+                        newLeaf = 'tab';
                     }
 
                     let leaf: WorkspaceLeaf;
                     if (newLeaf == 'tab') {
                         // Tabs opened via normal click are always focused regardless of focusNewTab setting.
-                        leaf = plugin.createNewLeaf(implicitOpen ? true : undefined);
+                        leaf = plugin.createNewLeaf(
+                            !origNewLeaf || origNewLeaf == "allow-duplicate" ? true : undefined,
+                            origNewLeaf == "opposite" ? "opposite" : undefined,
+                        );
                     } else if (newLeaf == "same") {
                         leaf = plugin.getUnpinnedLeaf();
                     } else {
@@ -144,7 +159,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
                     // we set these to be used in openFile so we can tell when to deduplicate files.
                     leaf.openTabSettings = {
-                        openType: newLeaf, implicitOpen, allowDuplicate,
+                        openType: newLeaf,
+                        implicitOpen: !origNewLeaf,
+                        allowDuplicate: origNewLeaf == "allow-duplicate",
                         openedFrom: activeLeaf?.id,
                     }
 
@@ -313,10 +330,13 @@ export default class OpenTabSettingsPlugin extends Plugin {
      * Custom variant of the internal workspace.createLeafInTabGroup function that follows our new tab placement logic.
      * @param focus Whether to focus the new tab. If undefined focus based on focusNewTab config
      */
-    private createNewLeaf(focus?: boolean) {
+    private createNewLeaf(
+        focus?: boolean, newTabTabGroupPlacement?: OpenTabSettingsPluginSettings["newTabTabGroupPlacement"],
+    ) {
         const plugin = this;
         const workspace = plugin.app.workspace;
         focus = focus ?? plugin.app.vault.getConfig('focusNewTab') as boolean;
+        newTabTabGroupPlacement = newTabTabGroupPlacement ?? plugin.settings.newTabTabGroupPlacement;
 
         const activeLeaf = workspace.getMostRecentLeaf();
         if (!activeLeaf) throw new Error("No tab group found.");
@@ -331,14 +351,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
         let group: TabGroup|undefined;
         let index: number|undefined;
 
-        if (plugin.settings.newTabTabGroupPlacement != "same" && !Platform.isPhone) {
+        if (newTabTabGroupPlacement != "same" && !Platform.isPhone) {
             const tabGroups = plugin.getAllTabGroups(activeLeaf.getRoot());
             const otherTabGroup = tabGroups.filter(g => g !== activeTabGroup).at(-1);
-            if (plugin.settings.newTabTabGroupPlacement == "opposite" && otherTabGroup) {
+            if (newTabTabGroupPlacement == "opposite" && otherTabGroup) {
                 group = otherTabGroup;
-            } else if (plugin.settings.newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
+            } else if (newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
                 group = tabGroups[0];
-            } else if (plugin.settings.newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
+            } else if (newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
                 group = tabGroups.at(-1)!;
             }
         }

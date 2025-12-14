@@ -1,6 +1,6 @@
 import { PaneType, WorkspaceTabs, WorkspaceMobileDrawer } from 'obsidian';
 
-export type PaneTypePatch = PaneType|"same"|"allow-duplicate";
+export type PaneTypePatch = PaneType|"same"|"allow-duplicate"|"opposite";
 
 declare module "obsidian" {
     interface WorkspaceLeaf {

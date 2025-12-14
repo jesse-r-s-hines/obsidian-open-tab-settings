@@ -1,13 +1,11 @@
 import { PaneType, WorkspaceTabs, WorkspaceMobileDrawer } from 'obsidian';
-
-export type PaneTypePatch = PaneType|"same"|"allow-duplicate"|"opposite";
+import { OpenTabSettingsPluginSettings } from './settings';
 
 declare module "obsidian" {
     interface WorkspaceLeaf {
         openTabSettings?: {
-            openType: PaneTypePatch,
-            implicitOpen: boolean,
-            allowDuplicate: boolean,
+            openMode: PaneType|false,
+            override: Partial<OpenTabSettingsPluginSettings>,
             openedFrom?: string,
         },
         pinned: boolean,

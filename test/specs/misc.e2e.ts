@@ -102,7 +102,7 @@ describe("Mod click", function() {
     });
 
     it('Test mod click duplicate', async function() {
-        await workspacePage.setSettings({ deduplicateTabs: true, modClickBehavior: "allow-duplicate" });
+        await workspacePage.setSettings({ deduplicateTabs: true, modClickBehavior: "allow_duplicate" });
 
         await workspacePage.openFile("B.md");
         await workspacePage.openFile("A.md");

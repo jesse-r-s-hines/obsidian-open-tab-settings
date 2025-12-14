@@ -18,7 +18,7 @@ export const NEW_TAB_TAB_GROUP_PLACEMENTS = {
 export const MOD_CLICK_BEHAVIOR = {
     "tab": "In new tab",
     "same": "In same tab",
-    "allow-duplicate": "In duplicate tab",
+    "allow_duplicate": "In duplicate tab",
     "opposite": "In opposite tab group",
 }
 
@@ -76,7 +76,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         const modClickBehavior = this.plugin.settings.modClickBehavior;
                         await this.plugin.updateSettings({
                             deduplicateTabs: value,
-                            modClickBehavior: (!value && modClickBehavior == "allow-duplicate") ? "tab" : modClickBehavior,
+                            modClickBehavior: (!value && modClickBehavior == "allow_duplicate") ? "tab" : modClickBehavior,
                         });
                         this.display();
                     })
@@ -148,7 +148,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     dropdown.addOption("same", MOD_CLICK_BEHAVIOR['same'])
                 }
                 if (this.plugin.settings.deduplicateTabs) {
-                    dropdown.addOption("allow-duplicate", MOD_CLICK_BEHAVIOR['allow-duplicate'])
+                    dropdown.addOption("allow_duplicate", MOD_CLICK_BEHAVIOR['allow_duplicate'])
                 }
                 dropdown.addOption("opposite", MOD_CLICK_BEHAVIOR['opposite'])
                 dropdown

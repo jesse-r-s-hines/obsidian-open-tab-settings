@@ -6,7 +6,7 @@ import * as monkeyAround from 'monkey-around';
 import {
     OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS, NEW_TAB_TAB_GROUP_PLACEMENTS,
 } from './settings';
-import { PaneTypePatch, TabGroup } from './types';
+import { TabGroup } from './types';
 
 
 /**
@@ -33,6 +33,33 @@ function capitalize(s: string) {
     return s[0].toUpperCase() + s.slice(1);
 }
 
+/**
+ * This is a bit hacky, but to support easily changing our settings in Mod click or menu items we're sticking the
+ * overrides onto the string passed to getLeaf.
+ */
+function buildOverride(mode: PaneType|false, settings: Partial<OpenTabSettingsPluginSettings>) {
+    return `${mode || ""}:${JSON.stringify(settings)}` as PaneType; // Deceptive cast to allow passing to getLeaf
+}
+
+function parseOverride(override?: string|boolean): [PaneType|false, Partial<OpenTabSettingsPluginSettings>] {
+    if (!override) {
+        return [false, {}];
+    } else if (override === true) {
+        return ['tab', {}];
+    } else {
+        const [mode, ...rest] = override.split(":");
+        const json = rest.join(":") || "{}";
+        return [(mode || false) as PaneType|false, JSON.parse(json)];
+    }
+}
+
+const OVERRIDES = {
+    tab: "tab",
+    same: buildOverride(false, {openInNewTab: false}),
+    allow_duplicate: buildOverride(false, {deduplicateTabs: false}),
+    opposite: buildOverride("tab", {newTabTabGroupPlacement: "opposite"}),
+}
+
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
@@ -53,7 +80,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             item.setIcon("file-minus")
                             item.setTitle("Open in same tab");
                             item.onClick(async () => {
-                                await this.app.workspace.getLeaf('same' as PaneType).openFile(file);
+                                await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
                             });
                         });
                     }
@@ -63,7 +90,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             item.setIcon("files")
                             item.setTitle("Open in duplicate tab");
                             item.onClick(async () => {
-                                await this.app.workspace.getLeaf('allow-duplicate' as PaneType).openFile(file);
+                                await this.app.workspace.getLeaf(OVERRIDES.allow_duplicate).openFile(file);
                             });
                         });
                     }
@@ -74,7 +101,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             item.setIcon("lucide-split-square-horizontal")
                             item.setTitle("Open in opposite tab group");
                             item.onClick(async () => {
-                                await this.app.workspace.getLeaf('opposite' as PaneType).openFile(file);
+                                await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
                             });
                         });
                     }
@@ -131,37 +158,24 @@ export default class OpenTabSettingsPlugin extends Plugin {
              * Patch getLeaf to open leaves in new tab by default, based on settings.
              */
             getLeaf(oldMethod: any) {
-                return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
+                return function(this: Workspace, openModeIn?: string|boolean, ...args) {
+                    const [openMode, override] = parseOverride(openModeIn);
+                    const settings = {...plugin.settings, ...override};
                     const activeLeaf = this.getActiveViewOfType(View)?.leaf;
 
-                    let origNewLeaf = newLeaf;
-                    // resolve newLeaf to enum
-                    if (newLeaf == true) {
-                        newLeaf = 'tab';
-                    } else if (!newLeaf || newLeaf == "allow-duplicate") {
-                        newLeaf = plugin.settings.openInNewTab ? 'tab' : 'same';
-                    } else if (newLeaf == "opposite") {
-                        newLeaf = 'tab';
-                    }
-
                     let leaf: WorkspaceLeaf;
-                    if (newLeaf == 'tab') {
+                    if (openMode == 'tab' || (!openMode && settings.openInNewTab)) {
                         // Tabs opened via normal click are always focused regardless of focusNewTab setting.
-                        leaf = plugin.createNewLeaf(
-                            !origNewLeaf || origNewLeaf == "allow-duplicate" ? true : undefined,
-                            origNewLeaf == "opposite" ? "opposite" : undefined,
-                        );
-                    } else if (newLeaf == "same") {
-                        leaf = plugin.getUnpinnedLeaf();
+                        leaf = plugin.createNewLeaf(!openMode ? true : undefined, settings);
+                    } else if (!openMode) {
+                        leaf = plugin.getUnpinnedLeaf(true, settings);
                     } else {
-                        leaf = oldMethod.call(this, newLeaf, ...args);
+                        leaf = oldMethod.call(this, openMode, ...args);
                     }
 
                     // we set these to be used in openFile so we can tell when to deduplicate files.
                     leaf.openTabSettings = {
-                        openType: newLeaf,
-                        implicitOpen: !origNewLeaf,
-                        allowDuplicate: origNewLeaf == "allow-duplicate",
+                        openMode, override,
                         openedFrom: activeLeaf?.id,
                     }
 
@@ -177,11 +191,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
              * when using ctrl and arrow keys in the file explorer to open files.
              */
             getUnpinnedLeaf(oldMethod: any) {
-                return function(this: Workspace, focus?: boolean, ...args) {
+                return function(this: Workspace, focus?: boolean) {
                     if (plugin.settings.openInNewTab) {
                         return this.getLeaf("tab");
                     } else {
-                        return plugin.getUnpinnedLeaf(focus, ...args);
+                        return plugin.getUnpinnedLeaf(focus);
                     }
                 }
             },
@@ -199,9 +213,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // and also clear them here if the leaf somehow gets populated without openFile
                     if (!isEmptyLeaf(this)) delete this.openTabSettings;
 
-                    const {openType, allowDuplicate, implicitOpen, openedFrom} = this.openTabSettings ?? {};
+                    const {openMode, override, openedFrom} = this.openTabSettings ?? {};
+                    const settings = {...plugin.settings, ...override};
+
                     let matches = plugin.findMatchingLeaves(file);
-                    if (!plugin.settings.deduplicateAcrossTabGroups) {
+                    if (!settings.deduplicateAcrossTabGroups) {
                         matches = matches.filter(l => l.parent == this.parent);
                     }
 
@@ -212,12 +228,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // the plugin was loaded or such.
                     const isSpecialOpen = (
                         !isMainLeaf(this) ||
-                        (isEmptyLeaf(this) && !['same', 'tab'].includes(openType ?? 'unknown')) ||
-                        allowDuplicate
+                        (isEmptyLeaf(this) && ![false, "tab"].includes(openMode ?? 'unknown'))
                     );
                     const isInternalLink = (
-                        plugin.settings.openInNewTab && implicitOpen &&
-                        isEmptyLeaf(this) &&
+                        isEmptyLeaf(this) && openMode === false &&
                         !!openState?.eState?.subpath &&
                         matches.some(l => l.id == openedFrom)
                     );
@@ -226,7 +240,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
                     if (isInternalLink && !isSpecialOpen && !isMatch) {
                         match = matches.find(l => l.id == openedFrom)!;
-                    } else if (plugin.settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !isMatch) {
+                    } else if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !isMatch) {
                         // choose matches first from last opened from, then matches in same group, then fist in list.
                         match = matches.find(l => l.id == openedFrom);
                         if (!match) matches.find(l => l.parent == this.parent);
@@ -264,15 +278,15 @@ export default class OpenTabSettingsPlugin extends Plugin {
             },
         }));
 
-        // Patch isModEvent to open in same tab
-        // We could actually just patch isModEvent instead of getLeaf for most cases, but there's quite a few places
+        // Patch isModEvent to add override settings
+        // We could have used isModEvent to implement openInNewTab instead of getLeaf, but there's quite a few places
         // that call getLeaf without isModEvent, such as the graph view.
         this.register(monkeyAround.around(Keymap, {
             isModEvent(oldMethod: any) {
                 return function(this: any, ...args) {
                     let result = oldMethod.call(this, ...args);
                     if (result == "tab") {
-                        result = plugin.settings.modClickBehavior;
+                        result = OVERRIDES[plugin.settings.modClickBehavior];
                     }
                     return result;
                 }
@@ -333,13 +347,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
      * Custom variant of the internal workspace.createLeafInTabGroup function that follows our new tab placement logic.
      * @param focus Whether to focus the new tab. If undefined focus based on focusNewTab config
      */
-    private createNewLeaf(
-        focus?: boolean, newTabTabGroupPlacement?: OpenTabSettingsPluginSettings["newTabTabGroupPlacement"],
-    ) {
+    private createNewLeaf(focus?: boolean, override: Partial<OpenTabSettingsPluginSettings> = {}) {
         const plugin = this;
         const workspace = plugin.app.workspace;
         focus = focus ?? plugin.app.vault.getConfig('focusNewTab') as boolean;
-        newTabTabGroupPlacement = newTabTabGroupPlacement ?? plugin.settings.newTabTabGroupPlacement;
+        const settings = {...plugin.settings, ...override};
 
         const activeLeaf = workspace.getMostRecentLeaf();
         if (!activeLeaf) throw new Error("No tab group found.");
@@ -354,14 +366,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
         let group: TabGroup|undefined;
         let index: number|undefined;
 
-        if (newTabTabGroupPlacement != "same" && !Platform.isPhone) {
+        if (settings.newTabTabGroupPlacement != "same" && !Platform.isPhone) {
             const tabGroups = plugin.getAllTabGroups(activeLeaf.getRoot());
             const otherTabGroup = tabGroups.filter(g => g !== activeTabGroup).at(-1);
-            if (newTabTabGroupPlacement == "opposite" && otherTabGroup) {
+            if (settings.newTabTabGroupPlacement == "opposite" && otherTabGroup) {
                 group = otherTabGroup;
-            } else if (newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
+            } else if (settings.newTabTabGroupPlacement == "first" && tabGroups.at(0)) {
                 group = tabGroups[0];
-            } else if (newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
+            } else if (settings.newTabTabGroupPlacement == "last" && tabGroups.at(-1)) {
                 group = tabGroups.at(-1)!;
             }
         }
@@ -370,18 +382,18 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         if (group == activeTabGroup) {
-            if (plugin.settings.newTabPlacement == "after-pinned") {
+            if (settings.newTabPlacement == "after-pinned") {
                 const lastPinnedIndex = group.children.findLastIndex(l => l.pinned);
                 index = lastPinnedIndex >= 0 ? lastPinnedIndex + 1 : activeIndex + 1;
-            } else if (plugin.settings.newTabPlacement == "beginning") {
+            } else if (settings.newTabPlacement == "beginning") {
                 index = 0;
-            } else if (plugin.settings.newTabPlacement == "end") {
+            } else if (settings.newTabPlacement == "end") {
                 index = activeTabGroup.children.length;
             } else {
                 index = activeIndex + 1;
             }
         } else {
-            if (plugin.settings.newTabPlacement == "beginning") {
+            if (settings.newTabPlacement == "beginning") {
                 index = 0
             } else {
                 index = activeTabGroup.children.length;
@@ -416,9 +428,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
      * Custom implementation of getUnpinnedLeaf that implements our new tab placement behavior when making new tabs,
      * e.g. when the active tab is pinned.
      */
-    private getUnpinnedLeaf(focus = true) {
+    private getUnpinnedLeaf(focus = true, override: Partial<OpenTabSettingsPluginSettings> = {}) {
         const plugin = this;
         const workspace = plugin.app.workspace;
+        const settings = {...plugin.settings, ...override};
 
         const activeLeaf = workspace.activeLeaf;
         if (activeLeaf?.canNavigate()) {
@@ -442,7 +455,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         });
 
         if (!leaf) {
-            leaf = plugin.createNewLeaf(focus);
+            leaf = plugin.createNewLeaf(focus, settings);
         } else if (focus) {
             workspace.setActiveLeaf(leaf);
         }

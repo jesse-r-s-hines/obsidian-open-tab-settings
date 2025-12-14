@@ -55,6 +55,16 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             });
                         });
                     }
+                    if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
+                        menu.addItem((item) => {
+                            item.setSection("open");
+                            item.setIcon("files")
+                            item.setTitle("Open in duplicate tab");
+                            item.onClick(async () => {
+                                await this.app.workspace.getLeaf('allow-duplicate' as PaneType).openFile(file);
+                            });
+                        });
+                    }
                 }
             })
         );
@@ -101,37 +111,28 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 return function(this: Workspace, newLeaf?: PaneTypePatch|boolean, ...args) {
                     const activeLeaf = this.getActiveViewOfType(View)?.leaf;
 
-                    let lastOpenType: PaneTypePatch|"implicit"
+                    let implicitOpen = !newLeaf || newLeaf == "allow-duplicate";
+                    const allowDuplicate = newLeaf == "allow-duplicate";
                     // resolve newLeaf to enum
                     if (newLeaf == true) {
-                        lastOpenType = 'tab';
                         newLeaf = 'tab';
-                    } else if (!newLeaf) {
-                        lastOpenType = 'implicit';
+                    } else if (!newLeaf || newLeaf == "allow-duplicate") {
                         newLeaf = plugin.settings.openInNewTab ? 'tab' : 'same';
-                    } else {
-                        lastOpenType = newLeaf;
                     }
 
                     let leaf: WorkspaceLeaf;
                     if (newLeaf == 'tab') {
                         // Tabs opened via normal click are always focused regardless of focusNewTab setting.
-                        leaf = plugin.createNewLeaf((lastOpenType == "implicit") ? true : undefined);
+                        leaf = plugin.createNewLeaf(implicitOpen ? true : undefined);
                     } else if (newLeaf == "same") {
                         leaf = plugin.getUnpinnedLeaf();
                     } else {
                         leaf = oldMethod.call(this, newLeaf, ...args);
                     }
 
+                    // we set these to be used in openFile so we can tell when to deduplicate files.
                     leaf.openTabSettings = {
-                        // We set this so we can avoid deduplicating if the pane was opened via explicit to-the-right
-                        // etc. we set it "implicit" for regular clicks so that we can treat them differently for
-                        // internal link handling.
-                        openType: lastOpenType,
-                        // this will be used so we can trigger deduplicate when opening an internal link. There's some
-                        // caveats with this, e.g. opening via the quick switcher will still show the open file as
-                        // "openedFrom". We work around this by only deduplicating if the link has a hash portion in
-                        // openFile.
+                        openType: newLeaf, implicitOpen, allowDuplicate,
                         openedFrom: activeLeaf?.id,
                     }
 
@@ -165,20 +166,25 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     let result: any;
                     let match: WorkspaceLeaf|undefined;
 
+                    // these values are only valid immediately after creating a leaf. We clear them after openFile,
+                    // and also clear them here if the leaf somehow gets populated without openFile
+                    if (!isEmptyLeaf(this)) delete this.openTabSettings;
+
+                    const {openType, allowDuplicate, implicitOpen, openedFrom} = this.openTabSettings ?? {};
                     const matches = plugin.findMatchingLeaves(file);
-                    const openType = this.openTabSettings?.openType;
-                    const openedFrom = this.openTabSettings?.openedFrom;
-                    // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
-                    // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
-                    // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
-                    // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the leaf
-                    // was created before the plugin was loaded or such.
+
+                    // if leaf is new and was opened via an explicit open in new window, split, or "allow duplicate",
+                    // don't deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
+                    // directly) so we assume undefined openType is a new window. getLeaf("same") will update openType,
+                    // so we shouldn't need to worry about if openType is undefined because the leaf was created before
+                    // the plugin was loaded or such.
                     const isSpecialOpen = (
                         !isMainLeaf(this) ||
-                        (isEmptyLeaf(this) && !['same', 'tab', 'implicit'].includes(openType ?? 'unknown'))
+                        (isEmptyLeaf(this) && !['same', 'tab'].includes(openType ?? 'unknown')) ||
+                        allowDuplicate
                     );
                     const isInternalLink = (
-                        plugin.settings.openInNewTab && !isSpecialOpen && openType == 'implicit' &&
+                        plugin.settings.openInNewTab && implicitOpen &&
                         isEmptyLeaf(this) &&
                         !!openState?.eState?.subpath &&
                         matches.some(l => l.id == openedFrom)
@@ -186,11 +192,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     const isMatch = matches.includes(this);
 
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
-                    if (isInternalLink && !isMatch) {
+                    if (isInternalLink && !isSpecialOpen && !isMatch) {
                         match = matches.find(l => l.id == openedFrom)!;
                     } else if (plugin.settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !isMatch) {
                         // choose matches first from last opened from, then matches in same group, then fist in list.
-                        if (isEmptyLeaf(this)) match = matches.find(l => l.id == openedFrom);
+                        match = matches.find(l => l.id == openedFrom);
                         if (!match) matches.find(l => l.parent == this.parent);
                         if (!match) match = matches[0];
                     }
@@ -218,6 +224,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     if (isEmptyLeaf(this) && this.parent.children.length > 1) {
                         this.detach();
                     }
+
+                    delete this.openTabSettings;
+
                     return result;
                 }
             },

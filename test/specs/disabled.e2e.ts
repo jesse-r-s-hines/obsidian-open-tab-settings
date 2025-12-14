@@ -80,4 +80,17 @@ describe('Test menu options', function() {
             {type: "markdown", file: "B.md", active: true},
         ]]);
     })
+
+    it("Test bypass deduplicate", async function() {
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
+
+        await workspacePage.openFile("B.md");
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkMenuOption(await workspacePage.getLink("B"), "Open in duplicate tab");
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md"},
+            {type: "markdown", file: "A.md"},
+            {type: "markdown", file: "B.md", active: true},
+        ]]);
+    })
 })

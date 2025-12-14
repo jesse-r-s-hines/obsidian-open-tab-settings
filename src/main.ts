@@ -200,7 +200,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     if (!isEmptyLeaf(this)) delete this.openTabSettings;
 
                     const {openType, allowDuplicate, implicitOpen, openedFrom} = this.openTabSettings ?? {};
-                    const matches = plugin.findMatchingLeaves(file);
+                    let matches = plugin.findMatchingLeaves(file);
+                    if (!plugin.settings.deduplicateAcrossTabGroups) {
+                        matches = matches.filter(l => l.parent == this.parent);
+                    }
 
                     // if leaf is new and was opened via an explicit open in new window, split, or "allow duplicate",
                     // don't deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf

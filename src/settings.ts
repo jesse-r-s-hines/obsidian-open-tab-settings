@@ -25,17 +25,19 @@ export const MOD_CLICK_BEHAVIOR = {
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
-    modClickBehavior: keyof typeof MOD_CLICK_BEHAVIOR,
+    deduplicateAcrossTabGroups: boolean,
     newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
     newTabTabGroupPlacement: "same"|"opposite"|"first"|"last",
+    modClickBehavior: keyof typeof MOD_CLICK_BEHAVIOR,
 }
 
 export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
-    modClickBehavior: "tab",
+    deduplicateAcrossTabGroups: true,
     newTabPlacement: "after-active",
     newTabTabGroupPlacement: "same",
+    modClickBehavior: "tab",
 }
 
 export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
@@ -81,26 +83,18 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('Mod click behavior')
-            .setDesc('On Ctrl/Cmd/middle click open links...')
-            .addDropdown(dropdown => {
-                dropdown.addOption("tab", MOD_CLICK_BEHAVIOR['tab']);
-                if (this.plugin.settings.openInNewTab) {
-                    dropdown.addOption("same", MOD_CLICK_BEHAVIOR['same'])
-                }
-                if (this.plugin.settings.deduplicateTabs) {
-                    dropdown.addOption("allow-duplicate", MOD_CLICK_BEHAVIOR['allow-duplicate'])
-                }
-                dropdown.addOption("opposite", MOD_CLICK_BEHAVIOR['opposite'])
-                dropdown
-                    .setValue(this.plugin.settings.modClickBehavior)
-                    .onChange(async value => {
-                        console.log("modClickBehavior onChange")
-                        await this.plugin.updateSettings({
-                            modClickBehavior: value as keyof typeof MOD_CLICK_BEHAVIOR,
-                        });
+            .setName('Deduplicate across tab groups')
+            .setDesc('Whether to switch to already open file even if its in a split pane or popout window')
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.deduplicateAcrossTabGroups)
+                    .onChange(async (value) => {
+                        await this.plugin.updateSettings({deduplicateAcrossTabGroups: value});
                     })
-            })
+            )
+            .setDisabled(!this.plugin.settings.deduplicateTabs)
+            .settingEl
+            .setCssStyles({opacity: this.plugin.settings.deduplicateTabs ? "" : "50%"});
 
         new Setting(this.containerEl)
             .setName('Focus explicit new tabs')
@@ -144,5 +138,27 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         });
                     })
             );
+
+        new Setting(this.containerEl)
+            .setName('Mod click behavior')
+            .setDesc('On Ctrl/Cmd/middle click open links...')
+            .addDropdown(dropdown => {
+                dropdown.addOption("tab", MOD_CLICK_BEHAVIOR['tab']);
+                if (this.plugin.settings.openInNewTab) {
+                    dropdown.addOption("same", MOD_CLICK_BEHAVIOR['same'])
+                }
+                if (this.plugin.settings.deduplicateTabs) {
+                    dropdown.addOption("allow-duplicate", MOD_CLICK_BEHAVIOR['allow-duplicate'])
+                }
+                dropdown.addOption("opposite", MOD_CLICK_BEHAVIOR['opposite'])
+                dropdown
+                    .setValue(this.plugin.settings.modClickBehavior)
+                    .onChange(async value => {
+                        console.log("modClickBehavior onChange")
+                        await this.plugin.updateSettings({
+                            modClickBehavior: value as keyof typeof MOD_CLICK_BEHAVIOR,
+                        });
+                    })
+            })
     }
 }

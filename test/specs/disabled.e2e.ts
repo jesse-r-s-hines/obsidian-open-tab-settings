@@ -65,7 +65,7 @@ describe('Test disabling the plugin', function() {
     })
 })
 
-describe('Test bypass new tab', function() {
+describe('Test menu options', function() {
     beforeEach(async function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setConfig('focusNewTab', false);
@@ -75,8 +75,7 @@ describe('Test bypass new tab', function() {
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
 
         await workspacePage.openFile("A.md");
-        await workspacePage.openLinkInSameTab(await workspacePage.getLink("B"));
-
+        await workspacePage.openLinkMenuOption(await workspacePage.getLink("B"), "Open in same tab");
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "B.md", active: true},
         ]]);

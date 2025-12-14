@@ -45,14 +45,16 @@ export default class OpenTabSettingsPlugin extends Plugin {
         this.registerEvent(
             this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
                 if (file instanceof TFile) {
-                    menu.addItem((item) => {
-                        item.setSection("open");
-                        item.setIcon("file-minus")
-                        item.setTitle("Open in same tab");
-                        item.onClick(async () => {
-                            await this.app.workspace.getLeaf('same' as PaneType).openFile(file);
+                    if (this.settings.openInNewTab) {
+                        menu.addItem((item) => {
+                            item.setSection("open");
+                            item.setIcon("file-minus")
+                            item.setTitle("Open in same tab");
+                            item.onClick(async () => {
+                                await this.app.workspace.getLeaf('same' as PaneType).openFile(file);
+                            });
                         });
-                    });
+                    }
                 }
             })
         );

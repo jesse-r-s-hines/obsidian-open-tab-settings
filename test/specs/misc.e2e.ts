@@ -55,6 +55,7 @@ describe('Misc', function() {
     });
 
     it("opposite menu item", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.setSettings({
             openInNewTab: true, deduplicateTabs: false, newTabTabGroupPlacement: "same",
         });
@@ -115,6 +116,7 @@ describe("Mod click", function() {
     });
 
     it("mode click opposite", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.setSettings({
             openInNewTab: true, deduplicateTabs: false, newTabTabGroupPlacement: "opposite",
         });

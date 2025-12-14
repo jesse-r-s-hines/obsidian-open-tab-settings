@@ -4,8 +4,10 @@ export type PaneTypePatch = PaneType|"same";
 
 declare module "obsidian" {
     interface WorkspaceLeaf {
-        openTabSettingsLastOpenType?: PaneTypePatch|"implicit",
-        openTabSettingsOpenedFrom?: string,
+        openTabSettings?: {
+            openType: PaneTypePatch|"implicit",
+            openedFrom?: string,
+        },
         pinned: boolean,
     }
 

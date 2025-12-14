@@ -123,15 +123,17 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         leaf = oldMethod.call(this, newLeaf, ...args);
                     }
 
-                    // We set this so we can avoid deduplicating if the pane was opened via explicit to-the-right etc.
-                    // we set it "implicit" for regular clicks so that we can treat them differently for internal link
-                    // handling.
-                    leaf.openTabSettingsLastOpenType = lastOpenType;
-                    // this will be used so we can trigger deduplicate when opening an internal link
-                    // NOTE: There's some caveats with this, e.g. opening via the quick switcher will still show the
-                    // open file as "openedFrom". We work around this by only deduplicating if the link has a hash
-                    // portion in openFile.
-                    leaf.openTabSettingsOpenedFrom = activeLeaf?.id;
+                    leaf.openTabSettings = {
+                        // We set this so we can avoid deduplicating if the pane was opened via explicit to-the-right
+                        // etc. we set it "implicit" for regular clicks so that we can treat them differently for
+                        // internal link handling.
+                        openType: lastOpenType,
+                        // this will be used so we can trigger deduplicate when opening an internal link. There's some
+                        // caveats with this, e.g. opening via the quick switcher will still show the open file as
+                        // "openedFrom". We work around this by only deduplicating if the link has a hash portion in
+                        // openFile.
+                        openedFrom: activeLeaf?.id,
+                    }
 
                     return leaf;
                 }
@@ -164,8 +166,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     let match: WorkspaceLeaf|undefined;
 
                     const matches = plugin.findMatchingLeaves(file);
-                    const lastOpenType = this.openTabSettingsLastOpenType;
-                    const lastOpenedFrom = this.openTabSettingsOpenedFrom;
+                    const openType = this.openTabSettings?.openType;
+                    const openedFrom = this.openTabSettings?.openedFrom;
                     // if the leaf is new (empty) and was opened via an explicit open in new window or split, don't
                     // deduplicate. Note that opening in new window doesn't call getLeaf (it calls openPopoutLeaf
                     // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
@@ -173,22 +175,22 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // was created before the plugin was loaded or such.
                     const isSpecialOpen = (
                         !isMainLeaf(this) ||
-                        (isEmptyLeaf(this) && !['same', 'tab', 'implicit'].includes(lastOpenType ?? 'unknown'))
+                        (isEmptyLeaf(this) && !['same', 'tab', 'implicit'].includes(openType ?? 'unknown'))
                     );
                     const isInternalLink = (
-                        plugin.settings.openInNewTab && !isSpecialOpen && lastOpenType == 'implicit' &&
+                        plugin.settings.openInNewTab && !isSpecialOpen && openType == 'implicit' &&
                         isEmptyLeaf(this) &&
                         !!openState?.eState?.subpath &&
-                        matches.some(l => l.id == lastOpenedFrom)
+                        matches.some(l => l.id == openedFrom)
                     );
                     const isMatch = matches.includes(this);
 
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
                     if (isInternalLink && !isMatch) {
-                        match = matches.find(l => l.id == lastOpenedFrom)!;
+                        match = matches.find(l => l.id == openedFrom)!;
                     } else if (plugin.settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !isMatch) {
                         // choose matches first from last opened from, then matches in same group, then fist in list.
-                        match = matches.find(l => l.id == lastOpenedFrom);
+                        if (isEmptyLeaf(this)) match = matches.find(l => l.id == openedFrom);
                         if (!match) matches.find(l => l.parent == this.parent);
                         if (!match) match = matches[0];
                     }

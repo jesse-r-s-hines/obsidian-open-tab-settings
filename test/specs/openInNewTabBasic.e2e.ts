@@ -152,9 +152,23 @@ describe('Test basic open in new tab', function() {
         await workspacePage.openFile("Loop.md");
         await workspacePage.setActiveFile("Loop.md")
 
+        // should NOT open internal link in new tab
         await workspacePage.openLink(await workspacePage.getLink("Loop.md#Subheading"));
         await $(".is-flashing").waitForExist(); // check we get the internal link highlight
         await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"},
+        ]]);
+    })
+
+    it("internal link explicit new tab", async function() {
+        await workspacePage.setConfig('focusNewTab', true);
+        await workspacePage.openFile("Loop.md");
+        await workspacePage.setActiveFile("Loop.md")
+
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop.md#Subheading"));
+        await $(".is-flashing").waitForExist(); // check we get the internal link highlight
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md"},
             {type: "markdown", file: "Loop.md"},
         ]]);
     })

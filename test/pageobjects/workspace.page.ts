@@ -212,9 +212,9 @@ class WorkspacePage {
         await menu.$("div.*=Open in new window").click()
     }
 
-    async openLinkInSameTab(link: ChainablePromiseElement) {
+    async openLinkMenuOption(link: ChainablePromiseElement, item: string) {
         const menu = await this.openContextMenu(link);
-        await menu.$("div.*=Open in same tab").click()
+        await menu.$(`div.*=${item}`).click();
     }
 
     async openFileViaQuickSwitcher(path: string): Promise<void> {

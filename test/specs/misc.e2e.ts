@@ -5,7 +5,7 @@ import { obsidianPage } from 'wdio-obsidian-service';
 describe('Misc', function() {
     beforeEach(async function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
-        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, openInSameTabOnModClick: true });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
     });
 
     it('should update focusNewTab on boot', async function() {
@@ -53,6 +53,23 @@ describe('Misc', function() {
         });
         expect(value).toEqual(true);
     });
+
+    it("opposite menu item", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+        await workspacePage.setSettings({
+            openInNewTab: true, deduplicateTabs: false, newTabTabGroupPlacement: "same",
+        });
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.setActiveFile("A.md");
+
+        await workspacePage.openLinkMenuOption(await workspacePage.getLink("B"), "Open in opposite tab group");
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "markdown", file: "B.md"}, {type: "markdown", file: "B.md"}]
+        ]);
+    })
 })
 
 describe("Mod click", function() {
@@ -61,11 +78,11 @@ describe("Mod click", function() {
     })
     beforeEach(async function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
-        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, openInSameTabOnModClick: true });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
     });
 
-    it('Test mod click', async function() {
-        await workspacePage.setSettings({ openInSameTabOnModClick: true });
+    it('Test mod click same', async function() {
+        await workspacePage.setSettings({ modClickBehavior: "same" });
         await workspacePage.openFile("A.md");
         await (await workspacePage.getLink("B")).click({"button": "middle"});
 
@@ -75,7 +92,7 @@ describe("Mod click", function() {
     });
 
     it('Test mod click off', async function() {
-        await workspacePage.setSettings({ openInSameTabOnModClick: false });
+        await workspacePage.setSettings({ modClickBehavior: "tab" });
         await workspacePage.openFile("A.md");
         await (await workspacePage.getLink("B")).click({"button": "middle"});
 
@@ -85,24 +102,33 @@ describe("Mod click", function() {
         ]]);
     });
 
-    it('Test mod click no new tab', async function() {
-        await workspacePage.setSettings({ openInNewTab: false, openInSameTabOnModClick: true });
+    it('Test mod click duplicate', async function() {
+        await workspacePage.setSettings({ deduplicateTabs: true, modClickBehavior: "allow_duplicate" });
+
+        await workspacePage.openFile("B.md");
         await workspacePage.openFile("A.md");
         await (await workspacePage.getLink("B")).click({"button": "middle"});
-
         await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "B.md"},
             {type: "markdown", file: "A.md"},
             {type: "markdown", file: "B.md", active: true},
         ]]);
     });
 
-    it('Test mod new tab disabled', async function() {
-        await workspacePage.setSettings({ openInNewTab: false, openInSameTabOnModClick: true });
-        await workspacePage.openFile("A.md");
-        await (await workspacePage.getLink("B")).click({"button": "middle"});
+    it("mode click opposite", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+        await workspacePage.setSettings({
+            openInNewTab: true, deduplicateTabs: false, newTabTabGroupPlacement: "opposite",
+        });
 
-        await workspacePage.matchWorkspace([[
-            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md"},
-        ]]);
-    });
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.setActiveFile("A.md");
+
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "A.md"}],
+            [{type: "markdown", file: "B.md"}, {type: "markdown", file: "B.md"}]
+        ]);
+    })
 })

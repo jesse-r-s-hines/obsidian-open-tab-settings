@@ -15,20 +15,29 @@ export const NEW_TAB_TAB_GROUP_PLACEMENTS = {
     "last": "In last tab group",
 };
 
+export const MOD_CLICK_BEHAVIOR = {
+    "tab": "In new tab",
+    "same": "In same tab",
+    "allow_duplicate": "In duplicate tab",
+    "opposite": "In opposite tab group",
+}
+
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
-    openInSameTabOnModClick: boolean,
+    deduplicateAcrossTabGroups: boolean,
     newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
     newTabTabGroupPlacement: "same"|"opposite"|"first"|"last",
+    modClickBehavior: keyof typeof MOD_CLICK_BEHAVIOR,
 }
 
 export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
-    openInSameTabOnModClick: false,
+    deduplicateAcrossTabGroups: true,
     newTabPlacement: "after-active",
     newTabTabGroupPlacement: "same",
+    modClickBehavior: "tab",
 }
 
 export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
@@ -41,14 +50,6 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
 
     display(): void {
         this.containerEl.empty();
-
-        const update = () => {
-            openInSameTabOnModClickSetting.settingEl.setCssStyles({
-                opacity: this.plugin.settings.openInNewTab ? "" : "50%",
-            });
-            openInSameTabOnModClickSetting.setDisabled(!this.plugin.settings.openInNewTab);
-        }
-
         new Setting(this.containerEl)
             .setName('Always open in new tab')
             .setDesc('Open files in a new tab by default.')
@@ -56,8 +57,12 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.openInNewTab)
                     .onChange(async (value) => {
-                        await this.plugin.updateSettings({openInNewTab: value});
-                        update();
+                        const modClickBehavior = this.plugin.settings.modClickBehavior;
+                        await this.plugin.updateSettings({
+                            openInNewTab: value,
+                            modClickBehavior: (!value && modClickBehavior == "same") ? "tab" : modClickBehavior,
+                        });
+                        this.display();
                     })
             );
 
@@ -68,22 +73,28 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.deduplicateTabs)
                     .onChange(async (value) => {
-                        await this.plugin.updateSettings({deduplicateTabs: value});
+                        const modClickBehavior = this.plugin.settings.modClickBehavior;
+                        await this.plugin.updateSettings({
+                            deduplicateTabs: value,
+                            modClickBehavior: (!value && modClickBehavior == "allow_duplicate") ? "tab" : modClickBehavior,
+                        });
+                        this.display();
                     })
             );
 
-        const openInSameTabOnModClickSetting = new Setting(this.containerEl)
-            .setName('Open in same tab on ctrl/middle click')
-            .setDesc(
-                'When "Always open in new tab" is enabled, open in same tab when using Ctrl click or middle click.'
-            )
+        new Setting(this.containerEl)
+            .setName('Deduplicate across tab groups')
+            .setDesc('Whether to switch to already open file even if its in a split pane or popout window')
             .addToggle(toggle =>
                 toggle
-                    .setValue(this.plugin.settings.openInSameTabOnModClick)
+                    .setValue(this.plugin.settings.deduplicateAcrossTabGroups)
                     .onChange(async (value) => {
-                        await this.plugin.updateSettings({openInSameTabOnModClick: value});
+                        await this.plugin.updateSettings({deduplicateAcrossTabGroups: value});
                     })
-            );
+            )
+            .setDisabled(!this.plugin.settings.deduplicateTabs)
+            .settingEl
+            .setCssStyles({opacity: this.plugin.settings.deduplicateTabs ? "" : "50%"});
 
         new Setting(this.containerEl)
             .setName('Focus explicit new tabs')
@@ -128,6 +139,26 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     })
             );
 
-        update();
+        new Setting(this.containerEl)
+            .setName('Mod click behavior')
+            .setDesc('On Ctrl/Cmd/middle click open links...')
+            .addDropdown(dropdown => {
+                dropdown.addOption("tab", MOD_CLICK_BEHAVIOR['tab']);
+                if (this.plugin.settings.openInNewTab) {
+                    dropdown.addOption("same", MOD_CLICK_BEHAVIOR['same'])
+                }
+                if (this.plugin.settings.deduplicateTabs) {
+                    dropdown.addOption("allow_duplicate", MOD_CLICK_BEHAVIOR['allow_duplicate'])
+                }
+                dropdown.addOption("opposite", MOD_CLICK_BEHAVIOR['opposite'])
+                dropdown
+                    .setValue(this.plugin.settings.modClickBehavior)
+                    .onChange(async value => {
+                        console.log("modClickBehavior onChange")
+                        await this.plugin.updateSettings({
+                            modClickBehavior: value as keyof typeof MOD_CLICK_BEHAVIOR,
+                        });
+                    })
+            })
     }
 }

@@ -1,11 +1,13 @@
 import { PaneType, WorkspaceTabs, WorkspaceMobileDrawer } from 'obsidian';
+import { OpenTabSettingsPluginSettings } from './settings';
 
-/** We use this key to check if can safely close a recently created empty leaf during file deduplication. */
-export type PaneTypePatch = PaneType|"same";
 declare module "obsidian" {
     interface WorkspaceLeaf {
-        openTabSettingsLastOpenType?: PaneTypePatch|"default",
-        openTabSettingsOpenedFrom?: string,
+        openTabSettings?: {
+            openMode: PaneType|false,
+            override: Partial<OpenTabSettingsPluginSettings>,
+            openedFrom?: string,
+        },
         pinned: boolean,
     }
 
@@ -14,6 +16,8 @@ declare module "obsidian" {
         insertChild(index: number, leaf: WorkspaceLeaf): void,
         selectTabIndex(index: number): void,
         children: WorkspaceItem[],
+        currentTab: number,
+        isStacked: boolean,
     }
 
     interface WorkspaceTabs {
@@ -22,6 +26,8 @@ declare module "obsidian" {
 
     interface WorkspaceMobileDrawer {
         children: WorkspaceLeaf[],
+        currentTab: number,
+        isStacked: boolean,
     }
 }
 

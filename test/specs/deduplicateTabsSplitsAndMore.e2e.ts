@@ -10,7 +10,9 @@ describe('Test deduplicate for splits and windows', function() {
 
     beforeEach(async function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
-        await workspacePage.setSettings({ openInNewTab: false, deduplicateTabs: true });
+        await workspacePage.setSettings({
+            openInNewTab: false, deduplicateTabs: true, deduplicateAcrossTabGroups: true
+        });
         await workspacePage.setConfig('focusNewTab', true);
     });
 
@@ -108,6 +110,33 @@ describe('Test deduplicate for splits and windows', function() {
 
     it('stacked tabs', async function() {
         await workspacePage.loadPlatformWorkspaceLayout("stacked");
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.openLink(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
+        ]]);
+    })
+
+    it('dedup across panes deduplicateAcrossTabGroups false', async function() {
+        await workspacePage.setSettings({ deduplicateAcrossTabGroups: false });
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.setActiveFile("A.md");
+
+        await workspacePage.matchWorkspace([[{file: "A.md", active: true}], [{file: "B.md"}]]);
+        await workspacePage.openLink(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([
+            [{type: "markdown", file: "B.md", active: true}],
+            [{type: "markdown", file: "B.md"}],
+        ]);
+    })
+
+    it('dedup basic deduplicateAcrossTabGroups false', async function() {
+        await workspacePage.setSettings({ deduplicateAcrossTabGroups: false });
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
 

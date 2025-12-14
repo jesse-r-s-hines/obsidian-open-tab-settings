@@ -233,6 +233,38 @@ describe('Test newTabPlacement', function() {
             {type: "markdown", file: "B.md"},
         ]]);
     })
+
+    it("newTabPlacement pinned tabs", async function() {
+        await workspacePage.setSettings({ newTabPlacement: "beginning" });
+        await workspacePage.openFile("A.md");
+        await workspacePage.pinTab("A.md");
+        await workspacePage.openLink(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([[
+            {file: "B.md", pinned: false, active: true},
+            {file: "A.md", pinned: true},
+        ]]);
+    })
+
+    it("Test newTabPlacement beginning focusNewTab false", async function() {
+        await workspacePage.setSettings({ openInNewTab: true, newTabPlacement: "beginning" });
+        await workspacePage.setConfig('focusNewTab', false);
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([[
+            {file: "B.md"},
+            {file: "A.md", active: true},
+        ]]);
+
+        // Verify that the active leaf is actually in view
+        // might make sense to put this in matchWorkspace to check all the time, though that runs into some
+        // complications with multiple windows.
+        const activeLeaf = $(await browser.executeObsidian(({app, obsidian}) =>
+            app.workspace.getActiveViewOfType(obsidian.View)!.containerEl
+        ));
+        await expect(activeLeaf).toBeDisplayed();
+    })
 })
 
 

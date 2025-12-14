@@ -3,7 +3,9 @@ import {
     WorkspaceItem, Platform, Keymap, Notice,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
-import { OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS } from './settings';
+import {
+    OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS, NEW_TAB_TAB_GROUP_PLACEMENTS,
+} from './settings';
 import { PaneTypePatch, TabGroup } from './types';
 
 
@@ -98,6 +100,16 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 },
             });
         }
+        this.addCommand({
+            id: `cycle-tab-group-placement`, name: `Cycle tab group placement`,
+            callback: async () => {
+                const values = Object.keys(NEW_TAB_TAB_GROUP_PLACEMENTS) as (keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS)[];
+                const index = values.findIndex(v => v == this.settings.newTabTabGroupPlacement);
+                const newValue = values[(index + 1) % values.length];
+                await this.updateSettings({newTabTabGroupPlacement: newValue});
+                new Notice(`Tab group placement: ${NEW_TAB_TAB_GROUP_PLACEMENTS[newValue]}`, 2500);
+            },
+        });
     }
 
     registerMonkeyPatches() {

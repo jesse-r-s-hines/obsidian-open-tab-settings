@@ -171,22 +171,26 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // directly) so we assume undefined lastOpenType is a new window. getLeaf("same") will update
                     // lastOpenType, so we shouldn't need to worry about if lastOpenType is undefined because the leaf
                     // was created before the plugin was loaded or such.
-                    const isSpecialOpen = (!isMainLeaf(this) || (
-                        isEmptyLeaf(this) && !['same', 'tab', 'implicit'].includes(lastOpenType ?? 'unknown')
-                    ));
-                    // To avoid issues when explicitly re-opening a file via the quick-switcher, also check that we are
-                    // opening a sub-heading.
+                    const isSpecialOpen = (
+                        !isMainLeaf(this) ||
+                        (isEmptyLeaf(this) && !['same', 'tab', 'implicit'].includes(lastOpenType ?? 'unknown'))
+                    );
                     const isInternalLink = (
+                        plugin.settings.openInNewTab && !isSpecialOpen && lastOpenType == 'implicit' &&
                         isEmptyLeaf(this) &&
                         !!openState?.eState?.subpath &&
                         matches.some(l => l.id == lastOpenedFrom)
                     );
+                    const isMatch = matches.includes(this);
 
-                    if (plugin.settings.openInNewTab && isInternalLink && !isSpecialOpen && lastOpenType == 'implicit') {
-                        // if the link opened was an internal link, always deduplicate to undo open in new tab.
+                    // if the link opened was an internal link, always deduplicate to undo open in new tab.
+                    if (isInternalLink && !isMatch) {
                         match = matches.find(l => l.id == lastOpenedFrom)!;
-                    } else if (plugin.settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !matches.includes(this)) {
-                        match = matches[0];
+                    } else if (plugin.settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !isMatch) {
+                        // choose matches first from last opened from, then matches in same group, then fist in list.
+                        match = matches.find(l => l.id == lastOpenedFrom);
+                        if (!match) matches.find(l => l.parent == this.parent);
+                        if (!match) match = matches[0];
                     }
 
                     if (match) {

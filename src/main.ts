@@ -239,8 +239,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
             isModEvent(oldMethod: any) {
                 return function(this: any, ...args) {
                     let result = oldMethod.call(this, ...args);
-                    if (plugin.settings.openInNewTab && plugin.settings.openInSameTabOnModClick && result == 'tab') {
-                        result = 'same';
+                    if (result == "tab") {
+                        result = plugin.settings.modClickBehavior;
                     }
                     return result;
                 }
@@ -250,11 +250,6 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
     async loadSettings() {
         const dataFile = await this.loadData() ?? {};
-        // backwards compat for setting
-        if (dataFile.openNewTabsInOtherTabGroup !== undefined) {
-            dataFile.newTabTabGroupPlacement = dataFile.openNewTabsInOtherTabGroup ? 'last' : 'same';
-            delete dataFile.openNewTabsInOtherTabGroup;
-        }
         this.settings = Object.assign({}, DEFAULT_SETTINGS, dataFile);
 
         if (Object.keys(dataFile).length == 0) {

@@ -69,6 +69,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
 
+        if (this.isDisabledOnCurrentDevice()) {
+            return;
+        }
+
         this.registerMonkeyPatches();
 
         this.registerEvent(
@@ -317,6 +321,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
     async updateSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
         Object.assign(this.settings, settings);
         await this.saveData(this.settings);
+    }
+
+    private isDisabledOnCurrentDevice() {
+        return this.settings.disableOnMobile && (Platform.isPhone || Platform.isTablet);
     }
 
     private findMatchingLeaves(file: TFile) {

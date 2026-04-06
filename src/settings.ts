@@ -23,6 +23,7 @@ export const MOD_CLICK_BEHAVIOR = {
 }
 
 export interface OpenTabSettingsPluginSettings {
+    disableOnMobile: boolean,
     openInNewTab: boolean,
     deduplicateTabs: boolean,
     deduplicateAcrossTabGroups: boolean,
@@ -32,6 +33,7 @@ export interface OpenTabSettingsPluginSettings {
 }
 
 export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
+    disableOnMobile: false,
     openInNewTab: true,
     deduplicateTabs: true,
     deduplicateAcrossTabGroups: true,
@@ -50,6 +52,18 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
 
     display(): void {
         this.containerEl.empty();
+
+        new Setting(this.containerEl)
+            .setName('Disable on mobile')
+            .setDesc('Disable this plugin on phone and tablet. Requires restart to take effect.')
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.disableOnMobile)
+                    .onChange(async (value) => {
+                        await this.plugin.updateSettings({disableOnMobile: value});
+                    })
+            );
+
         new Setting(this.containerEl)
             .setName('Always open in new tab')
             .setDesc('Open files in a new tab by default.')

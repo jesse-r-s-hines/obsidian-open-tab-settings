@@ -63,6 +63,8 @@ const OVERRIDES = {
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
+    private leafOpenOrder: Map<string, number> = new Map();
+    private nextOpenOrder = 1;
 
     async onload() {
         await this.loadSettings();
@@ -208,6 +210,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // openFile doesn't return anything, but just in case that changes.
                     let result: any;
                     let match: WorkspaceLeaf|undefined;
+                    let openedLeaf: WorkspaceLeaf|undefined;
 
                     // these values are only valid immediately after creating a leaf. We clear them after openFile,
                     // and also clear them here if the leaf somehow gets populated without openFile
@@ -253,6 +256,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                             //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
                             plugin.app.workspace.setActiveLeaf(matches[0]);
+                            openedLeaf = matches[0];
                             result = undefined;
                         } else {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
@@ -260,9 +264,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
                                 ...openState,
                                 active: !!openState?.active || activeLeaf == this,
                             }, ...args);
+                            openedLeaf = matches[0];
                         }
                     } else { // use default behavior
                         result = await oldMethod.call(this, file, openState, ...args);
+                        openedLeaf = this;
                     }
 
                     // If the leaf is still empty, close it. This can happen if the file was de-duplicated while
@@ -274,9 +280,15 @@ export default class OpenTabSettingsPlugin extends Plugin {
                             .filter(l => l !== this)
                             .reduce((max, l) => l.activeTime > max.activeTime ? l : max);
                         this.detach();
+                        plugin.leafOpenOrder.delete(this.id);
                         if (wasCurrentTab) {
                             tabGroup.selectTabIndex(tabGroup.children.findIndex(c => c === lastActiveTab));
                         }
+                    }
+
+                    if (openedLeaf && !isEmptyLeaf(openedLeaf)) {
+                        plugin.recordLeafOpenOrder(openedLeaf);
+                        plugin.enforceMaxOpenTabs(openedLeaf.parent, openedLeaf);
                     }
 
                     delete this.openTabSettings;
@@ -305,6 +317,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
     async loadSettings() {
         const dataFile = await this.loadData() ?? {};
         this.settings = Object.assign({}, DEFAULT_SETTINGS, dataFile);
+        this.settings.maxOpenTabs = Number.isFinite(this.settings.maxOpenTabs) && this.settings.maxOpenTabs > 0
+            ? Math.floor(this.settings.maxOpenTabs)
+            : 0;
 
         if (Object.keys(dataFile).length == 0) {
             // when using this plugin, focusNewTab should default to false. Set it if this is the first time we've
@@ -315,8 +330,70 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     async updateSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
+        if (settings.maxOpenTabs !== undefined) {
+            settings.maxOpenTabs = Number.isFinite(settings.maxOpenTabs) && settings.maxOpenTabs > 0
+                ? Math.floor(settings.maxOpenTabs)
+                : 0;
+        }
         Object.assign(this.settings, settings);
         await this.saveData(this.settings);
+    }
+
+    private recordLeafOpenOrder(leaf: WorkspaceLeaf) {
+        if (!this.leafOpenOrder.has(leaf.id)) {
+            this.leafOpenOrder.set(leaf.id, this.nextOpenOrder++);
+        }
+    }
+
+    private ensureLeafOpenOrder(tabGroup: TabGroup) {
+        const missingOrderLeaves = tabGroup.children
+            .filter(l => !isEmptyLeaf(l) && !this.leafOpenOrder.has(l.id))
+            .map((leaf, index) => ({
+                leaf,
+                index,
+                activeTime: Number.isFinite(leaf.activeTime) ? leaf.activeTime : Number.POSITIVE_INFINITY,
+            }))
+            .sort((a, b) => {
+                if (a.activeTime !== b.activeTime) return a.activeTime - b.activeTime;
+                return a.index - b.index;
+            });
+
+        for (const {leaf} of missingOrderLeaves) {
+            this.leafOpenOrder.set(leaf.id, this.nextOpenOrder++);
+        }
+    }
+
+    private enforceMaxOpenTabs(tabGroup: TabGroup, currentLeaf?: WorkspaceLeaf) {
+        const maxOpenTabs = this.settings.maxOpenTabs;
+        if (maxOpenTabs <= 0) return;
+
+        this.ensureLeafOpenOrder(tabGroup);
+
+        const getOpenLeaves = () => tabGroup.children.filter(l => !isEmptyLeaf(l));
+        let openLeaves = getOpenLeaves();
+        while (openLeaves.length > maxOpenTabs) {
+            const candidates = openLeaves.filter(l => l !== currentLeaf);
+            const closePool = candidates.length > 0 ? candidates : openLeaves;
+
+            const leavesWithOrder = closePool
+                .map(leaf => ({leaf, order: this.leafOpenOrder.get(leaf.id)}))
+                .filter((value): value is {leaf: WorkspaceLeaf, order: number} => value.order !== undefined);
+
+            const leafToClose = leavesWithOrder.length > 0
+                ? leavesWithOrder.reduce((min, cur) => cur.order < min.order ? cur : min).leaf
+                : closePool[0];
+
+            const closeIndex = tabGroup.children.indexOf(leafToClose);
+            const wasCurrentTab = tabGroup.children[tabGroup.currentTab] === leafToClose;
+            leafToClose.detach();
+            this.leafOpenOrder.delete(leafToClose.id);
+
+            if (wasCurrentTab && tabGroup.children.length > 0) {
+                tabGroup.selectTabIndex(Math.min(closeIndex, tabGroup.children.length - 1));
+            }
+
+            openLeaves = getOpenLeaves();
+        }
     }
 
     private findMatchingLeaves(file: TFile) {

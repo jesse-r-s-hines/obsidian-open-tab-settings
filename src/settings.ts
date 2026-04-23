@@ -26,6 +26,7 @@ export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
     deduplicateTabs: boolean,
     deduplicateAcrossTabGroups: boolean,
+    maxOpenTabs: number,
     newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
     newTabTabGroupPlacement: "same"|"opposite"|"first"|"last",
     modClickBehavior: keyof typeof MOD_CLICK_BEHAVIOR,
@@ -35,6 +36,7 @@ export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
     deduplicateTabs: true,
     deduplicateAcrossTabGroups: true,
+    maxOpenTabs: 0,
     newTabPlacement: "after-active",
     newTabTabGroupPlacement: "same",
     modClickBehavior: "tab",
@@ -95,6 +97,25 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             .setDisabled(!this.plugin.settings.deduplicateTabs)
             .settingEl
             .setCssStyles({opacity: this.plugin.settings.deduplicateTabs ? "" : "50%"});
+
+        new Setting(this.containerEl)
+            .setName('Maximum open tabs')
+            .setDesc(
+                'Limit the number of tabs per tab group. 0 disables the limit. ' +
+                'When the limit is exceeded, the oldest opened tab is closed. ' +
+                'If open order cannot be determined, the leftmost tab is closed.'
+            )
+            .addText(text =>
+                text
+                    .setPlaceholder('0')
+                    .setValue(String(this.plugin.settings.maxOpenTabs))
+                    .onChange(async (value) => {
+                        const parsed = Number.parseInt(value.trim(), 10);
+                        await this.plugin.updateSettings({
+                            maxOpenTabs: Number.isFinite(parsed) && parsed > 0 ? parsed : 0,
+                        });
+                    })
+            );
 
         new Setting(this.containerEl)
             .setName('Focus explicit new tabs')

@@ -141,7 +141,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
 
         new Setting(this.containerEl)
             .setName('Mod click behavior')
-            .setDesc('On Ctrl/Cmd/middle click open links...')
+            .setDesc('On ctrl/cmd/middle click open links...')
             .addDropdown(dropdown => {
                 dropdown.addOption("tab", MOD_CLICK_BEHAVIOR['tab']);
                 if (this.plugin.settings.openInNewTab) {
@@ -154,7 +154,6 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 dropdown
                     .setValue(this.plugin.settings.modClickBehavior)
                     .onChange(async value => {
-                        console.log("modClickBehavior onChange")
                         await this.plugin.updateSettings({
                             modClickBehavior: value as keyof typeof MOD_CLICK_BEHAVIOR,
                         });

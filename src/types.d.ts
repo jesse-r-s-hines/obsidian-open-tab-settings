@@ -1,4 +1,4 @@
-import { PaneType, WorkspaceTabs, WorkspaceMobileDrawer } from 'obsidian';
+import { PaneType, WorkspaceTabs, WorkspaceMobileDrawer, WorkspaceItem } from 'obsidian';
 import { OpenTabSettingsPluginSettings } from './settings';
 
 declare module "obsidian" {

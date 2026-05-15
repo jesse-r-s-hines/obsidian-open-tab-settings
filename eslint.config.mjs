@@ -1,51 +1,35 @@
-// @ts-check
-import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import obsidianmd from "eslint-plugin-obsidianmd";
+import globals from "globals";
+import { globalIgnores } from "eslint/config";
 
 export default tseslint.config(
-    eslint.configs.recommended,
-    tseslint.configs.recommendedTypeChecked,
     {
         languageOptions: {
+            globals: {
+                ...globals.browser,
+            },
             parserOptions: {
-                projectService: true,
+                projectService: {
+                    allowDefaultProject: [
+                        'eslint.config.js',
+                        'manifest.json'
+                    ]
+                },
                 tsconfigRootDir: import.meta.dirname,
+                extraFileExtensions: ['.json']
             },
         },
     },
-    {
-        rules: {
-            "no-prototype-builtins": "off",
-            'no-undef': 'off',
-            "no-empty": "off",
-            "@typescript-eslint/no-this-alias": "off",
-            "@typescript-eslint/no-explicit-any": "off",
-            "@typescript-eslint/no-unsafe-argument": "off",
-            "@typescript-eslint/no-unsafe-assignment": "off",
-            "@typescript-eslint/no-unsafe-member-access": "off",
-            "@typescript-eslint/no-unsafe-return": "off",
-            "@typescript-eslint/no-unsafe-call": "off",
-            "@typescript-eslint/no-namespace": "off",
-            '@typescript-eslint/no-require-imports': 'off',
-            "@typescript-eslint/restrict-plus-operands": "off",
-            "@typescript-eslint/require-await": "off",
-            "@typescript-eslint/no-empty-object-type": "off",
-            "@typescript-eslint/restrict-template-expressions": "off",
-            "@typescript-eslint/no-misused-promises": ["error", {
-                checksVoidReturn: false,
-            }],
-            "@typescript-eslint/no-floating-promises": ["error", {
-                checkThenables: true,
-                allowForKnownSafeCalls: [
-                    {from: 'package', package: "expect", name: ["expect", "toEqual", "toMatch", "toMatchObject"]},
-                ],
-            }],
-            "@typescript-eslint/no-unused-vars": ["error", {
-                args: "none",
-                varsIgnorePattern: "^_",
-                destructuredArrayIgnorePattern: ".*",
-                ignoreRestSiblings: true,
-            }],
-        },
-    },
+    ...obsidianmd.configs.recommended,
+    globalIgnores([
+        "node_modules",
+        "dist",
+        "esbuild.config.mjs",
+        "eslint.config.js",
+        "eslint.config.mjs",
+        "version-bump.mjs",
+        "versions.json",
+        "main.js",
+    ]),
 );

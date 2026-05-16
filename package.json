@@ -1,6 +1,6 @@
 {
     "name": "obsidian-open-tab-settings",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "description": "Add settings to open in new tab by default and prevent duplicate tabs.",
     "main": "main.js",
     "scripts": {
@@ -29,7 +29,7 @@
         "@wdio/spec-reporter": "^9.27.1",
         "appium": "^3.4.2",
         "appium-uiautomator2-driver": "^7.2.3",
-"chai": "^6.2.2",
+        "chai": "^6.2.2",
         "deepmerge-ts": "^7.1.5",
         "esbuild": "^0.28.0",
         "eslint": "^10.3.0",

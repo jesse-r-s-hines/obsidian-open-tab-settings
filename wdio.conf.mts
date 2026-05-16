@@ -1,6 +1,6 @@
 import * as path from "path"
 import { parseObsidianVersions, obsidianBetaAvailable } from "wdio-obsidian-service";
-import merge from "lodash.merge";
+import { deepmerge } from "deepmerge-ts";
 import { env } from "process";
 
 // wdio-obsidian-service will download Obsidian versions into this directory
@@ -49,13 +49,13 @@ export const config: WebdriverIO.Config = {
 
     // "matrix" to test your plugin on multiple Obsidian versions and with emulateMobile
     capabilities: [
-        ...desktopVersions.map(([appVersion, installerVersion]) => merge({}, common, {
+        ...desktopVersions.map(([appVersion, installerVersion]) => deepmerge(common, {
             'wdio:obsidianOptions': {
                 appVersion, installerVersion,
             },
         })),
         // Test the plugin on the emulated mobile UI.
-        ...mobileVersions.map(([appVersion, installerVersion]) => merge({}, common, {
+        ...mobileVersions.map(([appVersion, installerVersion]) => deepmerge(common, {
             'wdio:obsidianOptions': {
                 appVersion, installerVersion,
                 emulateMobile: true,

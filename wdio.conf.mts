@@ -75,9 +75,11 @@ export const config: WebdriverIO.Config = {
     mochaOpts: {
         ui: 'bdd',
         timeout: 60 * 1000,
-        retries: 4,
+        retries: 2,
         bail: true,
     },
+    specFileRetries: 2,
+
     waitforInterval: 250,
     waitforTimeout: 5 * 1000,
     logLevel: "warn",

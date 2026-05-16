@@ -1,6 +1,6 @@
 import {
     Plugin, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating, View, TFile, PaneType, WorkspaceTabs,
-    WorkspaceItem, Platform, Keymap, Notice,
+    WorkspaceItem, Platform, Keymap, Notice, App,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 import {
@@ -49,7 +49,7 @@ function parseOverride(override?: string|boolean): [PaneType|false, Partial<Open
     } else {
         const [mode, ...rest] = override.split(":");
         const json = rest.join(":") || "{}";
-        return [(mode || false) as PaneType|false, JSON.parse(json)];
+        return [(mode || false) as PaneType|false, JSON.parse(json) as Partial<OpenTabSettingsPluginSettings>];
     }
 }
 
@@ -151,13 +151,14 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     registerMonkeyPatches() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const plugin = this;
 
         this.register(monkeyAround.around(Workspace.prototype, {
             /**
              * Patch getLeaf to open leaves in new tab by default, based on settings.
              */
-            getLeaf(oldMethod: any) {
+            getLeaf(oldMethod) {
                 return function(this: Workspace, openModeIn?: string|boolean, ...args) {
                     const [openMode, override] = parseOverride(openModeIn);
                     const settings = {...plugin.settings, ...override};
@@ -170,7 +171,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     } else if (!openMode) {
                         leaf = plugin.getUnpinnedLeaf(true, settings);
                     } else {
-                        leaf = oldMethod.call(this, openMode, ...args);
+                        leaf = (oldMethod as (...args: unknown[]) => WorkspaceLeaf).call(this, openMode, ...args);
                     }
 
                     // we set these to be used in openFile so we can tell when to deduplicate files.
@@ -190,7 +191,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
              * Note that as of 1.9.10, getUnpinnedLeaf takes an undocumented "focus" boolean. Obsidian uses this param
              * when using ctrl and arrow keys in the file explorer to open files.
              */
-            getUnpinnedLeaf(oldMethod: any) {
+            getUnpinnedLeaf(oldMethod) {
                 return function(this: Workspace, focus?: boolean) {
                     if (plugin.settings.openInNewTab) {
                         return this.getLeaf("tab");
@@ -203,10 +204,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         // Patch openFile to deduplicate tabs
         this.register(monkeyAround.around(WorkspaceLeaf.prototype, {
-            openFile(oldMethod: any) {
+            openFile(oldMethod) {
                 return async function(this: WorkspaceLeaf, file, openState, ...args) {
                     // openFile doesn't return anything, but just in case that changes.
-                    let result: any;
+                    let result: void;
                     let match: WorkspaceLeaf|undefined;
 
                     // these values are only valid immediately after creating a leaf. We clear them after openFile,
@@ -290,11 +291,11 @@ export default class OpenTabSettingsPlugin extends Plugin {
         // We could have used isModEvent to implement openInNewTab instead of getLeaf, but there's quite a few places
         // that call getLeaf without isModEvent, such as the graph view.
         this.register(monkeyAround.around(Keymap, {
-            isModEvent(oldMethod: any) {
-                return function(this: any, ...args) {
+            isModEvent(oldMethod) {
+                return function(this: unknown, ...args) {
                     let result = oldMethod.call(this, ...args);
                     if (result == "tab") {
-                        result = OVERRIDES[plugin.settings.modClickBehavior];
+                        result = OVERRIDES[plugin.settings.modClickBehavior] as boolean|PaneType;
                     }
                     return result;
                 }
@@ -303,7 +304,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     async loadSettings() {
-        const dataFile = await this.loadData() ?? {};
+        const dataFile = await this.loadData() as object ?? {};
         this.settings = Object.assign({}, DEFAULT_SETTINGS, dataFile);
 
         if (Object.keys(dataFile).length == 0) {
@@ -356,10 +357,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
      * @param focus Whether to focus the new tab. If undefined focus based on focusNewTab config
      */
     private createNewLeaf(focus?: boolean, override: Partial<OpenTabSettingsPluginSettings> = {}) {
-        const plugin = this;
-        const workspace = plugin.app.workspace;
-        focus = focus ?? plugin.app.vault.getConfig('focusNewTab') as boolean;
-        const settings = {...plugin.settings, ...override};
+        const workspace = this.app.workspace;
+        focus = focus ?? this.app.vault.getConfig('focusNewTab') as boolean;
+        const settings = {...this.settings, ...override};
 
         const activeLeaf = workspace.getMostRecentLeaf();
         if (!activeLeaf) throw new Error("No tab group found.");
@@ -375,7 +375,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         let index: number|undefined;
 
         if (settings.newTabTabGroupPlacement != "same" && !Platform.isPhone) {
-            const tabGroups = plugin.getAllTabGroups(activeLeaf.getRoot());
+            const tabGroups = this.getAllTabGroups(activeLeaf.getRoot());
             const otherTabGroup = tabGroups.filter(g => g !== activeTabGroup).at(-1);
             if (settings.newTabTabGroupPlacement == "opposite" && otherTabGroup) {
                 group = otherTabGroup;
@@ -415,7 +415,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         if (isEmptyLeaf(leafToDisplace)) {
             newLeaf = leafToDisplace;
         } else {
-            newLeaf = new (WorkspaceLeaf as any)(this.app);
+            newLeaf = new (WorkspaceLeaf as new (app: App) => WorkspaceLeaf)(this.app);
             const currentTab = group.currentTab;
             // If new tab is inserted before the currently tab in a group, and we aren't setting the new tab active, we
             // need to update the selected tab so that group.currentTab index still points to the original active tab
@@ -437,10 +437,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
      * e.g. when the active tab is pinned.
      */
     private getUnpinnedLeaf(focus = true, override: Partial<OpenTabSettingsPluginSettings> = {}) {
-        const plugin = this;
-        const workspace = plugin.app.workspace;
-        const settings = {...plugin.settings, ...override};
+        const workspace = this.app.workspace;
+        const settings = {...this.settings, ...override};
 
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         const activeLeaf = workspace.activeLeaf;
         if (activeLeaf?.canNavigate()) {
             return activeLeaf;
@@ -463,7 +463,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         });
 
         if (!leaf) {
-            leaf = plugin.createNewLeaf(focus, settings);
+            leaf = this.createNewLeaf(focus, settings);
         } else if (focus) {
             workspace.setActiveLeaf(leaf);
         }

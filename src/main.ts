@@ -60,6 +60,20 @@ const OVERRIDES = {
     opposite: buildOverride("tab", {newTabTabGroupPlacement: "opposite"}),
 }
 
+const DISABLED_KEY = "open-tab-settings:disabled-on-device";
+
+export function isDisabledOnDevice(): boolean {
+    return window.localStorage.getItem(DISABLED_KEY) === "true";
+}
+
+export function setDisabledOnDevice(value: boolean): void {
+    if (value) {
+        window.localStorage.setItem(DISABLED_KEY, "true");
+    } else {
+        window.localStorage.removeItem(DISABLED_KEY);
+    }
+}
+
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
@@ -68,6 +82,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
         await this.loadSettings();
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
+
+        if (isDisabledOnDevice()) {
+            return;
+        }
 
         this.registerMonkeyPatches();
 

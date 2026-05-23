@@ -52,24 +52,6 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
         this.containerEl.empty();
 
         new Setting(this.containerEl)
-            .setName('Disable on this device')
-            .setDesc(
-                'When enabled, this plugin does nothing on the current device. ' +
-                'This setting is per-device and is not synced. Restart Obsidian or toggle the plugin off and on to apply.'
-            )
-            .addToggle(toggle =>
-                toggle
-                    .setValue(isDisabledOnDevice())
-                    .onChange((value) => {
-                        setDisabledOnDevice(value);
-                        new Notice(
-                            `Open Tab Settings will be ${value ? 'disabled' : 'enabled'} on this device after restart.`,
-                            5000,
-                        );
-                    })
-            );
-
-        new Setting(this.containerEl)
             .setName('Always open in new tab')
             .setDesc('Open files in a new tab by default.')
             .addToggle(toggle =>
@@ -178,5 +160,23 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         });
                     })
             })
+
+        new Setting(this.containerEl)
+            .setName('Disable on this device')
+            .setDesc(
+                'When enabled, this plugin does nothing on the current device. ' +
+                'This setting is per-device and is not synced. Restart Obsidian or toggle the plugin off and on to apply.'
+            )
+            .addToggle(toggle =>
+                toggle
+                    .setValue(isDisabledOnDevice())
+                    .onChange((value) => {
+                        setDisabledOnDevice(value);
+                        new Notice(
+                            `Open Tab Settings will be ${value ? 'disabled' : 'enabled'} on this device after restart.`,
+                            5000,
+                        );
+                    })
+            );
     }
 }

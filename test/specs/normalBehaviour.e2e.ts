@@ -19,7 +19,7 @@ const tests = () => {
 
     it("Open first file via file explorer works", async function() {
         await workspacePage.matchWorkspace([[{type: "empty"}]]); // Make sure loadWorkspaceLayout is working
-        await workspacePage.openFileViaQuickSwitcher("A.md");
+        await workspacePage.openFileViaFileExplorer("A.md");
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]]);
     })
 

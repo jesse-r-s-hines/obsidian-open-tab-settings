@@ -1,5 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
-import OpenTabSettingsPlugin, { isDisabledOnDevice, setDisabledOnDevice } from "./main"
+import OpenTabSettingsPlugin from "./main"
 
 export const NEW_TAB_PLACEMENTS = {
     "after-active": "After active tab",
@@ -38,6 +38,20 @@ export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     newTabPlacement: "after-active",
     newTabTabGroupPlacement: "same",
     modClickBehavior: "tab",
+}
+
+const DISABLED_KEY = "open-tab-settings:disabled-on-device";
+
+export function isDisabledOnDevice(): boolean {
+    return window.localStorage.getItem(DISABLED_KEY) === "true";
+}
+
+export function setDisabledOnDevice(value: boolean): void {
+    if (value) {
+        window.localStorage.setItem(DISABLED_KEY, "true");
+    } else {
+        window.localStorage.removeItem(DISABLED_KEY);
+    }
 }
 
 export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {

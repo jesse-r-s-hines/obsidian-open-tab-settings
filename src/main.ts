@@ -5,6 +5,7 @@ import {
 import * as monkeyAround from 'monkey-around';
 import {
     OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS, NEW_TAB_TAB_GROUP_PLACEMENTS,
+    isDisabledOnDevice,
 } from './settings';
 import { TabGroup } from './types';
 
@@ -60,21 +61,6 @@ const OVERRIDES = {
     opposite: buildOverride("tab", {newTabTabGroupPlacement: "opposite"}),
 }
 
-const DISABLED_KEY = "open-tab-settings:disabled-on-device";
-
-export function isDisabledOnDevice(): boolean {
-    return window.localStorage.getItem(DISABLED_KEY) === "true";
-}
-
-export function setDisabledOnDevice(value: boolean): void {
-    if (value) {
-        window.localStorage.setItem(DISABLED_KEY, "true");
-    } else {
-        window.localStorage.removeItem(DISABLED_KEY);
-    }
-}
-
-
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
 
@@ -88,44 +74,6 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         this.registerMonkeyPatches();
-
-        this.registerEvent(
-            this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
-                if (file instanceof TFile) {
-                    if (this.settings.openInNewTab) {
-                        menu.addItem((item) => {
-                            item.setSection("open");
-                            item.setIcon("file-minus")
-                            item.setTitle("Open in same tab");
-                            item.onClick(async () => {
-                                await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
-                            });
-                        });
-                    }
-                    if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
-                        menu.addItem((item) => {
-                            item.setSection("open");
-                            item.setIcon("files")
-                            item.setTitle("Open in duplicate tab");
-                            item.onClick(async () => {
-                                await this.app.workspace.getLeaf(OVERRIDES.allow_duplicate).openFile(file);
-                            });
-                        });
-                    }
-                    const activeLeaf = this.app.workspace.getMostRecentLeaf();
-                    if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
-                        menu.addItem((item) => {
-                            item.setSection("open");
-                            item.setIcon("lucide-split-square-horizontal")
-                            item.setTitle("Open in opposite tab group");
-                            item.onClick(async () => {
-                                await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
-                            });
-                        });
-                    }
-                }
-            })
-        );
 
         const commands = [
             ["openInNewTab", "always open in new tab"],
@@ -166,6 +114,42 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 new Notice(`Tab group placement: ${NEW_TAB_TAB_GROUP_PLACEMENTS[newValue]}`, 2500);
             },
         });
+
+        this.registerEvent(this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
+            if (file instanceof TFile) {
+                if (this.settings.openInNewTab) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("file-minus")
+                        item.setTitle("Open in same tab");
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
+                        });
+                    });
+                }
+                if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("files")
+                        item.setTitle("Open in duplicate tab");
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.allow_duplicate).openFile(file);
+                        });
+                    });
+                }
+                const activeLeaf = this.app.workspace.getMostRecentLeaf();
+                if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("lucide-split-square-horizontal")
+                        item.setTitle("Open in opposite tab group");
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
+                        });
+                    });
+                }
+            }
+        }));
     }
 
     registerMonkeyPatches() {

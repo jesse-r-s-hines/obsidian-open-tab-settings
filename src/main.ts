@@ -369,7 +369,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const activeIndex = activeTabGroup.children.indexOf(activeLeaf);
 
         // This is default Obsidian behavior, if active leaf is empty new tab replaces it instead of making a new one.
-        if (isEmptyLeaf(activeLeaf)) {
+        if (isEmptyLeaf(activeLeaf) && activeLeaf.canNavigate()) {
             return activeLeaf;
         }
 
@@ -414,7 +414,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         // we re-use empty tabs more aggressively than default Obsidian. If the tab at the new location is empty, re-use
         // it instead of creating a new one.
         const leafToDisplace = group.children[Math.min(index, group.children.length - 1)];
-        if (isEmptyLeaf(leafToDisplace)) {
+        if (isEmptyLeaf(leafToDisplace) && leafToDisplace.canNavigate()) {
             newLeaf = leafToDisplace;
         } else {
             newLeaf = new (WorkspaceLeaf as new (app: App) => WorkspaceLeaf)(this.app);

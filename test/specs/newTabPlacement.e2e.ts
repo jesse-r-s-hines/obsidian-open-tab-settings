@@ -208,6 +208,48 @@ describe('Test newTabPlacement', function() {
         ]]);
     })
 
+    it("doesn't replace active empty pinned tab", async function() {
+        await workspacePage.setSettings({newTabPlacement: "end"});
+        await workspacePage.pinTab((await workspacePage.getAllLeaves())[0][0].id)
+
+        await workspacePage.matchWorkspace([[
+            {type: "empty", pinned: true, active: true},
+        ]]);
+
+        await workspacePage.openFileViaQuickSwitcher("A.md");
+
+        await workspacePage.matchWorkspace([[
+            {type: "empty", pinned: true},
+            {type: "markdown", file: "A.md", active: true},
+        ]]);
+
+    })
+
+    it("doesn't replace end empty pinned tab", async function() {
+        await workspacePage.setSettings({newTabPlacement: "end"});
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("Loop.md");
+        await browser.executeObsidianCommand("workspace:new-tab");
+        await workspacePage.pinTab((await workspacePage.getAllLeaves())[0][2].id)
+        await workspacePage.setActiveFile("A.md");
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", active: true},
+            {type: "markdown", file: "Loop.md"},
+            {type: "empty", pinned: true},
+        ]]);
+
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", active: true},
+            {type: "markdown", file: "Loop.md"},
+            {type: "empty", pinned: true},
+            {type: "markdown", file: "B.md"},
+        ]]);
+    })
+
     it("end doesn't replace middle empty tab", async function() {
         await workspacePage.setSettings({newTabPlacement: "end"});
 

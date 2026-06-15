@@ -155,8 +155,10 @@ class WorkspacePage {
      * Pins the specified tab. Note it also focuses the tab.
      */
     async pinTab(pathOrId: string) {
-        await this.setActiveFile(pathOrId);
-        await browser.executeObsidianCommand("workspace:toggle-pin");
+        const leafInfo = await this.getLeaf(pathOrId);
+        await browser.executeObsidian(({app}, leafInfo) => {
+            return app.workspace.getLeafById(leafInfo.id)!.setPinned(true);
+        }, leafInfo);
     }
 
     async getLink(text: string): Promise<ChainablePromiseElement> {
@@ -174,7 +176,7 @@ class WorkspacePage {
     }
 
     async openContextMenu(elem: ChainablePromiseElement) {
-        await this.setConfig('nativeMenus', false);
+        // this requires nativeMenus to be set "false" (see appearance.json)
         const platform = await obsidianPage.getPlatform();
         if (platform.isDesktopApp) {
             await elem.click({button: "right"});

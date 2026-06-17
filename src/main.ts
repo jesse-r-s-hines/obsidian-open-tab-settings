@@ -317,7 +317,17 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
     }
 
-    async updateSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
+    async updateSettings(newSettings: Partial<OpenTabSettingsPluginSettings>) {
+        const settings = {...this.settings, ...newSettings}
+
+        if (
+            (settings.modClickBehavior == 'same' && !settings.openInNewTab) ||
+            (settings.modClickBehavior == 'allow_duplicate' && !settings.deduplicateTabs)
+        ) {
+            if (newSettings.modClickBehavior) throw Error(`Invalid settings: ${JSON.stringify(newSettings)}`)
+            settings.modClickBehavior = 'tab'
+        }
+
         Object.assign(this.settings, settings);
         await this.saveData(this.settings);
     }

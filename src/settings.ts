@@ -72,11 +72,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.openInNewTab)
                     .onChange(async (value) => {
-                        const modClickBehavior = this.plugin.settings.modClickBehavior;
-                        await this.plugin.updateSettings({
-                            openInNewTab: value,
-                            modClickBehavior: (!value && modClickBehavior == "same") ? "tab" : modClickBehavior,
-                        });
+                        await this.plugin.updateSettings({openInNewTab: value});
                         this.display();
                     })
             );
@@ -88,11 +84,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                 toggle
                     .setValue(this.plugin.settings.deduplicateTabs)
                     .onChange(async (value) => {
-                        const modClickBehavior = this.plugin.settings.modClickBehavior;
-                        await this.plugin.updateSettings({
-                            deduplicateTabs: value,
-                            modClickBehavior: (!value && modClickBehavior == "allow_duplicate") ? "tab" : modClickBehavior,
-                        });
+                        await this.plugin.updateSettings({deduplicateTabs: value});
                         this.display();
                     })
             );
@@ -105,6 +97,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .setValue(this.plugin.settings.deduplicateAcrossTabGroups)
                     .onChange(async (value) => {
                         await this.plugin.updateSettings({deduplicateAcrossTabGroups: value});
+                        this.display();
                     })
             )
             .setDisabled(!this.plugin.settings.deduplicateTabs)
@@ -123,6 +116,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     .setValue(this.app.vault.getConfig("focusNewTab") as boolean)
                     .onChange(async (value) => {
                         this.app.vault.setConfig("focusNewTab", value)
+                        this.display();
                     })
             );
 
@@ -137,6 +131,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         await this.plugin.updateSettings({
                             newTabPlacement: value as keyof typeof NEW_TAB_PLACEMENTS,
                         });
+                        this.display();
                     })
             )
 
@@ -151,6 +146,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         await this.plugin.updateSettings({
                             newTabTabGroupPlacement: value as keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS,
                         });
+                        this.display();
                     })
             );
 
@@ -172,7 +168,8 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         await this.plugin.updateSettings({
                             modClickBehavior: value as keyof typeof MOD_CLICK_BEHAVIOR,
                         });
-                    })
+                        this.display();
+                    });
             })
 
         new Setting(this.containerEl)
@@ -190,6 +187,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                             `Open Tab Settings will be ${value ? 'disabled' : 'enabled'} on this device after restart.`,
                             5000,
                         );
+                        this.display();
                     })
             );
     }

@@ -4,9 +4,14 @@ import { OpenTabSettingsPluginSettings } from './settings';
 declare module "obsidian" {
     interface WorkspaceLeaf {
         openTabSettings?: {
-            openMode: PaneType|false,
-            override: Partial<OpenTabSettingsPluginSettings>,
-            openedFrom?: string,
+            openInfo?: {
+                openMode: PaneType|false,
+                override: Partial<OpenTabSettingsPluginSettings>,
+                openedFrom?: string,
+            },
+            /** true when a leaf has just been opened, set to false the leaf is interacted with */
+            isPreview?: boolean,
+            eventCleanup?: () => void,
         },
         pinned: boolean,
     }

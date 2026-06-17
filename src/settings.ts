@@ -20,10 +20,12 @@ export const MOD_CLICK_BEHAVIOR = {
     "same": "In same tab",
     "allow_duplicate": "In duplicate tab",
     "opposite": "In opposite tab group",
+    "no_preview": "Open persistent (non-preview) tab",
 }
 
 export interface OpenTabSettingsPluginSettings {
     openInNewTab: boolean,
+    previewTabs: boolean,
     deduplicateTabs: boolean,
     deduplicateAcrossTabGroups: boolean,
     newTabPlacement: keyof typeof NEW_TAB_PLACEMENTS,
@@ -33,6 +35,7 @@ export interface OpenTabSettingsPluginSettings {
 
 export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     openInNewTab: true,
+    previewTabs: false,
     deduplicateTabs: true,
     deduplicateAcrossTabGroups: true,
     newTabPlacement: "after-active",
@@ -76,6 +79,19 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         this.display();
                     })
             );
+
+        new Setting(this.containerEl)
+            .setName('Preview tabs')
+            .setDesc('VS Code style preview tabs. Initially open tabs as "preview" until interacted with. Preview tabs will be replaced instead of opening in new tab.')
+            .addToggle(toggle =>
+                toggle
+                    .setValue(this.plugin.settings.previewTabs)
+                    .onChange(async (value) => {
+                        await this.plugin.updateSettings({previewTabs: value});
+                        this.display();
+                    })
+            )
+            .setDisabled(!this.plugin.settings.openInNewTab);
 
         new Setting(this.containerEl)
             .setName('Prevent duplicate tabs')
@@ -162,6 +178,9 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                     dropdown.addOption("allow_duplicate", MOD_CLICK_BEHAVIOR['allow_duplicate'])
                 }
                 dropdown.addOption("opposite", MOD_CLICK_BEHAVIOR['opposite'])
+                if (this.plugin.settings.previewTabs) {
+                    dropdown.addOption("no_preview", MOD_CLICK_BEHAVIOR['no_preview'])
+                }
                 dropdown
                     .setValue(this.plugin.settings.modClickBehavior)
                     .onChange(async value => {

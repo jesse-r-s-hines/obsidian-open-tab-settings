@@ -144,6 +144,24 @@ describe('Test deduplicate for splits and windows', function() {
             {type: "markdown", file: "A.md"}, {type: "markdown", file: "B.md", active: true},
         ]]);
     })
+
+    it('deduplicate prefers same tab group', async function() {
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.setActiveFile("B.md")
+        await workspacePage.openFile("A.md");
+        await workspacePage.setActiveFile("B.md")
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}],
+            [{file: "B.md", active: true}, {file: "A.md"}]
+        ]);
+        await workspacePage.openLink(await workspacePage.getLink("A"));
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}],
+            [{file: "B.md"}, {file: "A.md", active: true}],
+        ]);
+    })
 })
 
 describe('Test deduplicate for misc', function() {

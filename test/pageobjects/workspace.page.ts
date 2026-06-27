@@ -74,8 +74,8 @@ class WorkspacePage {
 
             const activeLeaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
 
-            return [...tabGroups].map(leaf =>
-                (leaf.children as WorkspaceLeaf[]).map(leaf => {
+            return tabGroups.map(group =>
+                (group.children as WorkspaceLeaf[]).map(leaf => {
                     return {
                         parent: leaf.parent.id,
                         id: leaf.id,

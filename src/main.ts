@@ -210,7 +210,6 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 return async function(this: WorkspaceLeaf, file, openState, ...args) {
                     // openFile doesn't return anything, but just in case that changes.
                     let result: void;
-                    let match: WorkspaceLeaf|undefined;
 
                     // these values are only valid immediately after creating a leaf. We clear them after openFile,
                     // and also clear them here if the leaf somehow gets populated without openFile
@@ -238,28 +237,30 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         !!openState?.eState?.subpath &&
                         matches.some(l => l.id == openedFrom)
                     );
-                    const isMatch = matches.includes(this);
 
+                    let match: WorkspaceLeaf|undefined;
+                    if (matches.includes(this)) match = this;
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
-                    if (isInternalLink && !isSpecialOpen && !isMatch) {
+                    if (!match && isInternalLink && !isSpecialOpen) {
                         match = matches.find(l => l.id == openedFrom)!;
-                    } else if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !isMatch) {
-                        // choose matches first from last opened from, then matches in same group, then fist in list.
-                        match = matches.find(l => l.id == openedFrom);
-                        if (!match) matches.find(l => l.parent == this.parent);
+                    }
+                    // choose matches first from last opened from, then matches in same group, then first in list.
+                    if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0) {
+                        if (!match) match = matches.find(l => l.id == openedFrom);
+                        if (!match) match = matches.find(l => l.parent == this.parent);
                         if (!match) match = matches[0];
                     }
 
-                    if (match) {
+                    if (match && match !== this) {
                         if (match.view.getViewType() == "kanban") {
                             // workaround for a bug in kanban. See
                             //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                             //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
-                            plugin.app.workspace.setActiveLeaf(matches[0]);
+                            plugin.app.workspace.setActiveLeaf(match);
                             result = undefined;
                         } else {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
-                            result = await oldMethod.call(matches[0], file, {
+                            result = await oldMethod.call(match, file, {
                                 ...openState,
                                 active: !!openState?.active || activeLeaf == this,
                             }, ...args);

@@ -78,7 +78,7 @@ describe("Mod click", function() {
     })
     beforeEach(async function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
-        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true, previewTabs: false });
     });
 
     it('Test mod click same', async function() {
@@ -115,7 +115,7 @@ describe("Mod click", function() {
         ]]);
     });
 
-    it("mode click opposite", async function() {
+    it("mod click opposite", async function() {
         if ((await obsidianPage.getPlatform()).isMobile) this.skip();
         await workspacePage.setSettings({
             openInNewTab: true, deduplicateTabs: false, newTabTabGroupPlacement: "opposite",
@@ -130,5 +130,17 @@ describe("Mod click", function() {
             [{type: "markdown", file: "A.md"}],
             [{type: "markdown", file: "B.md"}, {type: "markdown", file: "B.md"}]
         ]);
+    })
+
+    it("mod click preview", async function() {
+        await workspacePage.setSettings({ openInNewTab: true, previewTabs: true, deduplicateTabs: false });
+
+        await workspacePage.setSettings({ modClickBehavior: "no_preview" });
+        await workspacePage.openFile("A.md");
+        await (await workspacePage.getLink("B")).click({"button": "middle"});
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", isPreview: false},
+            {type: "markdown", file: "B.md", active: true, isPreview: false},
+        ]]);
     })
 })

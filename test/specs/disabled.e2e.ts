@@ -34,7 +34,6 @@ describe('Test disable options', function() {
 
 describe('Test disabling the plugin', function() {
     before(async function() {
-        await obsidianPage.disablePlugin("open-tab-settings");
         await workspacePage.setConfig('focusNewTab', false);
     });
 
@@ -42,18 +41,19 @@ describe('Test disabling the plugin', function() {
         await workspacePage.loadPlatformWorkspaceLayout("empty");
     });
 
-
-    after(async function() {
+    afterEach(async function() {
         await obsidianPage.enablePlugin("open-tab-settings");
     });
 
-    it("Test disabling the plugin new tabs", async function() {
+    it("new tabs", async function() {
+        await obsidianPage.disablePlugin("open-tab-settings");
         await workspacePage.openFile("A.md");
         await workspacePage.openLink(await workspacePage.getLink("B"));
         await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md", active: true}]]);
     })
 
-    it("Test disable deduplicateTabs", async function() {
+    it("deduplicateTabs", async function() {
+        await obsidianPage.disablePlugin("open-tab-settings");
         await workspacePage.openFile("A.md");
         await workspacePage.openFile("B.md");
         await workspacePage.setActiveFile("A.md");
@@ -61,6 +61,24 @@ describe('Test disabling the plugin', function() {
 
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "B.md", active: true}, {type: "markdown", file: "B.md"},
+        ]]);
+    })
+
+    it('previewTabs', async function() {
+        await workspacePage.setSettings({ openInNewTab: true, previewTabs: true });
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openLink(await workspacePage.getLink("B"));
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", isPreview: false},
+            {type: "markdown", file: "B.md", active: true, isPreview: true},
+        ]]);
+
+        await obsidianPage.disablePlugin("open-tab-settings");
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", isPreview: false},
+            {type: "markdown", file: "B.md", active: true, isPreview: false},
         ]]);
     })
 })

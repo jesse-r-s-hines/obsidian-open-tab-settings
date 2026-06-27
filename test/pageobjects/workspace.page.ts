@@ -14,6 +14,7 @@ type LeafInfo = {
     active: boolean,
     /** True if this leaf is selected within its tab group */
     currentTab: boolean,
+    isPreview: boolean,
 }
 
 class WorkspacePage {
@@ -85,6 +86,7 @@ class WorkspacePage {
                         deferred: leaf.isDeferred, pinned: leaf.pinned,
                         active: activeLeaf == leaf,
                         currentTab: leaf.parent.children.indexOf(leaf) === leaf.parent.currentTab,
+                        isPreview: leaf.openTabSettings?.isPreview ?? false,
                     };
                 })
             );
@@ -239,6 +241,10 @@ class WorkspacePage {
         await browser.executeObsidianCommand("switcher:open");
         await browser.keys(path);
         await browser.keys(Key.Enter);
+
+        if ((await obsidianPage.getPlatform()).isMobile) {
+            await browser.pause(500); // have to wait a bit for the animation to complete
+        }
     }
 
     async openFileViaFileExplorer(path: string): Promise<void> {
@@ -262,10 +268,28 @@ class WorkspacePage {
         }, name, value)
     }
 
-    async removeFile(file: string) {
-        await browser.executeObsidian(async ({app}, file) => {
-            await app.vault.delete(app.vault.getAbstractFileByPath(file)!);
-        }, file);
+    /** Replaces the leaf's content */
+    async editLeaf(pathOrId: string, text: string) {
+        const leafInfo = await workspacePage.getLeaf(pathOrId);
+        await browser.executeObsidian(async ({app, obsidian}, leafInfo, text) => {
+            const leaf = app.workspace.getLeafById(leafInfo.id)!;
+            app.workspace.setActiveLeaf(leaf, {focus: true});
+            await leaf.view.setState({...leaf.view.getState(), mode: "source"}, {history: false});
+            if (leaf.view instanceof obsidian.MarkdownView) {
+                leaf.view.editor.replaceSelection(text);
+            } else {
+                throw Error("Not a markdown view")
+            }
+        }, leafInfo, text);
+    }
+
+    /** double click on the leaf's tab header (for testing tab preview) */
+    async doubleClickTab(pathOrId: string) {
+        const leafInfo = await workspacePage.getLeaf(pathOrId);
+        await browser.executeObsidian(({app}, leafInfo) => {
+            const elem = app.workspace.getLeafById(leafInfo.id)!.tabHeaderEl;
+            elem.dispatchEvent(new MouseEvent("dblclick", {bubbles: true}));
+        }, leafInfo);
     }
 }
 

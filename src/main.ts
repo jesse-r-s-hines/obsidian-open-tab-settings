@@ -15,7 +15,7 @@ import { TabGroup } from './types';
  * This is only needed if the view is not registered as the default view for a file extension.
  */
 const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
-    "md": ["excalidraw", "kanban"],
+    "md": ["excalidraw", "kanban", "smm"],
 }
 
 

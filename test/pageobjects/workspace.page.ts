@@ -135,8 +135,19 @@ class WorkspacePage {
                 return equals(actual, matcher);
             });
         } catch {}
-        // Call expect again, this will give us nice error messages if value doesn't match.
-        expect(actual).toEqual(matcher);
+        if (!equals(actual, matcher)) {
+            // Show a pretty error message with only the relevant keys
+            const keys = [...new Set(expected.flat().flatMap(l => Object.keys(l)))];
+            const filteredActual = actual.map(group =>
+                group.map(leaf => Object.fromEntries(keys.map(k => [k, leaf[k as keyof LeafInfo]])),
+            ));
+
+            throw new Error(
+                "Workspace did not match!\n\n" +
+                "Expected:\n" + JSON.stringify(expected, null, 2) + "\n\n" +
+                "Actual:\n" + JSON.stringify(filteredActual, null, 2),
+            );
+        }
     }
 
     /**

@@ -22,7 +22,6 @@ Open Tab Settings should be compatible with most other plugins, if you encounter
 Some known plugin interactions:
 - The [PDF++](https://github.com/RyotaUshio/obsidian-pdf-plus) plugin customizes the opening behavior of PDFs which can override Open Tab Setting's behavior. You can make the plugins play nicely together by setting the "How to open..." options to "new tab" in the PDF++ settings.
 
-
 ## Contributing
 You can build the plugin with:
 ```shell
@@ -36,4 +35,5 @@ Run them with:
 ```shell
 npm run test
 ```
-This will automatically download the latest Obsidian version and test the plugin against it.
+
+If you'd like to help with translating, add a new locale file under `src/locales`.

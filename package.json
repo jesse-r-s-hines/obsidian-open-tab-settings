@@ -47,6 +47,7 @@
         "wdio-obsidian-service": "^3.1.1"
     },
     "dependencies": {
+        "i18next": "^24.2.1",
         "monkey-around": "^3.0.0"
     }
 }

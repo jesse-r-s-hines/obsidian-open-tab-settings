@@ -8,6 +8,8 @@ import {
     isDisabledOnDevice,
 } from './settings';
 import { TabGroup } from './types';
+import { initializeI18n } from './i18n';
+import { t } from 'i18next';
 
 
 /**
@@ -28,10 +30,6 @@ function isEmptyLeaf(leaf: WorkspaceLeaf) {
 function isMainLeaf(leaf: WorkspaceLeaf) {
     const root = leaf.getRoot();
     return (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
-}
-
-function capitalize(s: string) {
-    return s.slice(0, 1).toUpperCase() + s.slice(1);
 }
 
 /**
@@ -66,6 +64,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
 
     async onload() {
+        await initializeI18n();
+
         await this.loadSettings();
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
@@ -77,42 +77,43 @@ export default class OpenTabSettingsPlugin extends Plugin {
         this.registerMonkeyPatches();
 
         const commands = [
-            ["openInNewTab", "always open in new tab"],
-            ["deduplicateTabs", "prevent duplicate tabs"],
+            ["openInNewTab", t('settings.openInNewTab.name')],
+            ["deduplicateTabs", t('settings.deduplicateTabs.name')],
         ] as const;
         for (const [setting, name] of commands) {
             const id = setting.replace(/[A-Z]/g, l => `-${l.toLowerCase()}`);
 
             this.addCommand({
-                id: `toggle-${id}`, name: `Toggle ${name}`,
+                id: `toggle-${id}`, name: t('commands.toggle', { name }),
                 callback: async () => {
                     await this.updateSettings({[setting]: !this.settings[setting]});
-                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
                 },
             });
             this.addCommand({
-                id: `enable-${id}`, name: `Enable ${name}`,
+                id: `enable-${id}`, name: t('commands.enable', { name }),
                 callback: async () => {
                     await this.updateSettings({[setting]: true});
-                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
                 },
             });
             this.addCommand({
-                id: `disable-${id}`, name: `Disable ${name}`,
+                id: `disable-${id}`, name: t('commands.disable', { name }),
                 callback: async () => {
                     await this.updateSettings({[setting]: false});
-                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
                 },
             });
         }
         this.addCommand({
-            id: `cycle-tab-group-placement`, name: `Cycle tab group placement`,
+            id: `cycle-tab-group-placement`,
+            name: t('commands.cycle', {name: t('settings.newTabTabGroupPlacement.name')}),
             callback: async () => {
                 const values = Object.keys(NEW_TAB_TAB_GROUP_PLACEMENTS) as (keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS)[];
                 const index = values.findIndex(v => v == this.settings.newTabTabGroupPlacement);
                 const newValue = values[(index + 1) % values.length];
                 await this.updateSettings({newTabTabGroupPlacement: newValue});
-                new Notice(`Tab group placement: ${NEW_TAB_TAB_GROUP_PLACEMENTS[newValue]}`, 2500);
+                new Notice(`${t('settings.newTabTabGroupPlacement.name')}: ${t(NEW_TAB_TAB_GROUP_PLACEMENTS[newValue])}`, 2500);
             },
         });
 
@@ -122,7 +123,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     menu.addItem((item) => {
                         item.setSection("open");
                         item.setIcon("file-minus")
-                        item.setTitle("Open in same tab");
+                        item.setTitle(t('menu.openInSameTab'));
                         item.onClick(async () => {
                             await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
                         });
@@ -132,7 +133,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     menu.addItem((item) => {
                         item.setSection("open");
                         item.setIcon("files")
-                        item.setTitle("Open in duplicate tab");
+                        item.setTitle(t('menu.openInDuplicateTab'));
                         item.onClick(async () => {
                             await this.app.workspace.getLeaf(OVERRIDES.allow_duplicate).openFile(file);
                         });
@@ -143,7 +144,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     menu.addItem((item) => {
                         item.setSection("open");
                         item.setIcon("lucide-split-square-horizontal")
-                        item.setTitle("Open in opposite tab group");
+                        item.setTitle(t('menu.openInOppositeTabGroup'));
                         item.onClick(async () => {
                             await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
                         });

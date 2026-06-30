@@ -1,26 +1,27 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import OpenTabSettingsPlugin from "./main"
+import { t } from 'i18next';
 
 export const NEW_TAB_PLACEMENTS = {
-    "after-active": "After active tab",
-    "after-pinned": "After pinned tabs",
-    "beginning": "At beginning",
-    "end": "At end",
+    "after-active": 'settings.newTabPlacement.options.after-active',
+    "after-pinned": 'settings.newTabPlacement.options.after-pinned',
+    "beginning": 'settings.newTabPlacement.options.beginning',
+    "end": 'settings.newTabPlacement.options.end',
 };
 
 export const NEW_TAB_TAB_GROUP_PLACEMENTS = {
-    "same": "In same tab group",
-    "opposite": "In opposite tab group",
-    "first": "In first tab group",
-    "last": "In last tab group",
+    "same": 'settings.newTabTabGroupPlacement.options.same',
+    "opposite": 'settings.newTabTabGroupPlacement.options.opposite',
+    "first": 'settings.newTabTabGroupPlacement.options.first',
+    "last": 'settings.newTabTabGroupPlacement.options.last',
 };
 
 export const MOD_CLICK_BEHAVIOR = {
-    "tab": "In new tab",
-    "same": "In same tab",
-    "allow_duplicate": "In duplicate tab",
-    "opposite": "In opposite tab group",
-    "no_preview": "Open persistent (non-preview) tab",
+    "tab": 'settings.modClickBehavior.options.tab',
+    "same": 'settings.modClickBehavior.options.same',
+    "allow_duplicate": 'settings.modClickBehavior.options.allow_duplicate',
+    "opposite": 'settings.modClickBehavior.options.opposite',
+    "no_preview": 'settings.modClickBehavior.options.no_preview',
 }
 
 export interface OpenTabSettingsPluginSettings {
@@ -41,6 +42,10 @@ export const DEFAULT_SETTINGS: OpenTabSettingsPluginSettings = {
     newTabPlacement: "after-active",
     newTabTabGroupPlacement: "same",
     modClickBehavior: "tab",
+}
+
+function translateOptions(options: Record<string, string>): Record<string, string> {
+    return Object.fromEntries(Object.entries(options).map(([value, label]) => [value, t(label)]));
 }
 
 const DISABLED_KEY = "open-tab-settings:disabled-on-device";
@@ -69,8 +74,8 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
         this.containerEl.empty();
 
         new Setting(this.containerEl)
-            .setName('Always open in new tab')
-            .setDesc('Open files in a new tab by default.')
+            .setName(t('settings.openInNewTab.name'))
+            .setDesc(t('settings.openInNewTab.description'))
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.openInNewTab)
@@ -81,8 +86,8 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('Preview tabs')
-            .setDesc('VS Code style preview tabs. Initially open tabs as "preview" until interacted with. Preview tabs will be replaced instead of opening in new tab.')
+            .setName(t('settings.previewTabs.name'))
+            .setDesc(t('settings.previewTabs.description'))
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.previewTabs)
@@ -96,8 +101,8 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             .setCssStyles({opacity: this.plugin.settings.openInNewTab ? "" : "50%"});
 
         new Setting(this.containerEl)
-            .setName('Prevent duplicate tabs')
-            .setDesc('If a tab is already open, switch to it instead of re-opening it.')
+            .setName(t('settings.deduplicateTabs.name'))
+            .setDesc(t('settings.deduplicateTabs.description'))
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.deduplicateTabs)
@@ -108,8 +113,8 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('Deduplicate across tab groups')
-            .setDesc('Whether to switch to already open file even if its in a split pane or popout window')
+            .setName(t('settings.deduplicateAcrossTabGroups.name'))
+            .setDesc(t('settings.deduplicateAcrossTabGroups.description'))
             .addToggle(toggle =>
                 toggle
                     .setValue(this.plugin.settings.deduplicateAcrossTabGroups)
@@ -123,11 +128,8 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             .setCssStyles({opacity: this.plugin.settings.deduplicateTabs ? "" : "50%"});
 
         new Setting(this.containerEl)
-            .setName('Focus explicit new tabs')
-            .setDesc(
-                'Immediately switch to new tabs opened via middle or ctrl click instead of opening them in the ' +
-                'background. New tabs created by regular click will always focus regardless.'
-            )
+            .setName(t('settings.focusNewTabs.name'))
+            .setDesc(t('settings.focusNewTabs.description'))
             // this is just an alias for Obsidian Settings > Editor > Always focus new tabs
             .addToggle(toggle =>
                 toggle
@@ -139,11 +141,11 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('New tab placement')
-            .setDesc('Place new tabs...')
+            .setName(t('settings.newTabPlacement.name'))
+            .setDesc(t('settings.newTabPlacement.description'))
             .addDropdown(dropdown => 
                 dropdown
-                    .addOptions(NEW_TAB_PLACEMENTS)
+                    .addOptions(translateOptions(NEW_TAB_PLACEMENTS))
                     .setValue(this.plugin.settings.newTabPlacement)
                     .onChange(async value => {
                         await this.plugin.updateSettings({
@@ -154,11 +156,11 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             )
 
         new Setting(this.containerEl)
-            .setName('New tab tab group placement')
-            .setDesc('When the workspace is split, prefer to open new tabs...')
-            .addDropdown(toggle =>
-                toggle
-                    .addOptions(NEW_TAB_TAB_GROUP_PLACEMENTS)
+            .setName(t('settings.newTabTabGroupPlacement.name'))
+            .setDesc(t('settings.newTabTabGroupPlacement.description'))
+            .addDropdown(dropdown =>
+                dropdown
+                    .addOptions(translateOptions(NEW_TAB_TAB_GROUP_PLACEMENTS))
                     .setValue(this.plugin.settings.newTabTabGroupPlacement)
                     .onChange(async (value) => {
                         await this.plugin.updateSettings({
@@ -169,19 +171,19 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             );
 
         new Setting(this.containerEl)
-            .setName('Mod click behavior')
-            .setDesc('On ctrl/cmd/middle click open links...')
+            .setName(t('settings.modClickBehavior.name'))
+            .setDesc(t('settings.modClickBehavior.description'))
             .addDropdown(dropdown => {
-                dropdown.addOption("tab", MOD_CLICK_BEHAVIOR['tab']);
+                dropdown.addOption("tab", t(MOD_CLICK_BEHAVIOR['tab']));
                 if (this.plugin.settings.openInNewTab) {
-                    dropdown.addOption("same", MOD_CLICK_BEHAVIOR['same'])
+                    dropdown.addOption("same", t(MOD_CLICK_BEHAVIOR['same']))
                 }
                 if (this.plugin.settings.deduplicateTabs) {
-                    dropdown.addOption("allow_duplicate", MOD_CLICK_BEHAVIOR['allow_duplicate'])
+                    dropdown.addOption("allow_duplicate", t(MOD_CLICK_BEHAVIOR['allow_duplicate']))
                 }
-                dropdown.addOption("opposite", MOD_CLICK_BEHAVIOR['opposite'])
+                dropdown.addOption("opposite", t(MOD_CLICK_BEHAVIOR['opposite']))
                 if (this.plugin.settings.previewTabs) {
-                    dropdown.addOption("no_preview", MOD_CLICK_BEHAVIOR['no_preview'])
+                    dropdown.addOption("no_preview", t(MOD_CLICK_BEHAVIOR['no_preview']))
                 }
                 dropdown
                     .setValue(this.plugin.settings.modClickBehavior)
@@ -194,20 +196,14 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
             })
 
         new Setting(this.containerEl)
-            .setName('Disable on this device')
-            .setDesc(
-                'When enabled, this plugin does nothing on the current device. ' +
-                'This setting is per-device and is not synced. Restart Obsidian or toggle the plugin off and on to apply.'
-            )
+            .setName(t('settings.disableOnDevice.name'))
+            .setDesc(t('settings.disableOnDevice.description'))
             .addToggle(toggle =>
                 toggle
                     .setValue(isDisabledOnDevice())
                     .onChange((value) => {
                         setDisabledOnDevice(value);
-                        new Notice(
-                            `Open Tab Settings will be ${value ? 'disabled' : 'enabled'} on this device after restart.`,
-                            5000,
-                        );
+                        new Notice(t('settings.disableOnDevice.notice'), 5000);
                         this.display();
                     })
             );

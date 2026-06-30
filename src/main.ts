@@ -31,7 +31,7 @@ function isMainLeaf(leaf: WorkspaceLeaf) {
 }
 
 function capitalize(s: string) {
-    return s[0].toUpperCase() + s.slice(1);
+    return s.slice(0, 1).toUpperCase() + s.slice(1);
 }
 
 /**
@@ -376,7 +376,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     /**
-     * Gets all tab groups, sorted by active time.
+     * Gets all tab groups.
      */
     private getAllTabGroups(root: WorkspaceItem): TabGroup[] {
         const tabGroups: Set<TabGroup> = new Set(); // sets are ordered

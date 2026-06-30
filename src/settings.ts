@@ -91,7 +91,9 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
                         this.display();
                     })
             )
-            .setDisabled(!this.plugin.settings.openInNewTab);
+            .setDisabled(!this.plugin.settings.openInNewTab)
+            .settingEl
+            .setCssStyles({opacity: this.plugin.settings.openInNewTab ? "" : "50%"});
 
         new Setting(this.containerEl)
             .setName('Prevent duplicate tabs')

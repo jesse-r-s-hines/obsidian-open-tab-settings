@@ -1,6 +1,8 @@
 import esbuild from "esbuild";
 import process from "process";
 import { builtinModules } from "node:module";
+import path from "path";
+import fs from "fs";
 
 const banner =
 `/*
@@ -17,6 +19,32 @@ const context = await esbuild.context({
     },
     entryPoints: ["src/main.ts"],
     bundle: true,
+    plugins: [{
+        name: "import-glob",
+        setup: (build) => {
+            build.onResolve({ filter: /^glob:.*$/ }, async (args) => {
+                return {
+                    path: args.path.replace(/^glob:/, ''),
+                    namespace: 'import-glob',
+                    pluginData: { resolveDir: args.resolveDir },
+                };
+            });
+            build.onLoad({ filter: /.*/, namespace: 'import-glob' }, async (args) => {
+                const files = fs.globSync(args.path, {cwd: args.pluginData.resolveDir})
+                    .map((f) => f.split(path.sep).join('/'))
+                    .sort();
+                return {
+                    contents: [
+                        ...files.map((module, i) => `import m${i} from './${module}'`),
+                        "export default {",
+                            ...files.map((f, i) => `${JSON.stringify(path.basename(f, path.extname(f)))}: m${i},`),
+                        "}",
+                    ].join("\n"),
+                    resolveDir: args.pluginData.resolveDir,
+                };
+            });
+        },
+    }],
     external: [
         "obsidian",
         "electron",

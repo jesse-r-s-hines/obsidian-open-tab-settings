@@ -1,11 +1,6 @@
 import i18next from 'i18next';
 import { getLanguage } from 'obsidian';
-
-// esbuild doesn't have an easy way to include all files in a dir, so we'll list them manually
-import en from './locales/en.json';
-const locales = {
-    en,
-}
+import locales from 'glob:./locales/*.json';
 
 export async function initializeI18n() {
     return await i18next.init({

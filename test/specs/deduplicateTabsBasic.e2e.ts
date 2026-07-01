@@ -172,6 +172,7 @@ describe('Test basic deduplicate', function() {
     it('empty tab', async function() {
         await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
+        await browser.pause(500) // TODO: not sure why I need a manual pause here
         await workspacePage.openFileViaQuickSwitcher("A.md")
         await workspacePage.matchWorkspace([[{type: "markdown", file: "A.md", active: true}]])
     })
@@ -181,6 +182,7 @@ describe('Test basic deduplicate', function() {
         await workspacePage.openFile("B.md");
         await workspacePage.openFile("A.md");
         await workspacePage.setActiveFile("A.md");
+        await browser.pause(500) // TODO: not sure why I need a manual pause here
         await workspacePage.openLinkInNewTab(await workspacePage.getLink("B"));
         // Should still deduplicate if opened in new tab explicitly
         await workspacePage.matchWorkspace([[

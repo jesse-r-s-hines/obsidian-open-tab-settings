@@ -53,4 +53,24 @@ describe('Test basic deduplicate', function() {
             [{file: "Loop.md", active: true, currentTab: true}],
         ]);
     })
+
+    it('internal link with multiple duplicates', async function() {
+        await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: true });
+        await workspacePage.openFile("Loop.md");
+        await workspacePage.openFile("Loop.md");
+        const [loop1, loop2] = (await workspacePage.getAllLeaves())[0];
+
+        await workspacePage.setActiveFile(loop2.id);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md", id: loop1.id},
+            {type: "markdown", file: "Loop.md", id: loop2.id, active: true},
+        ]]);
+
+        await workspacePage.openLink(await workspacePage.getLink("Loop.md#Subheading"));
+
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "Loop.md", id: loop1.id},
+            {type: "markdown", file: "Loop.md", id: loop2.id, active: true},
+        ]]);
+    })
 })

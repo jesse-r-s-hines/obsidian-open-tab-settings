@@ -14,6 +14,7 @@ type LeafInfo = {
     active: boolean,
     /** True if this leaf is selected within its tab group */
     currentTab: boolean,
+    isPreview: boolean,
 }
 
 class WorkspacePage {
@@ -74,8 +75,8 @@ class WorkspacePage {
 
             const activeLeaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
 
-            return [...tabGroups].map(leaf =>
-                (leaf.children as WorkspaceLeaf[]).map(leaf => {
+            return tabGroups.map(group =>
+                (group.children as WorkspaceLeaf[]).map(leaf => {
                     return {
                         parent: leaf.parent.id,
                         id: leaf.id,
@@ -85,6 +86,7 @@ class WorkspacePage {
                         deferred: leaf.isDeferred, pinned: leaf.pinned,
                         active: activeLeaf == leaf,
                         currentTab: leaf.parent.children.indexOf(leaf) === leaf.parent.currentTab,
+                        isPreview: leaf.openTabSettings?.isPreview ?? false,
                     };
                 })
             );
@@ -135,8 +137,19 @@ class WorkspacePage {
                 return equals(actual, matcher);
             });
         } catch {}
-        // Call expect again, this will give us nice error messages if value doesn't match.
-        expect(actual).toEqual(matcher);
+        if (!equals(actual, matcher)) {
+            // Show a pretty error message with only the relevant keys
+            const keys = [...new Set(expected.flat().flatMap(l => Object.keys(l)))];
+            const filteredActual = actual.map(group =>
+                group.map(leaf => Object.fromEntries(keys.map(k => [k, leaf[k as keyof LeafInfo]])),
+            ));
+
+            throw new Error(
+                "Workspace did not match!\n\n" +
+                "Expected:\n" + JSON.stringify(expected, null, 2) + "\n\n" +
+                "Actual:\n" + JSON.stringify(filteredActual, null, 2),
+            );
+        }
     }
 
     /**
@@ -155,8 +168,10 @@ class WorkspacePage {
      * Pins the specified tab. Note it also focuses the tab.
      */
     async pinTab(pathOrId: string) {
-        await this.setActiveFile(pathOrId);
-        await browser.executeObsidianCommand("workspace:toggle-pin");
+        const leafInfo = await this.getLeaf(pathOrId);
+        await browser.executeObsidian(({app}, leafInfo) => {
+            return app.workspace.getLeafById(leafInfo.id)!.setPinned(true);
+        }, leafInfo);
     }
 
     async getLink(text: string): Promise<ChainablePromiseElement> {
@@ -174,7 +189,7 @@ class WorkspacePage {
     }
 
     async openContextMenu(elem: ChainablePromiseElement) {
-        await this.setConfig('nativeMenus', false);
+        // this requires nativeMenus to be set "false" (see appearance.json)
         const platform = await obsidianPage.getPlatform();
         if (platform.isDesktopApp) {
             await elem.click({button: "right"});
@@ -226,6 +241,10 @@ class WorkspacePage {
         await browser.executeObsidianCommand("switcher:open");
         await browser.keys(path);
         await browser.keys(Key.Enter);
+
+        if ((await obsidianPage.getPlatform()).isMobile) {
+            await browser.pause(500); // have to wait a bit for the animation to complete
+        }
     }
 
     async openFileViaFileExplorer(path: string): Promise<void> {
@@ -249,10 +268,28 @@ class WorkspacePage {
         }, name, value)
     }
 
-    async removeFile(file: string) {
-        await browser.executeObsidian(async ({app}, file) => {
-            await app.vault.delete(app.vault.getAbstractFileByPath(file)!);
-        }, file);
+    /** Replaces the leaf's content */
+    async editLeaf(pathOrId: string, text: string) {
+        const leafInfo = await workspacePage.getLeaf(pathOrId);
+        await browser.executeObsidian(async ({app, obsidian}, leafInfo, text) => {
+            const leaf = app.workspace.getLeafById(leafInfo.id)!;
+            app.workspace.setActiveLeaf(leaf, {focus: true});
+            await leaf.view.setState({...leaf.view.getState(), mode: "source"}, {history: false});
+            if (leaf.view instanceof obsidian.MarkdownView) {
+                leaf.view.editor.replaceSelection(text);
+            } else {
+                throw Error("Not a markdown view")
+            }
+        }, leafInfo, text);
+    }
+
+    /** double click on the leaf's tab header (for testing tab preview) */
+    async doubleClickTab(pathOrId: string) {
+        const leafInfo = await workspacePage.getLeaf(pathOrId);
+        await browser.executeObsidian(({app}, leafInfo) => {
+            const elem = app.workspace.getLeafById(leafInfo.id)!.tabHeaderEl;
+            elem.dispatchEvent(new MouseEvent("dblclick", {bubbles: true}));
+        }, leafInfo);
     }
 }
 

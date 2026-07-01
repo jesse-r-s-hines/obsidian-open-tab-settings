@@ -27,7 +27,7 @@ const tests = () => {
         await workspacePage.openFile("A.md");
         await browser.executeObsidianCommand("workspace:new-tab");
         await workspacePage.matchWorkspace([[
-            {type: "markdown", file: "A.md"}, {type: "empty", active: true},
+            {type: "markdown", file: "A.md", isPreview: false}, {type: "empty", active: true, isPreview: false},
         ]]);
     })
 

@@ -1,12 +1,15 @@
 import {
     Plugin, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating, View, TFile, PaneType, WorkspaceTabs,
-    WorkspaceItem, Platform, Keymap, Notice, App,
+    WorkspaceItem, Platform, Keymap, Notice, App, MarkdownView,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 import {
     OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS, NEW_TAB_TAB_GROUP_PLACEMENTS,
+    isDisabledOnDevice,
 } from './settings';
 import { TabGroup } from './types';
+import { initializeI18n } from './i18n';
+import { t } from 'i18next';
 
 
 /**
@@ -14,7 +17,7 @@ import { TabGroup } from './types';
  * This is only needed if the view is not registered as the default view for a file extension.
  */
 const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
-    "md": ["excalidraw", "kanban"],
+    "md": ["excalidraw", "kanban", "smm"],
 }
 
 
@@ -27,10 +30,6 @@ function isEmptyLeaf(leaf: WorkspaceLeaf) {
 function isMainLeaf(leaf: WorkspaceLeaf) {
     const root = leaf.getRoot();
     return (root instanceof WorkspaceRoot || root instanceof WorkspaceFloating);
-}
-
-function capitalize(s: string) {
-    return s[0].toUpperCase() + s.slice(1);
 }
 
 /**
@@ -58,27 +57,15 @@ const OVERRIDES = {
     same: buildOverride(false, {openInNewTab: false}),
     allow_duplicate: buildOverride(false, {deduplicateTabs: false}),
     opposite: buildOverride("tab", {newTabTabGroupPlacement: "opposite"}),
+    no_preview: buildOverride("tab", {previewTabs: false}),
 }
-
-const DISABLED_KEY = "open-tab-settings:disabled-on-device";
-
-export function isDisabledOnDevice(): boolean {
-    return window.localStorage.getItem(DISABLED_KEY) === "true";
-}
-
-export function setDisabledOnDevice(value: boolean): void {
-    if (value) {
-        window.localStorage.setItem(DISABLED_KEY, "true");
-    } else {
-        window.localStorage.removeItem(DISABLED_KEY);
-    }
-}
-
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
 
     async onload() {
+        await initializeI18n();
+
         await this.loadSettings();
 
         this.addSettingTab(new OpenTabSettingsPluginSettingTab(this.app, this));
@@ -89,83 +76,95 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
         this.registerMonkeyPatches();
 
-        this.registerEvent(
-            this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
-                if (file instanceof TFile) {
-                    if (this.settings.openInNewTab) {
-                        menu.addItem((item) => {
-                            item.setSection("open");
-                            item.setIcon("file-minus")
-                            item.setTitle("Open in same tab");
-                            item.onClick(async () => {
-                                await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
-                            });
-                        });
-                    }
-                    if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
-                        menu.addItem((item) => {
-                            item.setSection("open");
-                            item.setIcon("files")
-                            item.setTitle("Open in duplicate tab");
-                            item.onClick(async () => {
-                                await this.app.workspace.getLeaf(OVERRIDES.allow_duplicate).openFile(file);
-                            });
-                        });
-                    }
-                    const activeLeaf = this.app.workspace.getMostRecentLeaf();
-                    if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
-                        menu.addItem((item) => {
-                            item.setSection("open");
-                            item.setIcon("lucide-split-square-horizontal")
-                            item.setTitle("Open in opposite tab group");
-                            item.onClick(async () => {
-                                await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
-                            });
-                        });
-                    }
-                }
-            })
-        );
-
         const commands = [
-            ["openInNewTab", "always open in new tab"],
-            ["deduplicateTabs", "prevent duplicate tabs"],
+            ["openInNewTab", t('settings.openInNewTab.name')],
+            ["deduplicateTabs", t('settings.deduplicateTabs.name')],
         ] as const;
         for (const [setting, name] of commands) {
             const id = setting.replace(/[A-Z]/g, l => `-${l.toLowerCase()}`);
 
             this.addCommand({
-                id: `toggle-${id}`, name: `Toggle ${name}`,
+                id: `toggle-${id}`, name: t('commands.toggle', { name }),
                 callback: async () => {
                     await this.updateSettings({[setting]: !this.settings[setting]});
-                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
                 },
             });
             this.addCommand({
-                id: `enable-${id}`, name: `Enable ${name}`,
+                id: `enable-${id}`, name: t('commands.enable', { name }),
                 callback: async () => {
                     await this.updateSettings({[setting]: true});
-                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
                 },
             });
             this.addCommand({
-                id: `disable-${id}`, name: `Disable ${name}`,
+                id: `disable-${id}`, name: t('commands.disable', { name }),
                 callback: async () => {
                     await this.updateSettings({[setting]: false});
-                    new Notice(`${capitalize(name)} ${this.settings[setting] ? 'ON' : 'OFF'}`, 2500);
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
                 },
             });
         }
         this.addCommand({
-            id: `cycle-tab-group-placement`, name: `Cycle tab group placement`,
+            id: `cycle-tab-group-placement`,
+            name: t('commands.cycle', {name: t('settings.newTabTabGroupPlacement.name')}),
             callback: async () => {
                 const values = Object.keys(NEW_TAB_TAB_GROUP_PLACEMENTS) as (keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS)[];
                 const index = values.findIndex(v => v == this.settings.newTabTabGroupPlacement);
                 const newValue = values[(index + 1) % values.length];
                 await this.updateSettings({newTabTabGroupPlacement: newValue});
-                new Notice(`Tab group placement: ${NEW_TAB_TAB_GROUP_PLACEMENTS[newValue]}`, 2500);
+                new Notice(`${t('settings.newTabTabGroupPlacement.name')}: ${t(NEW_TAB_TAB_GROUP_PLACEMENTS[newValue])}`, 2500);
             },
         });
+
+        this.registerEvent(this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
+            if (file instanceof TFile) {
+                if (this.settings.openInNewTab) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("file-minus")
+                        item.setTitle(t('menu.openInSameTab'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
+                        });
+                    });
+                }
+                if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("files")
+                        item.setTitle(t('menu.openInDuplicateTab'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.allow_duplicate).openFile(file);
+                        });
+                    });
+                }
+                const activeLeaf = this.app.workspace.getMostRecentLeaf();
+                if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("lucide-split-square-horizontal")
+                        item.setTitle(t('menu.openInOppositeTabGroup'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
+                        });
+                    });
+                }
+            }
+        }));
+
+        this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
+            if (info instanceof MarkdownView) {
+                this.setLeafIsPreview(info.leaf, false);
+            }
+        }))
+
+        this.register(() => {
+            this.app.workspace.iterateAllLeaves(l => {
+                this.setLeafIsPreview(l, false);
+                delete l.openTabSettings;
+            })
+        })
     }
 
     registerMonkeyPatches() {
@@ -194,8 +193,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
 
                     // we set these to be used in openFile so we can tell when to deduplicate files.
                     leaf.openTabSettings = {
-                        openMode, override,
-                        openedFrom: activeLeaf?.id,
+                        ...leaf.openTabSettings,
+                        openInfo: { openMode, override, openedFrom: activeLeaf?.id },
                     }
 
                     return leaf;
@@ -226,13 +225,12 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 return async function(this: WorkspaceLeaf, file, openState, ...args) {
                     // openFile doesn't return anything, but just in case that changes.
                     let result: void;
-                    let match: WorkspaceLeaf|undefined;
 
                     // these values are only valid immediately after creating a leaf. We clear them after openFile,
                     // and also clear them here if the leaf somehow gets populated without openFile
-                    if (!isEmptyLeaf(this)) delete this.openTabSettings;
+                    if (!isEmptyLeaf(this)) delete this.openTabSettings?.openInfo;
 
-                    const {openMode, override, openedFrom} = this.openTabSettings ?? {};
+                    const {openMode, override, openedFrom} = this.openTabSettings?.openInfo ?? {};
                     const settings = {...plugin.settings, ...override};
 
                     let matches = plugin.findMatchingLeaves(file);
@@ -254,28 +252,30 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         !!openState?.eState?.subpath &&
                         matches.some(l => l.id == openedFrom)
                     );
-                    const isMatch = matches.includes(this);
 
+                    let match: WorkspaceLeaf|undefined;
+                    if (matches.includes(this)) match = this; // eslint-disable-line @typescript-eslint/no-this-alias
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
-                    if (isInternalLink && !isSpecialOpen && !isMatch) {
+                    if (!match && isInternalLink && !isSpecialOpen) {
                         match = matches.find(l => l.id == openedFrom)!;
-                    } else if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0 && !isMatch) {
-                        // choose matches first from last opened from, then matches in same group, then fist in list.
-                        match = matches.find(l => l.id == openedFrom);
-                        if (!match) matches.find(l => l.parent == this.parent);
+                    }
+                    // choose matches first from last opened from, then matches in same group, then first in list.
+                    if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0) {
+                        if (!match) match = matches.find(l => l.id == openedFrom);
+                        if (!match) match = matches.find(l => l.parent == this.parent);
                         if (!match) match = matches[0];
                     }
 
-                    if (match) {
+                    if (match && match !== this) {
                         if (match.view.getViewType() == "kanban") {
                             // workaround for a bug in kanban. See
                             //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                             //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
-                            plugin.app.workspace.setActiveLeaf(matches[0]);
+                            plugin.app.workspace.setActiveLeaf(match);
                             result = undefined;
                         } else {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
-                            result = await oldMethod.call(matches[0], file, {
+                            result = await oldMethod.call(match, file, {
                                 ...openState,
                                 active: !!openState?.active || activeLeaf == this,
                             }, ...args);
@@ -298,7 +298,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         }
                     }
 
-                    delete this.openTabSettings;
+                    delete this.openTabSettings?.openInfo;
 
                     return result;
                 }
@@ -333,8 +333,27 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
     }
 
-    async updateSettings(settings: Partial<OpenTabSettingsPluginSettings>) {
+    async updateSettings(newSettings: Partial<OpenTabSettingsPluginSettings>) {
+        const settings = {...this.settings, ...newSettings}
+
+        if (settings.previewTabs == true && !settings.openInNewTab) {
+            if (newSettings.previewTabs) throw Error(`Invalid settings: ${JSON.stringify(newSettings)}`)
+            settings.previewTabs = false;
+        }
+
+        if (
+            (settings.modClickBehavior == 'same' && !settings.openInNewTab) ||
+            (settings.modClickBehavior == 'no_preview' && !settings.previewTabs) ||
+            (settings.modClickBehavior == 'allow_duplicate' && !settings.deduplicateTabs)
+        ) {
+            if (newSettings.modClickBehavior) throw Error(`Invalid settings: ${JSON.stringify(newSettings)}`)
+            settings.modClickBehavior = 'tab'
+        }
+
         Object.assign(this.settings, settings);
+        if (!this.settings.previewTabs) {
+            this.app.workspace.iterateAllLeaves(l => this.setLeafIsPreview(l, false));
+        }
         await this.saveData(this.settings);
     }
 
@@ -358,7 +377,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     /**
-     * Gets all tab groups, sorted by active time.
+     * Gets all tab groups.
      */
     private getAllTabGroups(root: WorkspaceItem): TabGroup[] {
         const tabGroups: Set<TabGroup> = new Set(); // sets are ordered
@@ -368,6 +387,33 @@ export default class OpenTabSettingsPlugin extends Plugin {
             }
         });
         return [...tabGroups];
+    }
+
+    private setLeafIsPreview(leaf: WorkspaceLeaf, isPreview: boolean) {
+        if (leaf.openTabSettings?.isPreview === isPreview) return;
+
+        leaf.openTabSettings = {...leaf.openTabSettings, isPreview};
+        leaf.tabHeaderEl.toggleClass("open-tab-settings-is-preview", isPreview);
+        if (isPreview) {
+            if (!leaf.openTabSettings.eventCleanup) {
+                // I've confirmed that the events automatically get cleaned up when the leaf is closed. However we can't
+                // use this.registerEvent as that prevents leaf garbage collection. So instead add a cleanup function to
+                // the leaf. We'll call that on plugin disable, and after unpreview of a leaf
+                const unPreview = () => { this.setLeafIsPreview(leaf, false); };
+                leaf.on("pinned-change", unPreview);
+                leaf.tabHeaderEl.addEventListener("dblclick", unPreview);
+                leaf.openTabSettings.eventCleanup = () => {
+                    leaf.off('pinned-change', unPreview);
+                    leaf.tabHeaderEl.removeEventListener('dblclick', unPreview);
+                }
+            }
+            // one preview tab per tab group (this shouldn't trigger under normal circumstances, but with empty tabs
+            // there's a few edge cases where createNewLeaf might end up creating 2 preview tabs in a group)
+            leaf.parent.children.filter(l => l !== leaf).forEach(l => this.setLeafIsPreview(l, false));
+        } else if (leaf.openTabSettings.eventCleanup) {
+            leaf.openTabSettings.eventCleanup();
+            delete leaf.openTabSettings?.eventCleanup;
+        }
     }
 
     /**
@@ -383,12 +429,6 @@ export default class OpenTabSettingsPlugin extends Plugin {
         if (!activeLeaf) throw new Error("No tab group found.");
         const activeTabGroup = activeLeaf.parent;
         const activeIndex = activeTabGroup.children.indexOf(activeLeaf);
-
-        // This is default Obsidian behavior, if active leaf is empty new tab replaces it instead of making a new one.
-        if (isEmptyLeaf(activeLeaf)) {
-            return activeLeaf;
-        }
-
         let group: TabGroup|undefined;
         let index: number|undefined;
 
@@ -426,13 +466,26 @@ export default class OpenTabSettingsPlugin extends Plugin {
             }
         }
 
-        let newLeaf: WorkspaceLeaf;
-        // we re-use empty tabs more aggressively than default Obsidian. If the tab at the new location is empty, re-use
-        // it instead of creating a new one.
+        let newLeaf: WorkspaceLeaf|undefined;
+
+        // This is default Obsidian behavior, if active leaf is empty new tab replaces it instead of making a new one.
+        if (isEmptyLeaf(activeLeaf) && activeLeaf.canNavigate()) {
+            newLeaf = activeLeaf;
+        }
+
         const leafToDisplace = group.children[Math.min(index, group.children.length - 1)];
-        if (isEmptyLeaf(leafToDisplace)) {
+        if (!newLeaf && isEmptyLeaf(leafToDisplace) && leafToDisplace.canNavigate()) {
+            // we re-use empty tabs more aggressively than default Obsidian. If the tab at the new location is empty,
+            // re-use it instead of creating a new one.
             newLeaf = leafToDisplace;
-        } else {
+        }
+
+        if (!newLeaf && settings.previewTabs) {
+            // ignore index and use preview tab in group if there is one
+            newLeaf = group.children.find(l => l.openTabSettings?.isPreview);
+        }
+
+        if (!newLeaf) {
             newLeaf = new (WorkspaceLeaf as new (app: App) => WorkspaceLeaf)(this.app);
             const currentTab = group.currentTab;
             // If new tab is inserted before the currently tab in a group, and we aren't setting the new tab active, we
@@ -443,6 +496,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             }
         }
 
+        this.setLeafIsPreview(newLeaf, settings.previewTabs);
         if (focus) {
             workspace.setActiveLeaf(newLeaf);
         }

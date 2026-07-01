@@ -1,0 +1,73 @@
+{
+  "commands": {
+    "toggle": "Toggle {{name}}",
+    "enable": "Enable {{name}}",
+    "disable": "Disable {{name}}",
+    "cycle": "Cycle {{name}}",
+    "enabled": "ON",
+    "disabled": "OFF"
+  },
+  "menu": {
+    "openInSameTab": "Open in same tab",
+    "openInDuplicateTab": "Open in duplicate tab",
+    "openInOppositeTabGroup": "Open in opposite tab group"
+  },
+  "settings": {
+    "deduplicateAcrossTabGroups": {
+      "name": "Deduplicate across tab groups",
+      "description": "Whether to switch to already open file even if its in a split pane or popout window"
+    },
+    "deduplicateTabs": {
+      "name": "Prevent duplicate tabs",
+      "description": "If a tab is already open, switch to it instead of re-opening it."
+    },
+    "disableOnDevice": {
+      "name": "Disable on this device",
+      "description": "When enabled, this plugin does nothing on the current device. This setting is per-device and is not synced. Restart Obsidian or toggle the plugin off and on to apply.",
+      "notice": "Restart Obsidian for disable on this device to take effect"
+    },
+    "focusNewTabs": {
+      "name": "Focus explicit new tabs",
+      "description": "Immediately switch to new tabs opened via middle or ctrl click instead of opening them in the background. New tabs created by regular click will always focus regardless."
+    },
+    "modClickBehavior": {
+      "name": "Mod click behavior",
+      "description": "On ctrl/cmd/middle click open links...",
+      "options": {
+        "allow_duplicate": "In duplicate tab",
+        "no_preview": "Open persistent (non-preview) tab",
+        "opposite": "In opposite tab group",
+        "same": "In same tab",
+        "tab": "In new tab"
+      }
+    },
+    "newTabPlacement": {
+      "name": "New tab placement",
+      "description": "Place new tabs...",
+      "options": {
+        "after-active": "After active tab",
+        "after-pinned": "After pinned tabs",
+        "beginning": "At beginning",
+        "end": "At end"
+      }
+    },
+    "newTabTabGroupPlacement": {
+      "name": "New tab tab group placement",
+      "description": "When the workspace is split, prefer to open new tabs...",
+      "options": {
+        "first": "In first tab group",
+        "last": "In last tab group",
+        "opposite": "In opposite tab group",
+        "same": "In same tab group"
+      }
+    },
+    "openInNewTab": {
+      "name": "Always open in new tab",
+      "description": "Open files in a new tab by default."
+    },
+    "previewTabs": {
+      "name": "Preview tabs",
+      "description": "VS Code style preview tabs. Initially open tabs as \"preview\" until interacted with. Preview tabs will be replaced instead of opening in new tab."
+    }
+  }
+}

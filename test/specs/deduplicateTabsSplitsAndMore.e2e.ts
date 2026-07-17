@@ -147,6 +147,25 @@ describe('Test deduplicate for splits and windows', function() {
 
     it('deduplicate prefers same tab group', async function() {
         await workspacePage.openFile("A.md");
+        await workspacePage.openFile("D.md");
+        await workspacePage.setActiveFile("D.md")
+        await workspacePage.openLinkToRight(await workspacePage.getLink("Loop"));
+        await workspacePage.openFile("A.md");
+        await workspacePage.setActiveFile("Loop.md");
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}, {file: "D.md", currentTab: true}],
+            [{file: "Loop.md", active: true}, {file: "A.md"}]
+        ]);
+        await workspacePage.openFileViaQuickSwitcher("A.md");
+        await workspacePage.matchWorkspace([
+            [{file: "A.md"}, {file: "D.md", currentTab: true}],
+            [{file: "Loop.md"}, {file: "A.md", active: true}]
+        ]);
+    })
+
+    it('deduplicate prefers displayed tabs', async function() {
+        await workspacePage.openFile("A.md");
         await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
         await workspacePage.setActiveFile("B.md")
         await workspacePage.openFile("A.md");
@@ -158,8 +177,8 @@ describe('Test deduplicate for splits and windows', function() {
         ]);
         await workspacePage.openLink(await workspacePage.getLink("A"));
         await workspacePage.matchWorkspace([
-            [{file: "A.md"}],
-            [{file: "B.md"}, {file: "A.md", active: true}],
+            [{file: "A.md", active: true}],
+            [{file: "B.md"}, {file: "A.md"}],
         ]);
     })
 })

@@ -263,7 +263,13 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // choose matches first from last opened from, then matches in same group, then first in list.
                     if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0) {
                         if (!match) match = matches.find(l => l.id == openedFrom);
+                        // match that is already displayed in this group
+                        if (!match) match = matches.find(l => l.isVisible() && l.parent == this.parent);
+                        // match that is already displayed in another group
+                        if (!match) match = matches.find(l => l.isVisible());
+                        // matches in same group
                         if (!match) match = matches.find(l => l.parent == this.parent);
+                        // first match in list
                         if (!match) match = matches[0];
                     }
 

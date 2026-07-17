@@ -168,7 +168,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     registerMonkeyPatches() {
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        // eslint-disable-next-line @typescript-eslint/no-this-alias -- can't use arrow functions here
         const plugin = this;
 
         this.register(monkeyAround.around(Workspace.prototype, {
@@ -254,7 +254,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     );
 
                     let match: WorkspaceLeaf|undefined;
-                    if (matches.includes(this)) match = this; // eslint-disable-line @typescript-eslint/no-this-alias
+                    // eslint-disable-next-line -- @typescript-eslint/no-this-alias match
+                    if (matches.includes(this)) match = this;
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
                     if (!match && isInternalLink && !isSpecialOpen) {
                         match = matches.find(l => l.id == openedFrom)!;
@@ -512,7 +513,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const workspace = this.app.workspace;
         const settings = {...this.settings, ...override};
 
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- needed for compatibility
         const activeLeaf = workspace.activeLeaf;
         if (activeLeaf?.canNavigate()) {
             return activeLeaf;

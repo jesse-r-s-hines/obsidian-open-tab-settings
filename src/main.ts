@@ -157,7 +157,18 @@ export default class OpenTabSettingsPlugin extends Plugin {
             if (info instanceof MarkdownView) {
                 this.setLeafIsPreview(info.leaf, false);
             }
-        }))
+        }));
+
+        // double click in file explorer opens "non preview" like how VSCode does
+        this.registerDomEvent(document.body, 'dblclick', (e) => {
+            if (!(this.settings.previewTabs) || !(e.target instanceof Element)) return;
+            const filePath = e.target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
+            if (!filePath) return;
+            const leaf = this.app.workspace.getMostRecentLeaf();
+            if (leaf?.getViewState()?.state?.file == filePath) {
+                this.setLeafIsPreview(leaf, false);
+            }
+        });
 
         this.register(() => {
             this.app.workspace.iterateAllLeaves(l => {

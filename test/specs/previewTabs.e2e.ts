@@ -210,6 +210,7 @@ describe('Preview tabs', function() {
     })
 
     it("open new file via file explorer double click", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
         const expandAllButton = $(".nav-action-button[aria-label='Expand all']");
         if (await expandAllButton.isExisting()) await expandAllButton.click();
 
@@ -220,6 +221,7 @@ describe('Preview tabs', function() {
     });
 
     it("file explorer double click open file", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
         await workspacePage.openFileViaFileExplorer("A.md");
         await workspacePage.matchWorkspace([[
             {file: "A.md", isPreview: true, currentTab: true},

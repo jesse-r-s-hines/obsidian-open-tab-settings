@@ -160,6 +160,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }));
 
         // double click in file explorer opens "non preview" like how VSCode does
+        // eslint-disable-next-line obsidianmd/prefer-active-doc -- file explorer is only on main window
         this.registerDomEvent(document.body, 'dblclick', (e) => {
             if (!(this.settings.previewTabs) || !(e.target instanceof Element)) return;
             const filePath = e.target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
@@ -265,7 +266,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     );
 
                     let match: WorkspaceLeaf|undefined;
-                    // eslint-disable-next-line -- @typescript-eslint/no-this-alias match
+                    // eslint-disable-next-line @typescript-eslint/no-this-alias -- match
                     if (matches.includes(this)) match = this;
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
                     if (!match && isInternalLink && !isSpecialOpen) {

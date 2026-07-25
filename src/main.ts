@@ -159,6 +159,26 @@ export default class OpenTabSettingsPlugin extends Plugin {
             }
         }))
 
+        // Double-click on a file in the file explorer should confirm the preview tab (exit preview mode).
+        // This mirrors the built-in dblclick on tab header behavior.
+        this.registerDomEvent(document, "dblclick", (e: MouseEvent) => {
+            const target = (e.target as HTMLElement).closest('.nav-file-title');
+            if (!target) return;
+            if (!this.settings.previewTabs) return;
+
+            const filePath = target.getAttribute('data-path');
+            if (!filePath) return;
+
+            // Small delay to let the first click's async openFile finish setting up the preview leaf.
+            setTimeout(() => {
+                this.app.workspace.iterateAllLeaves(leaf => {
+                    if (leaf.openTabSettings?.isPreview && leaf.view.getState()?.file === filePath) {
+                        this.setLeafIsPreview(leaf, false);
+                    }
+                });
+            }, 100);
+        });
+
         this.register(() => {
             this.app.workspace.iterateAllLeaves(l => {
                 this.setLeafIsPreview(l, false);

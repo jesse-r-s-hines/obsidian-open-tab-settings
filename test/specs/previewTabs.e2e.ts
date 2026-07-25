@@ -208,4 +208,72 @@ describe('Preview tabs', function() {
             {type: "markdown", file: "B.md", active: true, isPreview: true},
         ]]);
     })
+
+    it("open new file via file explorer double click", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+        const expandAllButton = $(".nav-action-button[aria-label='Expand all']");
+        if (await expandAllButton.isExisting()) await expandAllButton.click();
+
+        await $(".nav-files-container [data-path='A.md']").doubleClick();
+        await workspacePage.matchWorkspace([[
+            {file: "A.md", isPreview: false},
+        ]]);
+    });
+
+    it("file explorer double click open file", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+        await workspacePage.openFileViaFileExplorer("A.md");
+        await workspacePage.matchWorkspace([[
+            {file: "A.md", isPreview: true, currentTab: true},
+        ]]);
+        await $(".nav-files-container [data-path='A.md']").doubleClick();
+        await workspacePage.matchWorkspace([[
+            {file: "A.md", isPreview: false, currentTab: true},
+        ]]);
+
+        // repeat has no effect
+        await $(".nav-files-container [data-path='A.md']").doubleClick();
+        await workspacePage.matchWorkspace([[
+            {file: "A.md", isPreview: false, currentTab: true},
+        ]]);
+    });
+
+    it("file explorer double click uses most recent", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+
+        await workspacePage.openFileViaFileExplorer("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.openFileViaFileExplorer("A.md");
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md", isPreview: true}],
+            [{file: "B.md", isPreview: false}, {file: "A.md", isPreview: true, active: true}],
+        ]);
+
+        await $(".nav-files-container [data-path='A.md']").doubleClick();
+        await workspacePage.matchWorkspace([
+            [{file: "A.md", isPreview: true}],
+            [{file: "B.md", isPreview: false}, {file: "A.md", isPreview: false}],
+        ]);
+    });
+
+    it("file explorer double click uses most recent 2", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+
+        await workspacePage.openFileViaFileExplorer("A.md");
+        await workspacePage.openLinkToRight(await workspacePage.getLink("B"));
+        await workspacePage.openFileViaFileExplorer("A.md");
+        await workspacePage.setActiveFile((await workspacePage.getAllLeaves())[0][0].id);
+
+        await workspacePage.matchWorkspace([
+            [{file: "A.md", isPreview: true, active: true}],
+            [{file: "B.md", isPreview: false}, {file: "A.md", isPreview: true}],
+        ]);
+
+        await $(".nav-files-container [data-path='A.md']").doubleClick();
+        await workspacePage.matchWorkspace([
+            [{file: "A.md", isPreview: false}],
+            [{file: "B.md", isPreview: false}, {file: "A.md", isPreview: true}],
+        ]);
+    });
 })

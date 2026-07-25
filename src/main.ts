@@ -157,7 +157,19 @@ export default class OpenTabSettingsPlugin extends Plugin {
             if (info instanceof MarkdownView) {
                 this.setLeafIsPreview(info.leaf, false);
             }
-        }))
+        }));
+
+        // double click in file explorer opens "non preview" like how VSCode does
+        // eslint-disable-next-line obsidianmd/prefer-active-doc -- file explorer is only on main window
+        this.registerDomEvent(document.body, 'dblclick', (e) => {
+            if (!(this.settings.previewTabs) || !(e.target instanceof Element)) return;
+            const filePath = e.target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
+            if (!filePath) return;
+            const leaf = this.app.workspace.getMostRecentLeaf();
+            if (leaf?.getViewState()?.state?.file == filePath) {
+                this.setLeafIsPreview(leaf, false);
+            }
+        });
 
         this.register(() => {
             this.app.workspace.iterateAllLeaves(l => {
@@ -168,7 +180,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     registerMonkeyPatches() {
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        // eslint-disable-next-line @typescript-eslint/no-this-alias -- can't use arrow functions here
         const plugin = this;
 
         this.register(monkeyAround.around(Workspace.prototype, {
@@ -253,35 +265,44 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         matches.some(l => l.id == openedFrom)
                     );
 
-                    let match: WorkspaceLeaf|undefined;
-                    if (matches.includes(this)) match = this; // eslint-disable-line @typescript-eslint/no-this-alias
+                    let target: WorkspaceLeaf|undefined;
+                    // eslint-disable-next-line @typescript-eslint/no-this-alias -- target
+                    if (matches.includes(this)) target = this;
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
-                    if (!match && isInternalLink && !isSpecialOpen) {
-                        match = matches.find(l => l.id == openedFrom)!;
+                    if (!target && isInternalLink && !isSpecialOpen) {
+                        target = matches.find(l => l.id == openedFrom)!;
                     }
                     // choose matches first from last opened from, then matches in same group, then first in list.
                     if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0) {
-                        if (!match) match = matches.find(l => l.id == openedFrom);
-                        if (!match) match = matches.find(l => l.parent == this.parent);
-                        if (!match) match = matches[0];
+                        if (!target) target = matches.find(l => l.id == openedFrom);
+                        // match that is already displayed in this group
+                        if (!target) target = matches.find(l => l.isVisible() && l.parent == this.parent);
+                        // match that is already displayed in another group
+                        if (!target) target = matches.find(l => l.isVisible());
+                        // matches in same group
+                        if (!target) target = matches.find(l => l.parent == this.parent);
+                        // first match in list
+                        if (!target) target = matches[0];
                     }
+                    // eslint-disable-next-line @typescript-eslint/no-this-alias -- target
+                    if (!target) target = this;
 
-                    if (match && match !== this) {
-                        if (match.view.getViewType() == "kanban") {
+                    if (target !== this) {
+                        if (target.view.getViewType() == "kanban") {
                             // workaround for a bug in kanban. See
                             //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                             //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
-                            plugin.app.workspace.setActiveLeaf(match);
+                            plugin.app.workspace.setActiveLeaf(target);
                             result = undefined;
                         } else {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
-                            result = await oldMethod.call(match, file, {
+                            result = await oldMethod.call(target, file, {
                                 ...openState,
                                 active: !!openState?.active || activeLeaf == this,
                             }, ...args);
                         }
                     } else { // use default behavior
-                        result = await oldMethod.call(this, file, openState, ...args);
+                        result = await oldMethod.call(target, file, openState, ...args);
                     }
 
                     // If the leaf is still empty, close it. This can happen if the file was de-duplicated while
@@ -512,7 +533,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const workspace = this.app.workspace;
         const settings = {...this.settings, ...override};
 
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        // eslint-disable-next-line @typescript-eslint/no-deprecated -- needed for compatibility
         const activeLeaf = workspace.activeLeaf;
         if (activeLeaf?.canNavigate()) {
             return activeLeaf;

@@ -265,42 +265,44 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         matches.some(l => l.id == openedFrom)
                     );
 
-                    let match: WorkspaceLeaf|undefined;
-                    // eslint-disable-next-line @typescript-eslint/no-this-alias -- match
-                    if (matches.includes(this)) match = this;
+                    let target: WorkspaceLeaf|undefined;
+                    // eslint-disable-next-line @typescript-eslint/no-this-alias -- target
+                    if (matches.includes(this)) target = this;
                     // if the link opened was an internal link, always deduplicate to undo open in new tab.
-                    if (!match && isInternalLink && !isSpecialOpen) {
-                        match = matches.find(l => l.id == openedFrom)!;
+                    if (!target && isInternalLink && !isSpecialOpen) {
+                        target = matches.find(l => l.id == openedFrom)!;
                     }
                     // choose matches first from last opened from, then matches in same group, then first in list.
                     if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0) {
-                        if (!match) match = matches.find(l => l.id == openedFrom);
+                        if (!target) target = matches.find(l => l.id == openedFrom);
                         // match that is already displayed in this group
-                        if (!match) match = matches.find(l => l.isVisible() && l.parent == this.parent);
+                        if (!target) target = matches.find(l => l.isVisible() && l.parent == this.parent);
                         // match that is already displayed in another group
-                        if (!match) match = matches.find(l => l.isVisible());
+                        if (!target) target = matches.find(l => l.isVisible());
                         // matches in same group
-                        if (!match) match = matches.find(l => l.parent == this.parent);
+                        if (!target) target = matches.find(l => l.parent == this.parent);
                         // first match in list
-                        if (!match) match = matches[0];
+                        if (!target) target = matches[0];
                     }
+                    // eslint-disable-next-line @typescript-eslint/no-this-alias -- target
+                    if (!target) target = this;
 
-                    if (match && match !== this) {
-                        if (match.view.getViewType() == "kanban") {
+                    if (target !== this) {
+                        if (target.view.getViewType() == "kanban") {
                             // workaround for a bug in kanban. See
                             //     https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/issues/25
                             //     https://github.com/mgmeyers/obsidian-kanban/issues/1102
-                            plugin.app.workspace.setActiveLeaf(match);
+                            plugin.app.workspace.setActiveLeaf(target);
                             result = undefined;
                         } else {
                             const activeLeaf = plugin.app.workspace.getActiveViewOfType(View)?.leaf;
-                            result = await oldMethod.call(match, file, {
+                            result = await oldMethod.call(target, file, {
                                 ...openState,
                                 active: !!openState?.active || activeLeaf == this,
                             }, ...args);
                         }
                     } else { // use default behavior
-                        result = await oldMethod.call(this, file, openState, ...args);
+                        result = await oldMethod.call(target, file, openState, ...args);
                     }
 
                     // If the leaf is still empty, close it. This can happen if the file was de-duplicated while

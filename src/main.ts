@@ -198,6 +198,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // eslint-disable-next-line @typescript-eslint/no-this-alias -- target
                     if (!target) target = this;
 
+                    target.openTabSettings = {...target.openTabSettings, openedTime: performance.now()};
+
                     if (target !== this) {
                         if (target.view.getViewType() == "kanban") {
                             // workaround for a bug in kanban. See
@@ -348,22 +350,70 @@ export default class OpenTabSettingsPlugin extends Plugin {
             }
         }));
 
-        // double click in file explorer opens "non preview" like how VSCode does
-        this.registerDomEvent(document.body, 'dblclick', (e) => {
-            if (!(this.settings.previewTabs) || !(e.target instanceof Element)) return;
-            const filePath = e.target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
-            if (!filePath) return;
-            const leaf = this.app.workspace.getMostRecentLeaf();
-            if (leaf?.getViewState()?.state?.file == filePath) {
-                this.setLeafIsPreview(leaf, false);
-            }
-        });
+        // handler so we can get the first click time of a dblclick event. Use window and capture: true to make sure
+        // it runs first and doesn't get stopPropagate from another plugin
+        let clickTimes: number[] = [];
+        const windowClickHandler = (e: MouseEvent) => {
+            clickTimes.push(e.timeStamp);
+            if (clickTimes.length > 2) clickTimes.shift();
+        }
+        const windowDblClickHandler = (e: MouseEvent) => {
+            const target = e.target as Element|null;
+            if (!this.settings.previewTabs || !target?.instanceOf?.(Element)) return;
 
+            // handled by even handler in setLeafIsPreview, so skip here
+            if (target.closest(".workspace-tab-header")) {
+                return;
+            }
+
+            // file explorer doesn't call openFile if file is already active, so to allow dblclick of active file to still work
+            // handle it explicitly here
+            const fileExplorerFile = target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
+            if (fileExplorerFile) {
+                const leaf = this.app.workspace.getMostRecentLeaf();
+                if (leaf?.getViewState()?.state?.file == fileExplorerFile) {
+                    this.setLeafIsPreview(leaf, false);
+                }
+                return;
+            };
+
+            // otherwise, try to detect if a file has opened within the dbclick
+
+            const firstClick = clickTimes.length >= 2 && e.timeStamp - clickTimes[1] < 15 ? clickTimes[0] : undefined;
+            // its possible for the "click" handler to get skipped if another `capture: true` click event calls
+            // preventPropagation, which would give incorrect firstClick.
+            if (firstClick) {
+                const opened: WorkspaceLeaf[] = [];
+                this.app.workspace.iterateAllLeaves(leaf => {
+                    if (isMainLeaf(leaf) && (leaf.openTabSettings?.openedTime ?? 0) >= firstClick) {
+                        opened.push(leaf);
+                    }
+                });
+                if (opened.length == 1) {
+                    this.setLeafIsPreview(opened[0], false);
+                }
+            }
+        }
+
+        for (const win of this.getAllWindows()) {
+            win.addEventListener('click', windowClickHandler, {capture: true});
+            win.addEventListener('dblclick', windowDblClickHandler);
+        }
+        this.registerEvent(this.app.workspace.on("window-open", (win) => {
+            win.win.addEventListener('click', windowClickHandler, {capture: true});
+            win.win.addEventListener('dblclick', windowDblClickHandler);
+        }))
+
+        // custom cleanup (can't use this.registerFoo on ephemeral dom elements as it memory leaks)
         this.register(() => {
             this.app.workspace.iterateAllLeaves(l => {
                 this.setLeafIsPreview(l, false);
                 delete l.openTabSettings;
-            })
+            });
+            for (const win of this.getAllWindows()) {
+                win.removeEventListener('click', windowClickHandler, {capture: true});
+                win.removeEventListener('dblclick', windowDblClickHandler);
+            };
         })
     }
 
@@ -411,6 +461,12 @@ export default class OpenTabSettingsPlugin extends Plugin {
             this.app.workspace.iterateAllLeaves(l => this.setLeafIsPreview(l, false));
         }
         await this.saveData(this.settings);
+    }
+
+    private getAllWindows() {
+        const windows = new Set([this.app.workspace.rootSplit?.win ?? window]);
+        this.app.workspace.iterateAllLeaves(l => { windows.add(l.getContainer().win) });
+        return [...windows];
     }
 
     private findMatchingLeaves(file: TFile) {

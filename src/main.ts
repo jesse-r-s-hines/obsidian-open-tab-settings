@@ -347,7 +347,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         // that call getLeaf without isModEvent, such as the graph view.
         this.register(monkeyAround.around(Keymap, {
             isModEvent(oldMethod) {
-                return function(this: unknown, ...args) {
+                return function(this: Keymap, ...args) {
                     let result = oldMethod.call(this, ...args);
                     if (result == "tab") {
                         result = OVERRIDES[plugin.settings.modClickBehavior] as boolean|PaneType;

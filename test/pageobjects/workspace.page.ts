@@ -304,6 +304,32 @@ class WorkspacePage {
             elem.dispatchEvent(new MouseEvent("dblclick", {bubbles: true}));
         }, leafInfo);
     }
+
+    private mainWindowHandle: string|undefined;
+
+    /** Returns the main window */
+    async getMainWindowHandle() {
+        const windowHandles = await browser.getWindowHandles();
+        if (!this.mainWindowHandle || windowHandles.includes(this.mainWindowHandle)) {
+            const currentWindow = await browser.getWindowHandle();
+            for (const windowHandle of windowHandles) {
+                await browser.switchToWindow(windowHandle);
+                const isMain = await browser.executeObsidian(({app}) => (app.workspace.rootSplit.win == window));
+                if (isMain) {
+                    this.mainWindowHandle = windowHandle;
+                    break;
+                }
+            }
+            await browser.switchToWindow(currentWindow);
+        }
+        return this.mainWindowHandle!;
+    }
+
+    /** Gets all window handles, the main window will always be first */
+    async getWindowHandles() {
+        const mainWindow = await this.getMainWindowHandle();
+        return [mainWindow, ...(await browser.getWindowHandles()).filter(h => h != mainWindow)];
+    }
 }
 
 const workspacePage = new WorkspacePage()

@@ -4,15 +4,8 @@ import { obsidianPage } from 'wdio-obsidian-service';
 
 
 describe('Preview tabs', function() {
-    let mainWindow: string|undefined
-
-    before(async function() {
-        mainWindow = await browser.getWindowHandle();
-        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
-    })
-
     beforeEach(async function() {
-        await browser.switchToWindow(mainWindow!);
+        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
         await obsidianPage.resetVault();
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettingsDefaults({ openInNewTab: true, previewTabs: true, deduplicateTabs: false });
@@ -20,7 +13,7 @@ describe('Preview tabs', function() {
     });
 
     after(async function() {
-        await browser.switchToWindow(mainWindow!);
+        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
     })
 
     it('opens new tabs as preview tabs', async function() {
@@ -318,9 +311,8 @@ describe('Preview tabs', function() {
         await workspacePage.setSettings({ newTabTabGroupPlacement: "opposite", deduplicateTabs: false });
         await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
         await browser.pause(250);
-        
-        const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
-        await browser.switchToWindow(otherWindow);
+
+        await browser.switchToWindow((await workspacePage.getWindowHandles())[1]);
         await workspacePage.setActiveFile("D.md");
         await workspacePage.matchWorkspace([
             [{ "file": "A.md", "isPreview": false}], // win 1
@@ -343,8 +335,7 @@ describe('Preview tabs', function() {
         await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
 
         await browser.pause(250);
-        const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
-        await browser.switchToWindow(otherWindow);
+        await browser.switchToWindow((await workspacePage.getWindowHandles())[1]);
         await browser.pause(250);
 
         await workspacePage.setActiveFile("D.md");

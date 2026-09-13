@@ -361,8 +361,13 @@ export default class OpenTabSettingsPlugin extends Plugin {
             const target = e.target as Element|null;
             if (!this.settings.previewTabs || !target?.instanceOf?.(Element)) return;
 
-            // handled by even handler in setLeafIsPreview, so skip here
-            if (target.closest(".workspace-tab-header")) {
+            const tabHeader = target.closest(".workspace-tab-header");
+            if (tabHeader) {
+                this.app.workspace.iterateAllLeaves(l => {
+                    if (l.tabHeaderEl == tabHeader) {
+                        this.setLeafIsPreview(l, false);
+                    }
+                })
                 return;
             }
 
@@ -375,7 +380,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     this.setLeafIsPreview(leaf, false);
                 }
                 return;
-            };
+            }
 
             // otherwise, try to detect if a file has opened within the dbclick
 
@@ -513,11 +518,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 // the leaf. We'll call that on plugin disable, and after unpreview of a leaf
                 const unPreview = () => { this.setLeafIsPreview(leaf, false); };
                 leaf.on("pinned-change", unPreview);
-                leaf.tabHeaderEl.addEventListener("dblclick", unPreview);
-                leaf.openTabSettings.eventCleanup = () => {
-                    leaf.off('pinned-change', unPreview);
-                    leaf.tabHeaderEl.removeEventListener('dblclick', unPreview);
-                }
+                leaf.openTabSettings.eventCleanup = () => { leaf.off('pinned-change', unPreview) };
             }
             // one preview tab per tab group (this shouldn't trigger under normal circumstances, but with empty tabs
             // there's a few edge cases where createNewLeaf might end up creating 2 preview tabs in a group)

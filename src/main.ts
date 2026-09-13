@@ -85,113 +85,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         this.registerMonkeyPatches();
-
-        const commands = [
-            ["openInNewTab", t('settings.openInNewTab.name')],
-            ["deduplicateTabs", t('settings.deduplicateTabs.name')],
-        ] as const;
-        for (const [setting, name] of commands) {
-            this.addCommand({
-                id: `toggle-${kebabCase(setting)}`, name: t('commands.toggle', { name }),
-                callback: async () => {
-                    await this.updateSettings({[setting]: !this.settings[setting]});
-                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
-                },
-            });
-            this.addCommand({
-                id: `enable-${kebabCase(setting)}`, name: t('commands.enable', { name }),
-                callback: async () => {
-                    await this.updateSettings({[setting]: true});
-                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
-                },
-            });
-            this.addCommand({
-                id: `disable-${kebabCase(setting)}`, name: t('commands.disable', { name }),
-                callback: async () => {
-                    await this.updateSettings({[setting]: false});
-                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
-                },
-            });
-        }
-        this.addCommand({
-            id: "cycle-tab-group-placement",
-            name: t('commands.cycle', {name: t('settings.newTabTabGroupPlacement.name')}),
-            callback: async () => {
-                const values = Object.keys(NEW_TAB_TAB_GROUP_PLACEMENTS) as (keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS)[];
-                const index = values.findIndex(v => v == this.settings.newTabTabGroupPlacement);
-                const newValue = values[(index + 1) % values.length];
-                await this.updateSettings({newTabTabGroupPlacement: newValue});
-                new Notice(`${t('settings.newTabTabGroupPlacement.name')}: ${t(NEW_TAB_TAB_GROUP_PLACEMENTS[newValue])}`, 2500);
-            },
-        });
-        // workspace:new-tab doesn't respect new tab placement options, so add some custom commands
-        for (const p of ["afterPinned", "afterActive", "beginning"] as const) {
-            this.addCommand({
-                id: "new-tab-" + kebabCase(p),
-                name: t(`commands.newTab.${p}`),
-                callback: () => { this.createNewLeaf(true, {newTabPlacement: p, replaceEmptyTabs: false}); },
-            })
-        }
-
-        this.registerEvent(this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
-            if (file instanceof TFile) {
-                if (this.settings.openInNewTab) {
-                    menu.addItem((item) => {
-                        item.setSection("open");
-                        item.setIcon("file-minus")
-                        item.setTitle(t('menu.openInSameTab'));
-                        item.onClick(async () => {
-                            await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
-                        });
-                    });
-                }
-                if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
-                    menu.addItem((item) => {
-                        item.setSection("open");
-                        item.setIcon("files")
-                        item.setTitle(t('menu.openInDuplicateTab'));
-                        item.onClick(async () => {
-                            await this.app.workspace.getLeaf(OVERRIDES.allowDuplicate).openFile(file);
-                        });
-                    });
-                }
-                const activeLeaf = this.app.workspace.getMostRecentLeaf();
-                if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
-                    menu.addItem((item) => {
-                        item.setSection("open");
-                        item.setIcon("lucide-split-square-horizontal")
-                        item.setTitle(t('menu.openInOppositeTabGroup'));
-                        item.onClick(async () => {
-                            await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
-                        });
-                    });
-                }
-            }
-        }));
-
-        this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
-            if (info instanceof MarkdownView) {
-                this.setLeafIsPreview(info.leaf, false);
-            }
-        }));
-
-        // double click in file explorer opens "non preview" like how VSCode does
-        this.registerDomEvent(document.body, 'dblclick', (e) => {
-            if (!(this.settings.previewTabs) || !(e.target instanceof Element)) return;
-            const filePath = e.target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
-            if (!filePath) return;
-            const leaf = this.app.workspace.getMostRecentLeaf();
-            if (leaf?.getViewState()?.state?.file == filePath) {
-                this.setLeafIsPreview(leaf, false);
-            }
-        });
-
-        this.register(() => {
-            this.app.workspace.iterateAllLeaves(l => {
-                this.setLeafIsPreview(l, false);
-                delete l.openTabSettings;
-            })
-        })
+        this.registerCommands();
+        this.registerFileMenuOptions();
+        this.registerPreviewTabsEvents();
     }
 
     registerMonkeyPatches() {
@@ -356,6 +252,119 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 }
             },
         }));
+    }
+
+    registerCommands() {
+        const commands = [
+            ["openInNewTab", t('settings.openInNewTab.name')],
+            ["deduplicateTabs", t('settings.deduplicateTabs.name')],
+        ] as const;
+        for (const [setting, name] of commands) {
+            this.addCommand({
+                id: `toggle-${kebabCase(setting)}`, name: t('commands.toggle', { name }),
+                callback: async () => {
+                    await this.updateSettings({[setting]: !this.settings[setting]});
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
+                },
+            });
+            this.addCommand({
+                id: `enable-${kebabCase(setting)}`, name: t('commands.enable', { name }),
+                callback: async () => {
+                    await this.updateSettings({[setting]: true});
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
+                },
+            });
+            this.addCommand({
+                id: `disable-${kebabCase(setting)}`, name: t('commands.disable', { name }),
+                callback: async () => {
+                    await this.updateSettings({[setting]: false});
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
+                },
+            });
+        }
+        this.addCommand({
+            id: "cycle-tab-group-placement",
+            name: t('commands.cycle', {name: t('settings.newTabTabGroupPlacement.name')}),
+            callback: async () => {
+                const values = Object.keys(NEW_TAB_TAB_GROUP_PLACEMENTS) as (keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS)[];
+                const index = values.findIndex(v => v == this.settings.newTabTabGroupPlacement);
+                const newValue = values[(index + 1) % values.length];
+                await this.updateSettings({newTabTabGroupPlacement: newValue});
+                new Notice(`${t('settings.newTabTabGroupPlacement.name')}: ${t(NEW_TAB_TAB_GROUP_PLACEMENTS[newValue])}`, 2500);
+            },
+        });
+        // workspace:new-tab doesn't respect new tab placement options, so add some custom commands
+        for (const p of ["afterPinned", "afterActive", "beginning"] as const) {
+            this.addCommand({
+                id: "new-tab-" + kebabCase(p),
+                name: t(`commands.newTab.${p}`),
+                callback: () => { this.createNewLeaf(true, {newTabPlacement: p, replaceEmptyTabs: false}); },
+            })
+        }
+    }
+
+    registerFileMenuOptions() {
+        this.registerEvent(this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
+            if (file instanceof TFile) {
+                if (this.settings.openInNewTab) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("file-minus")
+                        item.setTitle(t('menu.openInSameTab'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
+                        });
+                    });
+                }
+                if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("files")
+                        item.setTitle(t('menu.openInDuplicateTab'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.allowDuplicate).openFile(file);
+                        });
+                    });
+                }
+                const activeLeaf = this.app.workspace.getMostRecentLeaf();
+                if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("lucide-split-square-horizontal")
+                        item.setTitle(t('menu.openInOppositeTabGroup'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
+                        });
+                    });
+                }
+            }
+        }));
+    }
+
+    registerPreviewTabsEvents() {
+        this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
+            if (info instanceof MarkdownView) {
+                this.setLeafIsPreview(info.leaf, false);
+            }
+        }));
+
+        // double click in file explorer opens "non preview" like how VSCode does
+        this.registerDomEvent(document.body, 'dblclick', (e) => {
+            if (!(this.settings.previewTabs) || !(e.target instanceof Element)) return;
+            const filePath = e.target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
+            if (!filePath) return;
+            const leaf = this.app.workspace.getMostRecentLeaf();
+            if (leaf?.getViewState()?.state?.file == filePath) {
+                this.setLeafIsPreview(leaf, false);
+            }
+        });
+
+        this.register(() => {
+            this.app.workspace.iterateAllLeaves(l => {
+                this.setLeafIsPreview(l, false);
+                delete l.openTabSettings;
+            })
+        })
     }
 
     async loadSettings() {

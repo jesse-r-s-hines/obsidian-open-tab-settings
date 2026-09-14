@@ -299,7 +299,7 @@ describe('Preview tabs', function() {
             [{file: "Loop.md", isPreview: false}, {file: "B.md", isPreview: true}],
         ]);
 
-        link.doubleClick();
+        await link.doubleClick();
         await workspacePage.matchWorkspace([
             [{file: "A.md", isPreview: false}],
             [{file: "Loop.md", isPreview: false}, {file: "B.md", isPreview: false}],
@@ -320,7 +320,7 @@ describe('Preview tabs', function() {
             [{"file": "Loop.md", "isPreview": false}], // win 2 right
         ]);
 
-        (await workspacePage.getLink("Loop")).click();
+        await (await workspacePage.getLink("Loop")).click();
 
         await workspacePage.matchWorkspace([
             [{ "file": "A.md", "isPreview": false}], // win 1
@@ -346,7 +346,7 @@ describe('Preview tabs', function() {
             [{"file": "Loop.md", "isPreview": false}], // win 2 right
         ]);
 
-        (await workspacePage.getLink("Loop")).doubleClick();
+        await (await workspacePage.getLink("Loop")).doubleClick();
 
         await workspacePage.matchWorkspace([
             [{ "file": "A.md", "isPreview": false}], // win 1

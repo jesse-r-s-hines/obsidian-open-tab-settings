@@ -349,6 +349,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 this.setLeafIsPreview(info.leaf, false);
             }
         }));
+        this.registerEvent(this.app.workspace.on("layout-change", this.syncPreviewTabs));
 
         // handler so we can get the first click time of a dblclick event. Use window and capture: true to make sure
         // it runs first and doesn't get stopPropagate from another plugin
@@ -516,9 +517,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 // I've confirmed that the events automatically get cleaned up when the leaf is closed. However we can't
                 // use this.registerEvent as that prevents leaf garbage collection. So instead add a cleanup function to
                 // the leaf. We'll call that on plugin disable, and after unpreview of a leaf
-                const unPreview = () => { this.setLeafIsPreview(leaf, false); };
-                leaf.on("pinned-change", unPreview);
-                leaf.openTabSettings.eventCleanup = () => { leaf.off('pinned-change', unPreview) };
+                leaf.on("pinned-change", this.syncPreviewTabs);
+                leaf.openTabSettings.eventCleanup = () => {
+                    leaf.off('pinned-change', this.syncPreviewTabs);
+                };
             }
             // one preview tab per tab group (this shouldn't trigger under normal circumstances, but with empty tabs
             // there's a few edge cases where createNewLeaf might end up creating 2 preview tabs in a group)
@@ -527,6 +529,15 @@ export default class OpenTabSettingsPlugin extends Plugin {
             leaf.openTabSettings.eventCleanup();
             delete leaf.openTabSettings?.eventCleanup;
         }
+    }
+
+    /** Removes preview from any pinned tabs or non main tabs */
+    private syncPreviewTabs = () => {
+        this.app.workspace.iterateAllLeaves(l => {
+            if (!isMainLeaf(l) || l.pinned) {
+                this.setLeafIsPreview(l, false);
+            }
+        })
     }
 
     /**

@@ -311,19 +311,12 @@ describe('Test newTabPlacement', function() {
 
 
 describe('Test newTabTabGroupPlacement', function() {
-    let mainWindow: string|undefined
-
     before(async function() {
-        mainWindow = await browser.getWindowHandle();
         if ((await obsidianPage.getPlatform()).isPhone) this.skip();
     })
 
-    after(async function() {
-        await browser.switchToWindow(mainWindow!);
-    })
-
     beforeEach(async function() {
-        await browser.switchToWindow(mainWindow!);
+        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({
             openInNewTab: false, deduplicateTabs: false,
@@ -402,7 +395,7 @@ describe('Test newTabTabGroupPlacement', function() {
         await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
         await browser.pause(250);
 
-        const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
+        const [mainWindow, otherWindow] = await workspacePage.getWindowHandles();
         await browser.switchToWindow(otherWindow);
 
         await workspacePage.setActiveFile("D.md");

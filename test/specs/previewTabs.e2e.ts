@@ -5,11 +5,16 @@ import { obsidianPage } from 'wdio-obsidian-service';
 
 describe('Preview tabs', function() {
     beforeEach(async function() {
+        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
         await obsidianPage.resetVault();
         await workspacePage.loadPlatformWorkspaceLayout("empty");
-        await workspacePage.setSettings({ openInNewTab: true, previewTabs: true, deduplicateTabs: false });
+        await workspacePage.setSettingsDefaults({ openInNewTab: true, previewTabs: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
     });
+
+    after(async function() {
+        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+    })
 
     it('opens new tabs as preview tabs', async function() {
         await workspacePage.openFile("A.md");
@@ -274,6 +279,79 @@ describe('Preview tabs', function() {
         await workspacePage.matchWorkspace([
             [{file: "A.md", isPreview: false}],
             [{file: "B.md", isPreview: false}, {file: "A.md", isPreview: true}],
+        ]);
+    });
+
+    it("normal link", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone) this.skip();
+        await workspacePage.setSettings({ newTabTabGroupPlacement: "opposite" });
+        await workspacePage.loadPlatformWorkspaceLayout("split");
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.matchWorkspace([
+            [{file: "A.md", isPreview: false, active: true}],
+            [{file: "Loop.md", isPreview: false}],
+        ]);
+
+        const link = await workspacePage.getLink("B");
+        await workspacePage.openLink(link);
+        await workspacePage.matchWorkspace([
+            [{file: "A.md", isPreview: false}],
+            [{file: "Loop.md", isPreview: false}, {file: "B.md", isPreview: true}],
+        ]);
+
+        await link.doubleClick();
+        await workspacePage.matchWorkspace([
+            [{file: "A.md", isPreview: false}],
+            [{file: "Loop.md", isPreview: false}, {file: "B.md", isPreview: false}],
+        ]);
+    });
+
+    it("normal link in popout window as preview", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+        await workspacePage.setSettings({ newTabTabGroupPlacement: "opposite", deduplicateTabs: false });
+        await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
+        await browser.pause(250);
+
+        await browser.switchToWindow((await workspacePage.getWindowHandles())[1]);
+        await workspacePage.setActiveFile("D.md");
+        await workspacePage.matchWorkspace([
+            [{ "file": "A.md", "isPreview": false}], // win 1
+            [{"file": "D.md", "isPreview": false, "active": true}], // win 2 left
+            [{"file": "Loop.md", "isPreview": false}], // win 2 right
+        ]);
+
+        await (await workspacePage.getLink("Loop")).click();
+
+        await workspacePage.matchWorkspace([
+            [{ "file": "A.md", "isPreview": false}], // win 1
+            [{"file": "D.md", "isPreview": false}], // win 2 left
+            [{"file": "Loop.md", "isPreview": false}, {"file": "Loop.md", "isPreview": true, "active": true}], // win 2 right
+        ]);
+    });
+
+    it("normal link in popout window as non preview", async function() {
+        if ((await obsidianPage.getPlatform()).isMobile) this.skip();
+        await workspacePage.setSettings({ newTabTabGroupPlacement: "opposite", deduplicateTabs: false });
+        await workspacePage.loadPlatformWorkspaceLayout("split-popout-window");
+
+        await browser.pause(250);
+        await browser.switchToWindow((await workspacePage.getWindowHandles())[1]);
+        await browser.pause(250);
+
+        await workspacePage.setActiveFile("D.md");
+    
+        await workspacePage.matchWorkspace([
+            [{ "file": "A.md", "isPreview": false}], // win 1
+            [{"file": "D.md", "isPreview": false, "active": true}], // win 2 left
+            [{"file": "Loop.md", "isPreview": false}], // win 2 right
+        ]);
+
+        await (await workspacePage.getLink("Loop")).doubleClick();
+
+        await workspacePage.matchWorkspace([
+            [{ "file": "A.md", "isPreview": false}], // win 1
+            [{"file": "D.md", "isPreview": false}], // win 2 left
+            [{"file": "Loop.md", "isPreview": false}, {"file": "Loop.md", "isPreview": false, "active": true}], // win 2 right
         ]);
     });
 })

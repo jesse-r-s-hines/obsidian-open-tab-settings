@@ -85,113 +85,9 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         this.registerMonkeyPatches();
-
-        const commands = [
-            ["openInNewTab", t('settings.openInNewTab.name')],
-            ["deduplicateTabs", t('settings.deduplicateTabs.name')],
-        ] as const;
-        for (const [setting, name] of commands) {
-            this.addCommand({
-                id: `toggle-${kebabCase(setting)}`, name: t('commands.toggle', { name }),
-                callback: async () => {
-                    await this.updateSettings({[setting]: !this.settings[setting]});
-                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
-                },
-            });
-            this.addCommand({
-                id: `enable-${kebabCase(setting)}`, name: t('commands.enable', { name }),
-                callback: async () => {
-                    await this.updateSettings({[setting]: true});
-                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
-                },
-            });
-            this.addCommand({
-                id: `disable-${kebabCase(setting)}`, name: t('commands.disable', { name }),
-                callback: async () => {
-                    await this.updateSettings({[setting]: false});
-                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
-                },
-            });
-        }
-        this.addCommand({
-            id: "cycle-tab-group-placement",
-            name: t('commands.cycle', {name: t('settings.newTabTabGroupPlacement.name')}),
-            callback: async () => {
-                const values = Object.keys(NEW_TAB_TAB_GROUP_PLACEMENTS) as (keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS)[];
-                const index = values.findIndex(v => v == this.settings.newTabTabGroupPlacement);
-                const newValue = values[(index + 1) % values.length];
-                await this.updateSettings({newTabTabGroupPlacement: newValue});
-                new Notice(`${t('settings.newTabTabGroupPlacement.name')}: ${t(NEW_TAB_TAB_GROUP_PLACEMENTS[newValue])}`, 2500);
-            },
-        });
-        // workspace:new-tab doesn't respect new tab placement options, so add some custom commands
-        for (const p of ["afterPinned", "afterActive", "beginning"] as const) {
-            this.addCommand({
-                id: "new-tab-" + kebabCase(p),
-                name: t(`commands.newTab.${p}`),
-                callback: () => { this.createNewLeaf(true, {newTabPlacement: p, replaceEmptyTabs: false}); },
-            })
-        }
-
-        this.registerEvent(this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
-            if (file instanceof TFile) {
-                if (this.settings.openInNewTab) {
-                    menu.addItem((item) => {
-                        item.setSection("open");
-                        item.setIcon("file-minus")
-                        item.setTitle(t('menu.openInSameTab'));
-                        item.onClick(async () => {
-                            await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
-                        });
-                    });
-                }
-                if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
-                    menu.addItem((item) => {
-                        item.setSection("open");
-                        item.setIcon("files")
-                        item.setTitle(t('menu.openInDuplicateTab'));
-                        item.onClick(async () => {
-                            await this.app.workspace.getLeaf(OVERRIDES.allowDuplicate).openFile(file);
-                        });
-                    });
-                }
-                const activeLeaf = this.app.workspace.getMostRecentLeaf();
-                if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
-                    menu.addItem((item) => {
-                        item.setSection("open");
-                        item.setIcon("lucide-split-square-horizontal")
-                        item.setTitle(t('menu.openInOppositeTabGroup'));
-                        item.onClick(async () => {
-                            await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
-                        });
-                    });
-                }
-            }
-        }));
-
-        this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
-            if (info instanceof MarkdownView) {
-                this.setLeafIsPreview(info.leaf, false);
-            }
-        }));
-
-        // double click in file explorer opens "non preview" like how VSCode does
-        this.registerDomEvent(document.body, 'dblclick', (e) => {
-            if (!(this.settings.previewTabs) || !(e.target instanceof Element)) return;
-            const filePath = e.target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
-            if (!filePath) return;
-            const leaf = this.app.workspace.getMostRecentLeaf();
-            if (leaf?.getViewState()?.state?.file == filePath) {
-                this.setLeafIsPreview(leaf, false);
-            }
-        });
-
-        this.register(() => {
-            this.app.workspace.iterateAllLeaves(l => {
-                this.setLeafIsPreview(l, false);
-                delete l.openTabSettings;
-            })
-        })
+        this.registerCommands();
+        this.registerFileMenuOptions();
+        this.registerPreviewTabsEvents();
     }
 
     registerMonkeyPatches() {
@@ -302,6 +198,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     // eslint-disable-next-line @typescript-eslint/no-this-alias -- target
                     if (!target) target = this;
 
+                    target.openTabSettings = {...target.openTabSettings, openedTime: performance.now()};
+
                     if (target !== this) {
                         if (target.view.getViewType() == "kanban") {
                             // workaround for a bug in kanban. See
@@ -347,7 +245,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         // that call getLeaf without isModEvent, such as the graph view.
         this.register(monkeyAround.around(Keymap, {
             isModEvent(oldMethod) {
-                return function(this: unknown, ...args) {
+                return function(this: Keymap, ...args) {
                     let result = oldMethod.call(this, ...args);
                     if (result == "tab") {
                         result = OVERRIDES[plugin.settings.modClickBehavior] as boolean|PaneType;
@@ -356,6 +254,173 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 }
             },
         }));
+    }
+
+    registerCommands() {
+        const commands = [
+            ["openInNewTab", t('settings.openInNewTab.name')],
+            ["deduplicateTabs", t('settings.deduplicateTabs.name')],
+        ] as const;
+        for (const [setting, name] of commands) {
+            this.addCommand({
+                id: `toggle-${kebabCase(setting)}`, name: t('commands.toggle', { name }),
+                callback: async () => {
+                    await this.updateSettings({[setting]: !this.settings[setting]});
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
+                },
+            });
+            this.addCommand({
+                id: `enable-${kebabCase(setting)}`, name: t('commands.enable', { name }),
+                callback: async () => {
+                    await this.updateSettings({[setting]: true});
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
+                },
+            });
+            this.addCommand({
+                id: `disable-${kebabCase(setting)}`, name: t('commands.disable', { name }),
+                callback: async () => {
+                    await this.updateSettings({[setting]: false});
+                    new Notice(`${name}: ` + t(`commands.${this.settings[setting] ? 'enabled' : 'disabled'}`), 2500);
+                },
+            });
+        }
+        this.addCommand({
+            id: "cycle-tab-group-placement",
+            name: t('commands.cycle', {name: t('settings.newTabTabGroupPlacement.name')}),
+            callback: async () => {
+                const values = Object.keys(NEW_TAB_TAB_GROUP_PLACEMENTS) as (keyof typeof NEW_TAB_TAB_GROUP_PLACEMENTS)[];
+                const index = values.findIndex(v => v == this.settings.newTabTabGroupPlacement);
+                const newValue = values[(index + 1) % values.length];
+                await this.updateSettings({newTabTabGroupPlacement: newValue});
+                new Notice(`${t('settings.newTabTabGroupPlacement.name')}: ${t(NEW_TAB_TAB_GROUP_PLACEMENTS[newValue])}`, 2500);
+            },
+        });
+        // workspace:new-tab doesn't respect new tab placement options, so add some custom commands
+        for (const p of ["afterPinned", "afterActive", "beginning"] as const) {
+            this.addCommand({
+                id: "new-tab-" + kebabCase(p),
+                name: t(`commands.newTab.${p}`),
+                callback: () => { this.createNewLeaf(true, {newTabPlacement: p, replaceEmptyTabs: false}); },
+            })
+        }
+    }
+
+    registerFileMenuOptions() {
+        this.registerEvent(this.app.workspace.on("file-menu", (menu, file, source, leaf) => {
+            if (file instanceof TFile) {
+                if (this.settings.openInNewTab) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("file-minus")
+                        item.setTitle(t('menu.openInSameTab'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.same).openFile(file);
+                        });
+                    });
+                }
+                if (this.settings.deduplicateTabs && this.findMatchingLeaves(file).length > 0) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("files")
+                        item.setTitle(t('menu.openInDuplicateTab'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.allowDuplicate).openFile(file);
+                        });
+                    });
+                }
+                const activeLeaf = this.app.workspace.getMostRecentLeaf();
+                if (activeLeaf && this.getAllTabGroups(activeLeaf.getRoot()).length > 1) {
+                    menu.addItem((item) => {
+                        item.setSection("open");
+                        item.setIcon("lucide-split-square-horizontal")
+                        item.setTitle(t('menu.openInOppositeTabGroup'));
+                        item.onClick(async () => {
+                            await this.app.workspace.getLeaf(OVERRIDES.opposite).openFile(file);
+                        });
+                    });
+                }
+            }
+        }));
+    }
+
+    registerPreviewTabsEvents() {
+        this.registerEvent(this.app.workspace.on("editor-change", (editor, info) => {
+            if (info instanceof MarkdownView) {
+                this.setLeafIsPreview(info.leaf, false);
+            }
+        }));
+        this.registerEvent(this.app.workspace.on("layout-change", this.syncPreviewTabs));
+
+        // handler so we can get the first click time of a dblclick event. Use window and capture: true to make sure
+        // it runs first and doesn't get stopPropagate from another plugin
+        let clickTimes: number[] = [];
+        const windowClickHandler = (e: MouseEvent) => {
+            clickTimes.push(e.timeStamp);
+            if (clickTimes.length > 2) clickTimes.shift();
+        }
+        const windowDblClickHandler = (e: MouseEvent) => {
+            const target = e.target as Element|null;
+            if (!this.settings.previewTabs || !target?.instanceOf?.(Element)) return;
+
+            const tabHeader = target.closest(".workspace-tab-header");
+            if (tabHeader) {
+                this.app.workspace.iterateAllLeaves(l => {
+                    if (l.tabHeaderEl == tabHeader) {
+                        this.setLeafIsPreview(l, false);
+                    }
+                })
+                return;
+            }
+
+            // file explorer doesn't call openFile if file is already active, so to allow dblclick of active file to still work
+            // handle it explicitly here
+            const fileExplorerFile = target.closest('.nav-files-container .nav-file-title[data-path]')?.getAttr("data-path");
+            if (fileExplorerFile) {
+                const leaf = this.app.workspace.getMostRecentLeaf();
+                if (leaf?.getViewState()?.state?.file == fileExplorerFile) {
+                    this.setLeafIsPreview(leaf, false);
+                }
+                return;
+            }
+
+            // otherwise, try to detect if a file has opened within the dbclick
+
+            const firstClick = clickTimes.length >= 2 && e.timeStamp - clickTimes[1] < 15 ? clickTimes[0] : undefined;
+            // its possible for the "click" handler to get skipped if another `capture: true` click event calls
+            // preventPropagation, which would give incorrect firstClick.
+            if (firstClick) {
+                const opened: WorkspaceLeaf[] = [];
+                this.app.workspace.iterateAllLeaves(leaf => {
+                    if (isMainLeaf(leaf) && (leaf.openTabSettings?.openedTime ?? 0) >= firstClick) {
+                        opened.push(leaf);
+                    }
+                });
+                if (opened.length == 1) {
+                    this.setLeafIsPreview(opened[0], false);
+                }
+            }
+        }
+
+        for (const win of this.getAllWindows()) {
+            win.addEventListener('click', windowClickHandler, {capture: true});
+            win.addEventListener('dblclick', windowDblClickHandler);
+        }
+        this.registerEvent(this.app.workspace.on("window-open", (win) => {
+            win.win.addEventListener('click', windowClickHandler, {capture: true});
+            win.win.addEventListener('dblclick', windowDblClickHandler);
+        }))
+
+        // custom cleanup (can't use this.registerFoo on ephemeral dom elements as it memory leaks)
+        this.register(() => {
+            this.app.workspace.iterateAllLeaves(l => {
+                this.setLeafIsPreview(l, false);
+                delete l.openTabSettings;
+            });
+            for (const win of this.getAllWindows()) {
+                win.removeEventListener('click', windowClickHandler, {capture: true});
+                win.removeEventListener('dblclick', windowDblClickHandler);
+            };
+        })
     }
 
     async loadSettings() {
@@ -404,6 +469,12 @@ export default class OpenTabSettingsPlugin extends Plugin {
         await this.saveData(this.settings);
     }
 
+    private getAllWindows() {
+        const windows = new Set([this.app.workspace.rootSplit?.win ?? window]);
+        this.app.workspace.iterateAllLeaves(l => { windows.add(l.getContainer().win) });
+        return [...windows];
+    }
+
     private findMatchingLeaves(file: TFile) {
         const matches: WorkspaceLeaf[] = [];
         this.app.workspace.iterateAllLeaves(leaf => {
@@ -446,13 +517,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 // I've confirmed that the events automatically get cleaned up when the leaf is closed. However we can't
                 // use this.registerEvent as that prevents leaf garbage collection. So instead add a cleanup function to
                 // the leaf. We'll call that on plugin disable, and after unpreview of a leaf
-                const unPreview = () => { this.setLeafIsPreview(leaf, false); };
-                leaf.on("pinned-change", unPreview);
-                leaf.tabHeaderEl.addEventListener("dblclick", unPreview);
+                leaf.on("pinned-change", this.syncPreviewTabs);
                 leaf.openTabSettings.eventCleanup = () => {
-                    leaf.off('pinned-change', unPreview);
-                    leaf.tabHeaderEl.removeEventListener('dblclick', unPreview);
-                }
+                    leaf.off('pinned-change', this.syncPreviewTabs);
+                };
             }
             // one preview tab per tab group (this shouldn't trigger under normal circumstances, but with empty tabs
             // there's a few edge cases where createNewLeaf might end up creating 2 preview tabs in a group)
@@ -461,6 +529,15 @@ export default class OpenTabSettingsPlugin extends Plugin {
             leaf.openTabSettings.eventCleanup();
             delete leaf.openTabSettings?.eventCleanup;
         }
+    }
+
+    /** Removes preview from any pinned tabs or non main tabs */
+    private syncPreviewTabs = () => {
+        this.app.workspace.iterateAllLeaves(l => {
+            if (!isMainLeaf(l) || l.pinned) {
+                this.setLeafIsPreview(l, false);
+            }
+        })
     }
 
     /**

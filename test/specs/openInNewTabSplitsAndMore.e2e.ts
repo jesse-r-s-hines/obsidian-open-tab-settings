@@ -5,18 +5,16 @@ import { WorkspaceLeaf } from 'obsidian';
 
 
 describe('Test open in new tab for splits and windows', function() {
-    let mainWindow: string|undefined
     before(async function() {
-        mainWindow = await browser.getWindowHandle();
         if ((await obsidianPage.getPlatform()).isPhone) this.skip();
     })
 
     after(async function() {
-        await browser.switchToWindow(mainWindow!);
+        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
     })
 
     beforeEach(async function() {
-        await browser.switchToWindow(mainWindow!);
+        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);
@@ -53,15 +51,13 @@ describe('Test open in new tab for splits and windows', function() {
         await browser.pause(250);
         await workspacePage.setActiveFile("A.md");
 
-        const otherWindow = (await browser.getWindowHandles()).find(h => h != mainWindow)!;
-
         await workspacePage.openLink(await workspacePage.getLink("B"));
         await workspacePage.matchWorkspace([
             [{file: "A.md"}, {file: "B.md", active: true}],
             [{file: "D.md"}],
         ]);
 
-        await browser.switchToWindow(otherWindow);
+        await browser.switchToWindow((await workspacePage.getWindowHandles())[1]);
 
         await workspacePage.setActiveFile("D.md");
         await workspacePage.openLink(await workspacePage.getLink("Loop"));

@@ -134,7 +134,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             getUnpinnedLeaf(oldMethod) {
                 return function(this: Workspace, focus?: boolean) {
                     if (plugin.settings.openInNewTab) {
-                        return this.getLeaf("tab");
+                        return this.getLeaf(false);
                     } else {
                         return plugin.getUnpinnedLeaf(focus);
                     }

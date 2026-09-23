@@ -310,7 +310,7 @@ class WorkspacePage {
     /** Returns the main window */
     async getMainWindowHandle() {
         const windowHandles = await browser.getWindowHandles();
-        if (!this.mainWindowHandle || windowHandles.includes(this.mainWindowHandle)) {
+        if (!this.mainWindowHandle || !windowHandles.includes(this.mainWindowHandle)) {
             const currentWindow = await browser.getWindowHandle();
             for (const windowHandle of windowHandles) {
                 await browser.switchToWindow(windowHandle);

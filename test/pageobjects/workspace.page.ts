@@ -15,6 +15,7 @@ type LeafInfo = {
     /** True if this leaf is selected within its tab group */
     currentTab: boolean,
     isPreview: boolean,
+    tabHeaderElClasses: string[], containerElClasses: string[], containerElIsVisible: boolean,
 }
 
 class WorkspacePage {
@@ -100,6 +101,9 @@ class WorkspacePage {
                         active: activeLeaf == leaf,
                         currentTab: leaf.parent.children.indexOf(leaf) === (leaf.parent as WorkspaceTabs).currentTab,
                         isPreview: leaf.openTabSettings?.isPreview ?? false,
+                        tabHeaderElClasses: [...leaf.tabHeaderEl.classList],
+                        containerElClasses: [...leaf.containerEl.classList],
+                        containerElIsVisible: leaf.containerEl.checkVisibility({checkOpacity: true, checkVisibilityCSS: true}),
                     };
                 })
             );
@@ -162,6 +166,24 @@ class WorkspacePage {
                 "Expected:\n" + JSON.stringify(expected, null, 2) + "\n\n" +
                 "Actual:\n" + JSON.stringify(filteredActual, null, 2),
             );
+        }
+
+        // sanity checks to make sure the active tabs are in fact visible and not out of sync
+        for (const tabGroup of actual) {
+            for (const leaf of tabGroup) {
+                if (leaf.currentTab) {
+                    expect(leaf.tabHeaderElClasses).toContain("is-active");
+                } else {
+                    expect(leaf.tabHeaderElClasses).not.toContain("is-active");
+                }
+                if (leaf.active) {
+                    expect(leaf.currentTab).toBe(true);
+                    expect(leaf.containerElClasses).toContain("mod-active");
+                    expect(leaf.containerElIsVisible).toBe(true);
+                } else {
+                    expect(leaf.containerElClasses).not.toContain("mod-active");
+                }
+            }
         }
     }
 

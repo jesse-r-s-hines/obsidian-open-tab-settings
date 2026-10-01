@@ -13,6 +13,20 @@ Using these settings can enable a more familiar workflow for those used to worki
 
 The primary settings can also be toggled via commands.
 
+## Common setups
+
+### Side preview pane
+
+Keep a second pane on the side for previewing linked notes, like VS Code's side preview. Mod-clicking a link opens it in that pane, and the next mod-click reuses it instead of creating a new split each time:
+
+- **Mod click behavior**: *In opposite tab group*
+- **Preview tabs**: on
+- **Always open in new tab**: off, so regular clicks keep opening in the current tab
+
+With a two-pane split, ctrl/cmd-clicking a link in either pane opens the note in the other one as a preview tab (italic title). The next ctrl/cmd-click replaces that preview, and interacting with the tab (editing it or double-clicking its header) makes it persistent.
+
+![side preview pane](./screenshots/side-preview.gif)
+
 ## Comparison with similar plugins
 There are several plugins that attempt to solve this problem with different pros and cons. However, most other options either only work in specific menus or have a noticeable timer delay before opening new tabs. "Open Tab Settings" works by patching some of Obsidian's internal methods to achieve consistent and seamless new tab and de-duplication behavior throughout Obsidian. It is inspired by the [Opener](https://github.com/aidan-gibson/obsidian-opener) plugin which worked in a similar way, but is no longer maintained and broken on the latest Obsidian (though it has since been [forked](https://github.com/lukemt/obsidian-opener)). "Open Tab Settings" also adds a few improvements over Opener, including making non-file views such as the Graph View also open in new tabs and adding several customization options for new tab placement.
 

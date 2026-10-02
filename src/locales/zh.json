@@ -1,0 +1,81 @@
+{
+  "commands": {
+    "toggle": "切换{{name}}",
+    "enable": "启用{{name}}",
+    "disable": "禁用{{name}}",
+    "cycle": "循环切换{{name}}",
+    "enabled": "开启",
+    "disabled": "关闭",
+    "newTab": {
+      "afterPinned": "在固定标签页之后打开新标签页",
+      "afterActive": "在当前标签页之后打开新标签页",
+      "beginning": "在最前面打开新标签页"
+    }
+  },
+  "menu": {
+    "openInSameTab": "在当前标签页中打开",
+    "openInDuplicateTab": "在重复标签页中打开",
+    "openInOppositeTabGroup": "在另一标签页组中打开"
+  },
+  "settings": {
+    "deduplicateAcrossTabGroups": {
+      "name": "跨标签页组避免重复",
+      "description": "即使文件已在分屏或独立窗口中打开，也切换到已有标签页。"
+    },
+    "deduplicateTabs": {
+      "name": "避免重复标签页",
+      "description": "如果文件已在某个标签页中打开，则切换到该标签页，而不是再次打开。"
+    },
+    "disableOnDevice": {
+      "name": "在此设备上禁用",
+      "description": "启用后，此插件在当前设备上不执行任何操作。此设置仅适用于当前设备，不会同步。重启 Obsidian，或先禁用再启用插件，使设置生效。",
+      "notice": "请重启 Obsidian，使“在此设备上禁用”设置生效。"
+    },
+    "focusNewTabs": {
+      "name": "立即切换到新标签页",
+      "description": "通过鼠标中键或 Ctrl 单击打开新标签页时，立即切换到该标签页，而不是在后台打开。普通单击打开的新标签页始终会立即切换，不受此设置影响。"
+    },
+    "modClickBehavior": {
+      "name": "Ctrl / Cmd / 中键点击行为",
+      "description": "通过 Ctrl、Cmd 或鼠标中键点击链接时的打开方式。",
+      "options": {
+        "allowDuplicate": "重复标签页",
+        "noPreview": "普通标签页（非预览）",
+        "opposite": "另一标签页组",
+        "same": "当前标签页",
+        "tab": "新标签页",
+        "placeAfterActive": "当前标签页之后",
+        "placeAtBeginning": "最前面",
+        "placeAtEnd": "最后面"
+      }
+    },
+    "newTabPlacement": {
+      "name": "新标签页位置",
+      "description": "将新标签页放在……",
+      "options": {
+        "afterActive": "当前标签页之后",
+        "afterPinned": "固定标签页之后",
+        "beginning": "最前面",
+        "end": "最后面"
+      }
+    },
+    "newTabTabGroupPlacement": {
+      "name": "新标签页所在的标签页组",
+      "description": "工作区分屏时，优先在以下位置打开新标签页……",
+      "options": {
+        "first": "第一个标签页组",
+        "last": "最后一个标签页组",
+        "opposite": "另一标签页组",
+        "same": "当前标签页组"
+      }
+    },
+    "openInNewTab": {
+      "name": "始终在新标签页中打开",
+      "description": "默认在新标签页中打开文件。"
+    },
+    "previewTabs": {
+      "name": "预览标签页",
+      "description": "使用 VS Code 风格的预览标签页。新打开的标签页在与其交互前处于“预览”状态。继续打开文件时会替换预览标签页，而不是新建标签页。"
+    }
+  }
+}

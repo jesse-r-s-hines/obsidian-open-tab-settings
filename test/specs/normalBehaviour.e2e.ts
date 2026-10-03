@@ -1,5 +1,5 @@
 import { browser } from '@wdio/globals'
-import workspacePage from 'test/pageobjects/workspace.page';
+import workspacePage from '../pageobjects/workspace.page';
 import { obsidianPage } from "wdio-obsidian-service"
 
 // Test that normal behaviors aren't broken by the plugin

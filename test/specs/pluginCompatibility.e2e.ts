@@ -1,6 +1,6 @@
 import { browser } from '@wdio/globals'
 import { obsidianPage } from 'wdio-obsidian-service';
-import workspacePage from 'test/pageobjects/workspace.page';
+import workspacePage from '../pageobjects/workspace.page';
 
 describe('Plugin compatibility', function() {
     beforeEach(async function() {

@@ -634,7 +634,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const workspace = this.app.workspace;
         const settings = {...this.settings, ...override};
 
-        const activeLeaf = workspace.activeLeaf;
+        const activeLeaf = workspace.getActiveViewOfType(View)?.leaf;
         if (activeLeaf?.canNavigate()) {
             return activeLeaf;
         }

@@ -39,7 +39,7 @@ The primary settings can also be toggled via commands.
 
 With **Always open in new tab** on and **Prevent duplicate tabs** on (the default), you can get behavior like this:
 
-![basic-new-tab](./screenshots/basic-new-tab-2.gif)
+![basic-new-tab](./screenshots/basic-new-tab.gif)
 
 ### Side preview pane
 

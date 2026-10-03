@@ -615,6 +615,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
             group.insertChild(index, newLeaf);
             if (index <= currentTab && (group != activeTabGroup || !focus)) {
                 group.selectTabIndex(currentTab + 1);
+            } else {
+                group.selectTabIndex(group.currentTab); // make sure to trigger an update.
             }
         }
 

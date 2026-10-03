@@ -1,7 +1,7 @@
 import { browser } from '@wdio/globals'
-import workspacePage from 'test/pageobjects/workspace.page';
+import workspacePage from '../pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
-import { WorkspaceParent } from 'obsidian';
+import { WorkspaceParent, WorkspaceTabs } from 'obsidian';
 
 
 describe('Test basic deduplicate', function() {
@@ -226,10 +226,11 @@ describe('Test basic deduplicate', function() {
 
         await browser.executeObsidian( async ({app, obsidian}) => {
             const leaf = app.workspace.getActiveViewOfType(obsidian.View)!.leaf;
-            const tabGroup = leaf.parent;
+            const tabGroup = leaf.parent as WorkspaceTabs;
             leaf.detach();
             await leaf.openFile(app.vault.getFileByPath("B.md")!);
             tabGroup.insertChild(0, leaf);
+            tabGroup.selectTabIndex(1);
         });
 
         await workspacePage.matchWorkspace([[{file: "B.md"}, {file: "A.md", active: true}]]);

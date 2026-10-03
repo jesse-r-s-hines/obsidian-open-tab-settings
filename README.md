@@ -1,19 +1,45 @@
-# Open Tab Settings [![Test](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml)
+# Open Tab Settings
+[![Test](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml)
 
 This plugin adds settings to customize how Obsidian opens tabs and navigates between files, including options to:
 - open in new tab by default
 - switch to existing tab instead of opening a duplicate file
-- customize new tab placement and order
 - open new tabs in the opposite pane when using a split workspace
+- and more!
 
 Using these settings can enable a more familiar workflow for those used to working in editors like VSCode. With the "Always open in new tab" toggled, Obsidian will always open files in a new tab, whether they were opened via links, the quick switcher, file explorer, etc. Never accidentally lose your tabs again!
 
 ## Features
 ![settings](./screenshots/settings.png)
 
+All features can be disabled and customized in the settings to tweak Obsidian's behavior to your liking.
+
+- Always open in new tab
+    - Open files in a new tab by default.
+- Preview tabs
+    - VS Code style preview tabs. Initially open tabs as "preview" until interacted with. Preview tabs will be replaced instead of opening in new tab.
+- Prevent duplicate tabs
+    - If a file is already open, switch to it instead of re-opening it.
+- Deduplicate across tab groups
+    - Switch to an already open file even when it's in a split pane or popout window.
+- Focus explicit new tabs
+    - Immediately switch to new tabs opened via middle or ctrl click instead of opening them in the background. New tabs created by regular click will always focus regardless.
+- New tab placement
+    - Place new tabs after active tab, after pinned tabs, at the beginning, or at the end.
+- New tab tab group placement
+    - When the workspace is split, prefer to open new tabs in the first tab group, in the last tab group, in the opposite tab group, or in the same tab group.
+- Mod click behavior
+    - Customize what Ctrl/Cmd/middle click does.
+
 The primary settings can also be toggled via commands.
 
-## Common setups
+## Demos
+
+### Open in new tab and deduplicate
+
+With **Always open in new tab** on and **Prevent duplicate tabs** on (the default), you can get behavior like this:
+
+![basic-new-tab](./screenshots/basic-new-tab-2.gif)
 
 ### Side preview pane
 
@@ -21,7 +47,7 @@ Keep a second pane on the side for previewing linked notes, like VS Code's side 
 
 - **Mod click behavior**: *In opposite tab group*
 - **Preview tabs**: on
-- **Always open in new tab**: off, so regular clicks keep opening in the current tab
+- **Always open in new tab**: off, so regular clicks keep opening in the current tab. You can also turn this on if you want links to open in the side pane by default.
 
 With a two-pane split, ctrl/cmd-clicking a link in either pane opens the note in the other one as a preview tab (italic title). The next ctrl/cmd-click replaces that preview, and interacting with the tab (editing it or double-clicking its header) makes it persistent.
 

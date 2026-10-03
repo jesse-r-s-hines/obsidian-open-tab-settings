@@ -615,6 +615,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
             group.insertChild(index, newLeaf);
             if (index <= currentTab && (group != activeTabGroup || !focus)) {
                 group.selectTabIndex(currentTab + 1);
+            } else {
+                group.selectTabIndex(group.currentTab); // make sure to trigger an update.
             }
         }
 
@@ -634,7 +636,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const workspace = this.app.workspace;
         const settings = {...this.settings, ...override};
 
-        const activeLeaf = workspace.activeLeaf;
+        const activeLeaf = workspace.getActiveViewOfType(View)?.leaf;
         if (activeLeaf?.canNavigate()) {
             return activeLeaf;
         }

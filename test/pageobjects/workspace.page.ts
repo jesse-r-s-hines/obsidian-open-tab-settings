@@ -4,6 +4,7 @@ import type { OpenTabSettingsPluginSettings } from "src/settings.js"
 import { equals } from "@jest/expect-utils";
 import { WorkspaceTabs, WorkspaceLeaf, WorkspaceParent } from 'obsidian';
 import { obsidianPage } from 'wdio-obsidian-service';
+import path from "path";
 
 type LeafInfo = {
     id: string,
@@ -15,7 +16,8 @@ type LeafInfo = {
     /** True if this leaf is selected within its tab group */
     currentTab: boolean,
     isPreview: boolean,
-    tabHeaderElClasses: string[], containerElClasses: string[], containerElIsVisible: boolean,
+    tabHeaderElClasses: string[], tabHeaderElTextContent: string,
+    containerElClasses: string[], containerElIsVisible: boolean,
 }
 
 class WorkspacePage {
@@ -102,6 +104,7 @@ class WorkspacePage {
                         currentTab: leaf.parent.children.indexOf(leaf) === (leaf.parent as WorkspaceTabs).currentTab,
                         isPreview: leaf.openTabSettings?.isPreview ?? false,
                         tabHeaderElClasses: [...leaf.tabHeaderEl.classList],
+                        tabHeaderElTextContent: leaf.tabHeaderEl.textContent,
                         containerElClasses: [...leaf.containerEl.classList],
                         containerElIsVisible: leaf.containerEl.checkVisibility({checkOpacity: true, checkVisibilityCSS: true}),
                     };
@@ -148,43 +151,55 @@ class WorkspacePage {
     async matchWorkspace(expected: Partial<LeafInfo>[][]) {
         const matcher = expected.map(g => g.map(l => expect.objectContaining(l)));
         let actual: LeafInfo[][] = [];
-        try {
-            await browser.waitUntil(async () => {
-                actual = await this.getAllLeaves();
-                return equals(actual, matcher);
-            });
-        } catch {}
-        if (!equals(actual, matcher)) {
-            // Show a pretty error message with only the relevant keys
-            const keys = [...new Set(expected.flat().flatMap(l => Object.keys(l)))];
-            const filteredActual = actual.map(group =>
-                group.map(leaf => Object.fromEntries(keys.map(k => [k, leaf[k as keyof LeafInfo]])),
-            ));
+        const check = (actual: LeafInfo[][]) => {
+            if (!equals(actual, matcher)) {
+                // Show a pretty error message with only the relevant keys
+                const keys = [...new Set(expected.flat().flatMap(l => Object.keys(l)))];
+                const filteredActual = actual.map(group =>
+                    group.map(leaf => Object.fromEntries(keys.map(k => [k, leaf[k as keyof LeafInfo]])),
+                ));
 
-            throw new Error(
-                "Workspace did not match!\n\n" +
-                "Expected:\n" + JSON.stringify(expected, null, 2) + "\n\n" +
-                "Actual:\n" + JSON.stringify(filteredActual, null, 2),
-            );
-        }
+                throw new Error(
+                    "Workspace did not match!\n\n" +
+                    "Expected:\n" + JSON.stringify(expected, null, 2) + "\n\n" +
+                    "Actual:\n" + JSON.stringify(filteredActual, null, 2),
+                );
+            }
 
-        // sanity checks to make sure the active tabs are in fact visible and not out of sync
-        for (const tabGroup of actual) {
-            for (const leaf of tabGroup) {
-                if (leaf.currentTab) {
-                    expect(leaf.tabHeaderElClasses).toContain("is-active");
-                } else {
-                    expect(leaf.tabHeaderElClasses).not.toContain("is-active");
-                }
-                if (leaf.active) {
-                    expect(leaf.currentTab).toBe(true);
-                    expect(leaf.containerElClasses).toContain("mod-active");
-                    expect(leaf.containerElIsVisible).toBe(true);
-                } else {
-                    expect(leaf.containerElClasses).not.toContain("mod-active");
+            // sanity checks to make sure the active tabs are in fact visible and not out of sync with the DOM
+            for (const tabGroup of actual) {
+                for (const leaf of tabGroup) {
+                    if (leaf.currentTab) {
+                        expect(leaf.tabHeaderElClasses).toContain("is-active");
+                    } else {
+                        expect(leaf.tabHeaderElClasses).not.toContain("is-active");
+                    }
+                    if (leaf.active) {
+                        expect(leaf.currentTab).toBe(true);
+                        expect(leaf.containerElClasses).toContain("mod-active");
+                        expect(leaf.containerElIsVisible).toBe(true);
+                    } else {
+                        expect(leaf.containerElClasses).not.toContain("mod-active");
+                    }
+                    if (leaf.type == "markdown") {
+                        expect(leaf.tabHeaderElTextContent.trim()).toBe(path.parse(leaf.file).name);
+                    } else if (leaf.type == "empty") {
+                        expect(leaf.tabHeaderElTextContent.trim()).toBe("New tab");
+                    } else {
+                        expect(leaf.tabHeaderElTextContent.trim()).not.toBe("");
+                    }
                 }
             }
         }
+
+        try {
+            await browser.waitUntil(async () => {
+                actual = await this.getAllLeaves();
+                check(actual);
+                return true;
+            });
+        } catch {}
+        check(actual); // call again to get better error message
     }
 
     /**

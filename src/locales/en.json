@@ -20,11 +20,11 @@
   "settings": {
     "deduplicateAcrossTabGroups": {
       "name": "Deduplicate across tab groups",
-      "description": "Whether to switch to already open file even if its in a split pane or popout window"
+      "description": "Switch to an already open file even when it's in a split pane or popout window."
     },
     "deduplicateTabs": {
       "name": "Prevent duplicate tabs",
-      "description": "If a tab is already open, switch to it instead of re-opening it."
+      "description": "If a file is already open, switch to it instead of re-opening it."
     },
     "disableOnDevice": {
       "name": "Disable on this device",

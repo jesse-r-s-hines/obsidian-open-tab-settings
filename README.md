@@ -1,4 +1,5 @@
-# Open Tab Settings [![Test](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml)
+# Open Tab Settings
+[![Test](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/jesse-r-s-hines/obsidian-open-tab-settings/actions/workflows/test.yaml)
 
 This plugin adds settings to customize how Obsidian opens tabs and navigates between files, including options to:
 - open in new tab by default

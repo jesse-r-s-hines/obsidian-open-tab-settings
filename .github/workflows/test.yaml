@@ -9,6 +9,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: obsidianmd/obsidian-workflows@v1
+        with:
+          strict: true
+
   test-desktop:
     strategy:
       fail-fast: false
@@ -175,7 +183,7 @@ jobs:
   # add every matrix option in the GitHub repo settings.
   check:
     if: always()
-    needs: [test-desktop]
+    needs: [validate, test-desktop]
     runs-on: ubuntu-latest
     steps:
       - name: Check all tests passed

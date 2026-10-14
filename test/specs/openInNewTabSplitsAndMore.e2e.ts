@@ -10,11 +10,11 @@ describe('Test open in new tab for splits and windows', function() {
     })
 
     after(async function() {
-        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+        await browser.switchToWindow(await obsidianPage.getMainWindowHandle());
     })
 
     beforeEach(async function() {
-        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+        await browser.switchToWindow(await obsidianPage.getMainWindowHandle());
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({ openInNewTab: true, deduplicateTabs: false });
         await workspacePage.setConfig('focusNewTab', false);

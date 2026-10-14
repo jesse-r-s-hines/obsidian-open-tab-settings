@@ -5,7 +5,7 @@ import { obsidianPage } from 'wdio-obsidian-service';
 
 describe('Preview tabs', function() {
     beforeEach(async function() {
-        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+        await browser.switchToWindow(await obsidianPage.getMainWindowHandle());
         await obsidianPage.resetVault();
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettingsDefaults({ openInNewTab: true, previewTabs: true, deduplicateTabs: false });
@@ -13,7 +13,7 @@ describe('Preview tabs', function() {
     });
 
     after(async function() {
-        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+        await browser.switchToWindow(await obsidianPage.getMainWindowHandle());
     })
 
     it('opens new tabs as preview tabs', async function() {

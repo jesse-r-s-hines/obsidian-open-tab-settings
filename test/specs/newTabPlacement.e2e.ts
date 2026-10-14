@@ -316,7 +316,7 @@ describe('Test newTabTabGroupPlacement', function() {
     })
 
     beforeEach(async function() {
-        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+        await browser.switchToWindow(await obsidianPage.getMainWindowHandle());
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettings({
             openInNewTab: false, deduplicateTabs: false,

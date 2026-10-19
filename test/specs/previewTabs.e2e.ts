@@ -356,6 +356,16 @@ describe('Preview tabs', function() {
         ]);
     });
 
+    it("external file opens as non preview", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
+
+        const externalFile = workspacePage.getExternalFilePath();
+        await workspacePage.openExternalFile(externalFile);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: externalFile, active: true, isPreview: false}
+        ]]);
+    })
+
     it("external file replaces normal preview", async function() {
         if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
 
@@ -366,7 +376,7 @@ describe('Preview tabs', function() {
         ]]);
         await workspacePage.openExternalFile(externalFile);
         await workspacePage.matchWorkspace([[
-            {type: "markdown", file: externalFile, active: true, isPreview: true}
+            {type: "markdown", file: externalFile, active: true, isPreview: false}
         ]]);
     })
 })

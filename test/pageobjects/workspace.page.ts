@@ -1,10 +1,11 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
 import { ConfigItem } from 'obsidian-typings'
-import type { OpenTabSettingsPluginSettings } from "../../src/settings.js"
 import { equals } from "@jest/expect-utils";
-import { WorkspaceTabs, WorkspaceLeaf, WorkspaceParent } from 'obsidian';
-import { obsidianPage } from 'wdio-obsidian-service';
+import { fileURLToPath } from 'url';
 import path from "path";
+import { WorkspaceTabs, WorkspaceLeaf, WorkspaceParent } from 'obsidian';
+import type { OpenTabSettingsPluginSettings } from "../../src/settings.js"
+import { obsidianPage } from 'wdio-obsidian-service';
 
 type LeafInfo = {
     id: string,
@@ -346,6 +347,16 @@ class WorkspacePage {
     async getWindowHandles() {
         const mainWindow = await obsidianPage.getMainWindowHandle();
         return [mainWindow, ...(await browser.getWindowHandles()).filter(h => h != mainWindow)];
+    }
+
+    async openExternalFile(file: string) {
+        await browser.executeObsidian(({}, file) => {
+            (window as any).OBS_OPEN_FILE(file.replace(/^file:/, ''));
+        }, file)
+    }
+
+    getExternalFilePath() {
+        return `file:${path.resolve(fileURLToPath(import.meta.url), "../../External File.md")}`
     }
 }
 

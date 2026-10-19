@@ -2,7 +2,7 @@ import { browser } from '@wdio/globals'
 import workspacePage from '../pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
 import { WorkspaceLeaf } from 'obsidian';
-
+import semver from "semver";
 
 describe('Test open in new tab for splits and windows', function() {
     before(async function() {
@@ -138,5 +138,17 @@ describe('Test open in new tab for misc', function() {
 
         await browser.executeObsidianCommand("app:go-forward");
         await workspacePage.matchWorkspace([[{type: "markdown", file: "B.md", active: true}]]);
+    })
+
+    it("open external file", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
+
+        await workspacePage.openFile("A.md")
+        const externalFile = workspacePage.getExternalFilePath();
+        await workspacePage.openExternalFile(externalFile);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md"},
+            {type: "markdown", file: externalFile, active: true},
+        ]]);
     })
 })

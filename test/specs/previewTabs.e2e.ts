@@ -1,6 +1,7 @@
 import { browser } from '@wdio/globals'
 import workspacePage from '../pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
+import semver from "semver"
 
 
 describe('Preview tabs', function() {
@@ -354,4 +355,18 @@ describe('Preview tabs', function() {
             [{"file": "Loop.md", "isPreview": false}, {"file": "Loop.md", "isPreview": false, "active": true}], // win 2 right
         ]);
     });
+
+    it("external file replaces normal preview", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
+
+        const externalFile = workspacePage.getExternalFilePath();
+        await workspacePage.openFileViaQuickSwitcher("A.md");
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", active: true, isPreview: true}
+        ]]);
+        await workspacePage.openExternalFile(externalFile);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: externalFile, active: true, isPreview: true}
+        ]]);
+    })
 })

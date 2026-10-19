@@ -1,6 +1,7 @@
 import { browser } from '@wdio/globals'
 import workspacePage from '../pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
+import semver from "semver"
 
 
 describe('Test deduplicate for splits and windows', function() {
@@ -226,8 +227,22 @@ describe('Test deduplicate for misc', function() {
         ]]);
 
         await browser.executeObsidianCommand("app:go-forward");
-                await workspacePage.matchWorkspace([[
+        await workspacePage.matchWorkspace([[
             {type: "markdown", file: "B.md"}, {type: "markdown", file: "A.md", active: true},
         ]]);
+    })
+
+    it("external files", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
+
+        const externalFile = workspacePage.getExternalFilePath();
+        await workspacePage.openExternalFile(externalFile);
+        await workspacePage.openFile("A.md");
+        await workspacePage.setActiveFile("A.md");
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: externalFile},
+            {type: "markdown", file: "A.md", active: true}
+        ]]);
+        await workspacePage.openExternalFile(externalFile);
     })
 })

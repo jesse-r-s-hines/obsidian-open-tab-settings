@@ -218,6 +218,10 @@ export default class OpenTabSettingsPlugin extends Plugin {
                         result = await oldMethod.call(target, file, openState, ...args);
                     }
 
+                    if (file.path.startsWith("file:")) { // Don't set external files as previews
+                        plugin.setLeafIsPreview(target, false);
+                    }
+
                     // If the leaf is still empty, close it. This can happen if the file was de-duplicated while
                     // "openInNewTab" is enabled, or if you open a file "in default app" in a new tab.
                     if (isEmptyLeaf(this) && isMainLeaf(this) && this.parent.children.length > 1) {

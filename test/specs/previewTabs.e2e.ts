@@ -1,11 +1,12 @@
 import { browser } from '@wdio/globals'
 import workspacePage from '../pageobjects/workspace.page';
 import { obsidianPage } from 'wdio-obsidian-service';
+import semver from "semver"
 
 
 describe('Preview tabs', function() {
     beforeEach(async function() {
-        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+        await browser.switchToWindow(await obsidianPage.getMainWindowHandle());
         await obsidianPage.resetVault();
         await workspacePage.loadPlatformWorkspaceLayout("empty");
         await workspacePage.setSettingsDefaults({ openInNewTab: true, previewTabs: true, deduplicateTabs: false });
@@ -13,7 +14,7 @@ describe('Preview tabs', function() {
     });
 
     after(async function() {
-        await browser.switchToWindow(await workspacePage.getMainWindowHandle());
+        await browser.switchToWindow(await obsidianPage.getMainWindowHandle());
     })
 
     it('opens new tabs as preview tabs', async function() {
@@ -354,4 +355,28 @@ describe('Preview tabs', function() {
             [{"file": "Loop.md", "isPreview": false}, {"file": "Loop.md", "isPreview": false, "active": true}], // win 2 right
         ]);
     });
+
+    it("external file opens as non preview", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
+
+        const externalFile = workspacePage.getExternalFilePath();
+        await workspacePage.openExternalFile(externalFile);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: externalFile, active: true, isPreview: false}
+        ]]);
+    })
+
+    it("external file replaces normal preview", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
+
+        const externalFile = workspacePage.getExternalFilePath();
+        await workspacePage.openFileViaQuickSwitcher("A.md");
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: "A.md", active: true, isPreview: true}
+        ]]);
+        await workspacePage.openExternalFile(externalFile);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: externalFile, active: true, isPreview: false}
+        ]]);
+    })
 })

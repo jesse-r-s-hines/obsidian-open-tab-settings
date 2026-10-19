@@ -1,6 +1,7 @@
 import { browser } from '@wdio/globals'
 import workspacePage from '../pageobjects/workspace.page';
 import { obsidianPage } from "wdio-obsidian-service"
+import semver from "semver";
 
 // Test that normal behaviors aren't broken by the plugin
 // We'll run these tests 3 times: with the plugin disabled, with the settings disabled, and with the settings enabled
@@ -111,6 +112,16 @@ const tests = () => {
         await $(".is-flashing").waitForExist(); // check we get the internal link highlight
         await workspacePage.matchWorkspace([[
             {type: "markdown", file: "Loop.md"},
+        ]]);
+    })
+
+    it("open external file", async function() {
+        if ((await obsidianPage.getPlatform()).isPhone || semver.lt(browser.getObsidianVersion(), "1.14.2")) this.skip();
+
+        const externalFile = workspacePage.getExternalFilePath();
+        await workspacePage.openExternalFile(externalFile);
+        await workspacePage.matchWorkspace([[
+            {type: "markdown", file: externalFile, active: true}
         ]]);
     })
 }

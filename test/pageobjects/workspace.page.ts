@@ -1,10 +1,11 @@
 import { Key, ChainablePromiseElement } from 'webdriverio'
 import { ConfigItem } from 'obsidian-typings'
-import type { OpenTabSettingsPluginSettings } from "../../src/settings.js"
 import { equals } from "@jest/expect-utils";
-import { WorkspaceTabs, WorkspaceLeaf, WorkspaceParent } from 'obsidian';
-import { obsidianPage } from 'wdio-obsidian-service';
+import { fileURLToPath } from 'url';
 import path from "path";
+import { WorkspaceTabs, WorkspaceLeaf, WorkspaceParent } from 'obsidian';
+import type { OpenTabSettingsPluginSettings } from "../../src/settings.js"
+import { obsidianPage } from 'wdio-obsidian-service';
 
 type LeafInfo = {
     id: string,
@@ -342,30 +343,20 @@ class WorkspacePage {
         }, leafInfo);
     }
 
-    private mainWindowHandle: string|undefined;
-
-    /** Returns the main window */
-    async getMainWindowHandle() {
-        const windowHandles = await browser.getWindowHandles();
-        if (!this.mainWindowHandle || !windowHandles.includes(this.mainWindowHandle)) {
-            const currentWindow = await browser.getWindowHandle();
-            for (const windowHandle of windowHandles) {
-                await browser.switchToWindow(windowHandle);
-                const isMain = await browser.executeObsidian(({app}) => (app.workspace.rootSplit.win == window));
-                if (isMain) {
-                    this.mainWindowHandle = windowHandle;
-                    break;
-                }
-            }
-            await browser.switchToWindow(currentWindow);
-        }
-        return this.mainWindowHandle!;
-    }
-
     /** Gets all window handles, the main window will always be first */
     async getWindowHandles() {
-        const mainWindow = await this.getMainWindowHandle();
+        const mainWindow = await obsidianPage.getMainWindowHandle();
         return [mainWindow, ...(await browser.getWindowHandles()).filter(h => h != mainWindow)];
+    }
+
+    async openExternalFile(file: string) {
+        await browser.executeObsidian(({}, file) => {
+            (window as any).OBS_OPEN_FILE(file.replace(/^file:/, ''));
+        }, file)
+    }
+
+    getExternalFilePath() {
+        return `file:${path.resolve(fileURLToPath(import.meta.url), "../../External File.md")}`
     }
 }
 

@@ -1,6 +1,6 @@
 import {
     Plugin, Workspace, WorkspaceLeaf, WorkspaceRoot, WorkspaceFloating, View, TFile, PaneType, WorkspaceTabs,
-    WorkspaceItem, Platform, Keymap, Notice, App, MarkdownView,
+    WorkspaceItem, Platform, Keymap, Notice, App, MarkdownView, EditableFileView,
 } from 'obsidian';
 import * as monkeyAround from 'monkey-around';
 import {
@@ -10,15 +10,6 @@ import {
 import { TabGroup } from './types';
 import { initializeI18n } from './i18n';
 import { t } from 'i18next';
-
-
-/**
- * Special view types added by plugins that should be deduplicated like normal files.
- * This is only needed if the view is not registered as the default view for a file extension.
- */
-const PLUGIN_VIEW_TYPES: Record<string, string[]> = {
-    "md": ["excalidraw", "kanban", "smm"],
-}
 
 
 function isEmptyLeaf(leaf: WorkspaceLeaf) {
@@ -72,6 +63,19 @@ const OVERRIDES = {
 
 export default class OpenTabSettingsPlugin extends Plugin {
     settings: OpenTabSettingsPluginSettings = {...DEFAULT_SETTINGS};
+
+    /**
+     * Handle third-party plugins that register custom "default" views for files, like excalidraw and kanban. Note we
+     * don't want to deduplicate just any FileView with the same file path, because informational views like Outlinks
+     * and Backlinks shouldn't be deduplicated. Only deduplicating EditableFileViews seems like a reasonable heuristic.
+     * 
+     * However, this is further complicated by deferred views, which we can't do an instance of check without loading.
+     * And I don't want to make findMatchingLeaves async as that can trigger weird timing issues (see 396dc1 and #22).
+     * This will be a cache of views that should be treated as "default" and we'll update it as we see views. Dedup may
+     * fail to match on a deferred third-party view at first, but once one's been loaded it will work on the rest. We'll
+     * also pre-populate it with some popular plugins.
+     */
+    pluginDefaultViewTypes: Set<string> = new Set(["excalidraw", "kanban", "smm"])
 
     async onload() {
         await initializeI18n();
@@ -185,15 +189,20 @@ export default class OpenTabSettingsPlugin extends Plugin {
                     }
                     // choose matches first from last opened from, then matches in same group, then first in list.
                     if (settings.deduplicateTabs && !isSpecialOpen && matches.length > 0) {
-                        if (!target) target = matches.find(l => l.id == openedFrom);
-                        // match that is already displayed in this group
-                        if (!target) target = matches.find(l => l.isVisible() && l.parent == this.parent);
-                        // match that is already displayed in another group
-                        if (!target) target = matches.find(l => l.isVisible());
-                        // matches in same group
-                        if (!target) target = matches.find(l => l.parent == this.parent);
-                        // first match in list
-                        if (!target) target = matches[0];
+                        // first match Obsidian default views, then try to match third-party plugin views
+                        for (const thirdPartyView of [false, true]) {
+                            const extType = this.app.viewRegistry.getTypeByExtension(file.extension)
+                            const typeMatches = matches.filter(l => (l.view.getViewType() != extType) == thirdPartyView);
+                            if (!target) target = typeMatches.find(l => l.id == openedFrom);
+                            // match that is already displayed in this group
+                            if (!target) target = typeMatches.find(l => l.isVisible() && l.parent == this.parent);
+                            // match that is already displayed in another group
+                            if (!target) target = typeMatches.find(l => l.isVisible());
+                            // matches in same group
+                            if (!target) target = typeMatches.find(l => l.parent == this.parent);
+                            // first match in list
+                            if (!target) target = typeMatches[0];
+                        }
                     }
                     // eslint-disable-next-line @typescript-eslint/no-this-alias -- target
                     if (!target) target = this;
@@ -480,22 +489,25 @@ export default class OpenTabSettingsPlugin extends Plugin {
     }
 
     private findMatchingLeaves(file: TFile) {
-        const matches: WorkspaceLeaf[] = [];
+        const leaves: WorkspaceLeaf[] = [];
         this.app.workspace.iterateAllLeaves(leaf => {
-            // file is the same
+            if (
+                leaf.view instanceof EditableFileView && leaf.view.file &&
+                leaf.view.getViewType() != this.app.viewRegistry.getTypeByExtension(leaf.view.file.extension)
+            ) {
+                this.pluginDefaultViewTypes.add(leaf.view.getViewType());
+            }
+            leaves.push(leaf);
+        });
+        return leaves.filter(leaf => {
             const isFileMatch = leaf.getViewState()?.state?.file == file.path;
-            // we only want to switch to another leaf if its a basic file, not if its outgoing-links etc.
             const viewType = leaf.view.getViewType();
             const isTypeMatch = (
                 this.app.viewRegistry.getTypeByExtension(file.extension) == viewType ||
-                PLUGIN_VIEW_TYPES[file.extension]?.includes(viewType)
+                this.pluginDefaultViewTypes.has(viewType)
             );
-
-            if (isMainLeaf(leaf) && isFileMatch && isTypeMatch) {
-                matches.push(leaf);
-            }
+            return (isMainLeaf(leaf) && isFileMatch && isTypeMatch)
         });
-        return matches;
     }
 
     /**

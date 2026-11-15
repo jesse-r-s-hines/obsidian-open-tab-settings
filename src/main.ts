@@ -13,8 +13,11 @@ import { t } from 'i18next';
 
 
 function isEmptyLeaf(leaf: WorkspaceLeaf) {
-    // home-tab plugin replaces new tab with home tabs, which should be treated like empty.
-    return ["empty", "home-tab-view"].includes(leaf.view.getViewType())
+    return [
+        "empty",
+        "home-tab-view", // https://github.com/olrenso/obsidian-home-tab plugin replaces new tab with home tabs
+        "start-page-view", // https://github.com/kuzzh/obsidian-startpage
+    ].includes(leaf.view.getViewType())
 }
 
 /** Check if leaf is in the main area (e.g. not in sidebar etc) */

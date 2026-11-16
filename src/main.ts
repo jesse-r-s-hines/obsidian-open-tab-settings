@@ -53,6 +53,11 @@ function parseOverride(override?: string|boolean): [PaneType|false, Partial<Open
     }
 }
 
+/** Internal Obsidian command object, used to wrap "Undo close tab" */
+type CheckCallbackCommand = {
+    checkCallback(checking: boolean): boolean|void,
+}
+
 const OVERRIDES = {
     tab: "tab",
     same: buildOverride(false, {openInNewTab: false}),
@@ -92,6 +97,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         this.registerMonkeyPatches();
+        this.registerUndoCloseTabPatch();
         this.registerCommands();
         this.registerFileMenuOptions();
         this.registerPreviewTabsEvents();
@@ -270,6 +276,43 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 }
             },
         }));
+    }
+
+    /**
+     * Obsidian's "Undo close tab" always reopens the tab at the end of its old tab group, bypassing getLeaf. Wrap the
+     * command to move the reopened tab to where newTabPlacement would place a new tab.
+     */
+    registerUndoCloseTabPatch() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias -- can't use arrow functions here
+        const plugin = this;
+        this.app.workspace.onLayoutReady(() => {
+            const commands = (this.app as unknown as {commands: {commands: Record<string, unknown>}}).commands.commands;
+            const command = commands["workspace:undo-close-pane"] as CheckCallbackCommand|undefined;
+            if (typeof command?.checkCallback != "function") return;
+
+            this.register(monkeyAround.around(command, {
+                checkCallback(oldMethod) {
+                    return function(this: CheckCallbackCommand, checking: boolean) {
+                        if (checking) return oldMethod.call(this, checking);
+
+                        const workspace = plugin.app.workspace;
+                        const activeLeaf = workspace.getMostRecentLeaf();
+                        const leavesBefore = new Set<WorkspaceLeaf>();
+                        workspace.iterateAllLeaves(l => { leavesBefore.add(l) });
+
+                        const result = oldMethod.call(this, checking);
+
+                        const reopened: WorkspaceLeaf[] = [];
+                        workspace.iterateAllLeaves(l => { if (!leavesBefore.has(l)) reopened.push(l) });
+                        // If the tab replaced an empty tab instead of opening a new one, there's nothing to move.
+                        if (reopened.length == 1 && isMainLeaf(reopened[0])) {
+                            plugin.moveReopenedTab(reopened[0], activeLeaf);
+                        }
+                        return result;
+                    }
+                },
+            }));
+        });
     }
 
     registerCommands() {
@@ -573,7 +616,6 @@ export default class OpenTabSettingsPlugin extends Plugin {
         const root = activeLeaf.getRoot();
         const activeTabGroup = activeLeaf.parent as TabGroup;
         let group: TabGroup|undefined;
-        let index: number|undefined;
 
         if (settings.newTabTabGroupPlacement == "same" || Platform.isPhone) {
             group = activeTabGroup;
@@ -588,28 +630,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             }
         }
 
-        if (group == activeTabGroup) {
-            if (settings.newTabPlacement == "afterPinned") {
-                if (group.children[group.currentTab].pinned) {
-                    index = group.currentTab;
-                    while (index < group.children.length && group.children[index].pinned) index++;
-                } else {
-                    index = group.currentTab + 1;
-                }
-            } else if (settings.newTabPlacement == "beginning") {
-                index = 0;
-            } else if (settings.newTabPlacement == "end") {
-                index = group.children.length;
-            } else { // if (settings.newTabPlacement == "afterActive") {
-                index = group.currentTab + 1;
-            }
-        } else {
-            if (settings.newTabPlacement == "beginning") {
-                index = 0
-            } else {
-                index = group.children.length;
-            }
-        }
+        const index = this.getNewTabIndex(group, activeTabGroup, settings);
 
         let newLeaf: WorkspaceLeaf|undefined;
 
@@ -649,6 +670,52 @@ export default class OpenTabSettingsPlugin extends Plugin {
         }
 
         return newLeaf;
+    }
+
+    /** Index in group to place a new tab at, based on the newTabPlacement setting. */
+    private getNewTabIndex(group: TabGroup, activeTabGroup: TabGroup, settings: OpenTabSettingsPluginSettings): number {
+        let index: number;
+        if (group == activeTabGroup) {
+            if (settings.newTabPlacement == "afterPinned") {
+                if (group.children[group.currentTab].pinned) {
+                    index = group.currentTab;
+                    while (index < group.children.length && group.children[index].pinned) index++;
+                } else {
+                    index = group.currentTab + 1;
+                }
+            } else if (settings.newTabPlacement == "beginning") {
+                index = 0;
+            } else if (settings.newTabPlacement == "end") {
+                index = group.children.length;
+            } else { // if (settings.newTabPlacement == "afterActive") {
+                index = group.currentTab + 1;
+            }
+        } else {
+            if (settings.newTabPlacement == "beginning") {
+                index = 0
+            } else {
+                index = group.children.length;
+            }
+        }
+        return index;
+    }
+
+    /**
+     * Move a tab reopened by "Undo close tab" (which Obsidian puts at the end of its tab group) to where
+     * newTabPlacement would place a new tab.
+     * @param activeLeaf The leaf that was active before the tab was reopened
+     */
+    private moveReopenedTab(leaf: WorkspaceLeaf, activeLeaf: WorkspaceLeaf|null) {
+        const group = leaf.parent as TabGroup;
+        // removing the only tab would remove the tab group itself
+        if (group.children.length < 2) return;
+        const activeTabGroup = activeLeaf?.parent as TabGroup|undefined;
+
+        group.removeChild(leaf);
+        const index = this.getNewTabIndex(group, activeTabGroup ?? group, this.settings);
+        group.insertChild(index, leaf);
+        // Obsidian focuses the reopened tab once its view loads, select it now so the tab bar doesn't flicker.
+        group.selectTabIndex(index);
     }
 
     /**

@@ -7,7 +7,7 @@ import {
     OpenTabSettingsPluginSettingTab, OpenTabSettingsPluginSettings, DEFAULT_SETTINGS, NEW_TAB_TAB_GROUP_PLACEMENTS,
     DISABLED_KEY,
 } from './settings';
-import { TabGroup } from './types';
+import { TabGroup, CheckCallbackCommand } from './types';
 import { initializeI18n } from './i18n';
 import { t } from 'i18next';
 
@@ -53,10 +53,6 @@ function parseOverride(override?: string|boolean): [PaneType|false, Partial<Open
     }
 }
 
-/** Internal Obsidian command object, used to wrap "Undo close tab" */
-type CheckCallbackCommand = {
-    checkCallback(checking: boolean): boolean|void,
-}
 
 const OVERRIDES = {
     tab: "tab",
@@ -286,7 +282,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
         // eslint-disable-next-line @typescript-eslint/no-this-alias -- can't use arrow functions here
         const plugin = this;
         this.app.workspace.onLayoutReady(() => {
-            const commands = (this.app as unknown as {commands: {commands: Record<string, unknown>}}).commands.commands;
+            const commands = this.app.commands.commands;
             const command = commands["workspace:undo-close-pane"] as CheckCallbackCommand|undefined;
             if (typeof command?.checkCallback != "function") return;
 

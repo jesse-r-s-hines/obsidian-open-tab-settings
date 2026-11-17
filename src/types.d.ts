@@ -1,4 +1,4 @@
-import { PaneType, WorkspaceLeaf, WorkspaceTabs } from 'obsidian';
+import { PaneType, WorkspaceLeaf, WorkspaceTabs, Command } from 'obsidian';
 import { OpenTabSettingsPluginSettings } from './settings';
 
 declare module "obsidian" {
@@ -18,3 +18,5 @@ declare module "obsidian" {
 }
 
 export type TabGroup = Omit<WorkspaceTabs, 'children'> & {children: WorkspaceLeaf[]};
+
+type CheckCallbackCommand = Command & Required<Pick<Command, 'checkCallback'>>

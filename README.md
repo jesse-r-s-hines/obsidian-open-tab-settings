@@ -25,7 +25,7 @@ All features can be disabled and customized in the settings to tweak Obsidian's 
 - Focus explicit new tabs
     - Immediately switch to new tabs opened via middle or ctrl click instead of opening them in the background. New tabs created by regular click will always focus regardless.
 - New tab placement
-    - Place new tabs after active tab, after pinned tabs, at the beginning, or at the end.
+    - Place new tabs after active tab, after pinned tabs, at the beginning, or at the end. Also applies to tabs reopened with "Undo close tab".
 - New tab tab group placement
     - When the workspace is split, prefer to open new tabs in the first tab group, in the last tab group, in the opposite tab group, or in the same tab group.
 - Mod click behavior

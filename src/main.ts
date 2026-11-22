@@ -61,6 +61,7 @@ const OVERRIDES = {
     opposite: buildOverride("tab", {newTabTabGroupPlacement: "opposite"}),
     noPreview: buildOverride("tab", {previewTabs: false}),
     placeAfterActive: buildOverride('tab', {newTabPlacement: "afterActive"}),
+    placeBeforeActive: buildOverride('tab', {newTabPlacement: "beforeActive"}),
     placeAtBeginning: buildOverride('tab', {newTabPlacement: "beginning"}),
     placeAtEnd: buildOverride('tab', {newTabPlacement: "end"}),
 }
@@ -351,7 +352,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             },
         });
         // workspace:new-tab doesn't respect new tab placement options, so add some custom commands
-        for (const p of ["afterPinned", "afterActive", "beginning"] as const) {
+        for (const p of ["afterPinned", "afterActive", "beforeActive", "beginning"] as const) {
             this.addCommand({
                 id: "new-tab-" + kebabCase(p),
                 name: t(`commands.newTab.${p}`),
@@ -510,6 +511,7 @@ export default class OpenTabSettingsPlugin extends Plugin {
             (settings.modClickBehavior == 'noPreview' && !settings.previewTabs) ||
             (settings.modClickBehavior == 'allowDuplicate' && !settings.deduplicateTabs) ||
             (settings.modClickBehavior == "placeAfterActive" && settings.newTabPlacement == "afterActive") ||
+            (settings.modClickBehavior == "placeBeforeActive" && settings.newTabPlacement == "beforeActive") ||
             (settings.modClickBehavior == "placeAtBeginning" && settings.newTabPlacement == "beginning") ||
             (settings.modClickBehavior == "placeAtEnd" && settings.newTabPlacement == "end")
         ) {
@@ -683,6 +685,8 @@ export default class OpenTabSettingsPlugin extends Plugin {
                 index = 0;
             } else if (settings.newTabPlacement == "end") {
                 index = group.children.length;
+            } else if (settings.newTabPlacement == "beforeActive") {
+                index = group.currentTab;
             } else { // if (settings.newTabPlacement == "afterActive") {
                 index = group.currentTab + 1;
             }

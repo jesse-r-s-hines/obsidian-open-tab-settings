@@ -4,6 +4,7 @@ import { t } from 'i18next';
 
 export const NEW_TAB_PLACEMENTS = {
     "afterActive": 'settings.newTabPlacement.options.afterActive',
+    "beforeActive": 'settings.newTabPlacement.options.beforeActive',
     "afterPinned": 'settings.newTabPlacement.options.afterPinned',
     "beginning": 'settings.newTabPlacement.options.beginning',
     "end": 'settings.newTabPlacement.options.end',
@@ -23,8 +24,9 @@ export const MOD_CLICK_BEHAVIOR = {
     "opposite": 'settings.modClickBehavior.options.opposite',
     "noPreview": 'settings.modClickBehavior.options.noPreview',
     "placeAfterActive": 'settings.modClickBehavior.options.placeAfterActive',
-    "placeAtEnd": 'settings.modClickBehavior.options.placeAtEnd',
+    "placeBeforeActive": 'settings.modClickBehavior.options.placeBeforeActive',
     "placeAtBeginning": 'settings.modClickBehavior.options.placeAtBeginning',
+    "placeAtEnd": 'settings.modClickBehavior.options.placeAtEnd',
 }
 
 export interface OpenTabSettingsPluginSettings {
@@ -80,6 +82,7 @@ export class OpenTabSettingsPluginSettingTab extends PluginSettingTab {
         modClickOptions.push('opposite');
         if (settings.previewTabs) modClickOptions.push('noPreview');
         if (settings.newTabPlacement != "afterActive") modClickOptions.push('placeAfterActive');
+        if (settings.newTabPlacement != "beforeActive") modClickOptions.push('placeBeforeActive');
         if (settings.newTabPlacement != "beginning") modClickOptions.push('placeAtBeginning');
         if (settings.newTabPlacement != "end") modClickOptions.push('placeAtEnd');
 

@@ -9,6 +9,7 @@
     "newTab": {
       "afterPinned": "在固定标签页之后打开新标签页",
       "afterActive": "在当前标签页之后打开新标签页",
+      "beforeActive": "在当前标签页之前打开新标签页",
       "beginning": "在最前面打开新标签页"
     }
   },
@@ -45,6 +46,7 @@
         "same": "当前标签页",
         "tab": "新标签页",
         "placeAfterActive": "当前标签页之后",
+        "placeBeforeActive": "当前标签页之前",
         "placeAtBeginning": "最前面",
         "placeAtEnd": "最后面"
       }
@@ -54,6 +56,7 @@
       "description": "将新标签页放在……",
       "options": {
         "afterActive": "当前标签页之后",
+        "beforeActive": "当前标签页之前",
         "afterPinned": "固定标签页之后",
         "beginning": "最前面",
         "end": "最后面"

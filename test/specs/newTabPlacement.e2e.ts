@@ -139,6 +139,17 @@ describe('Test newTabPlacement', function() {
         ]]);
     })
 
+    it('basic newTabPlacement before active', async function() {
+        await workspacePage.setSettings({newTabPlacement: "beforeActive"});
+
+        await workspacePage.openFile("A.md");
+        await workspacePage.openFile("D.md");
+        await workspacePage.setActiveFile("D.md");
+        await workspacePage.openLinkInNewTab(await workspacePage.getLink("Loop"));
+
+        await workspacePage.matchWorkspace([[{file: "A.md"}, {file: "Loop.md"}, {file: "D.md"}]]);
+    })
+
     it('replaces active empty', async function() {
         await workspacePage.setSettings({newTabPlacement: "end"});
 

@@ -9,6 +9,7 @@
     "newTab": {
       "afterPinned": "Open new tab after pinned tabs",
       "afterActive": "Open new tab after active tab",
+      "beforeActive": "Open new tab before active tab",
       "beginning": "Open new tab at beginning"
     }
   },
@@ -44,7 +45,8 @@
         "opposite": "In opposite tab group",
         "same": "In same tab",
         "tab": "In new tab",
-        "placeAfterActive": "After active tabs",
+        "placeAfterActive": "After active tab",
+        "placeBeforeActive": "Before active tab",
         "placeAtBeginning": "At beginning",
         "placeAtEnd": "At end"
       }
@@ -54,6 +56,7 @@
       "description": "Place new tabs...",
       "options": {
         "afterActive": "After active tab",
+        "beforeActive": "Before active tab",
         "afterPinned": "After pinned tabs",
         "beginning": "At beginning",
         "end": "At end"
